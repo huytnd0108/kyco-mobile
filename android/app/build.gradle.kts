@@ -6,7 +6,9 @@ plugins {
 
 android {
     namespace = "com.kyco.kyco_mobile"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_secure_storage requires compileSdk 37 (backward-compatible bump
+    // from the Flutter default of 36).
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
