@@ -1,0 +1,6 @@
+# Copy to key.properties (gitignored) and fill in. storeFile is relative to android/app/.
+# For CI, base64 the .jks into a secret and decode it in a build step instead.
+storeFile=kyco-release.jks
+storePassword=CHANGE_ME
+keyAlias=kyco
+keyPassword=CHANGE_ME
