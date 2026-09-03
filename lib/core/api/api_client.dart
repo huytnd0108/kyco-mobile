@@ -15,7 +15,7 @@ typedef OnAuthLost = void Function();
 ///  - unwraps the `{ ok, data, meta }` envelope (throws ApiException on !ok),
 ///  - never loops: the refresh + retry are marked so a second 401 gives up.
 class KycoApiClient {
-  KycoApiClient({required this.tokens, this.onAuthLost, Dio? dio})
+  KycoApiClient({required this.tokens, this.onAuthLost, this.acceptLanguage, Dio? dio})
       : _dio = dio ??
             Dio(BaseOptions(
               baseUrl: AppConfig.apiBase,
@@ -32,6 +32,10 @@ class KycoApiClient {
   final TokenStore tokens;
   final OnAuthLost? onAuthLost;
 
+  /// Resolves the language code ('vi'/'en') for the Accept-Language header so
+  /// the backend returns content_translations in the app's active language.
+  final String Function()? acceptLanguage;
+
   // Single-flight refresh: concurrent 401s share one in-flight refresh.
   Future<bool>? _refreshing;
 
@@ -40,6 +44,7 @@ class KycoApiClient {
       final t = await tokens.accessToken;
       if (t != null) options.headers['authorization'] = 'Bearer $t';
     }
+    options.headers['accept-language'] = acceptLanguage?.call() ?? 'vi';
     handler.next(options);
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/widgets.dart';
 import 'auth_controller.dart';
@@ -38,9 +39,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final auth = ref.watch(authControllerProvider);
+    final errorText =
+        auth.error == null ? null : (auth.error == AuthController.genericError ? l.genericError : auth.error!);
     return Scaffold(
-      appBar: AppBar(title: const Text('Đăng ký')),
+      appBar: AppBar(title: Text(l.signup)),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -58,7 +62,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       controller: _name,
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.name],
-                      decoration: const InputDecoration(labelText: 'Họ tên', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: l.fullName),
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
@@ -66,8 +70,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.email],
-                      decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
-                      validator: (v) => (v == null || !v.contains('@')) ? 'Email không hợp lệ' : null,
+                      decoration: InputDecoration(labelText: l.email),
+                      validator: (v) => (v == null || !v.contains('@')) ? l.emailInvalid : null,
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
@@ -76,30 +80,30 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       autofillHints: const [AutofillHints.newPassword],
                       onFieldSubmitted: (_) => _submit(),
                       decoration: InputDecoration(
-                        labelText: 'Mật khẩu (tối thiểu 8 ký tự)',
-                        border: const OutlineInputBorder(),
+                        labelText: l.password,
+                        helperText: l.passwordMin8,
                         suffixIcon: IconButton(
-                          tooltip: _obscure ? 'Hiện mật khẩu' : 'Ẩn mật khẩu',
+                          tooltip: _obscure ? l.showPassword : l.hidePassword,
                           icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
                           onPressed: () => setState(() => _obscure = !_obscure),
                         ),
                       ),
-                      validator: (v) => (v == null || v.length < 8) ? 'Tối thiểu 8 ký tự' : null,
+                      validator: (v) => (v == null || v.length < 8) ? l.passwordMin8 : null,
                     ),
-                    if (auth.error != null) ...[
+                    if (errorText != null) ...[
                       const SizedBox(height: 14),
-                      ErrorBanner(auth.error!),
+                      ErrorBanner(errorText),
                     ],
                     const SizedBox(height: 22),
                     FilledButton(
                       onPressed: auth.busy ? null : _submit,
                       child: auth.busy
                           ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Text('Tạo tài khoản'),
+                          : Text(l.createAccount),
                     ),
                     TextButton(
                       onPressed: auth.busy ? null : () => context.go('/login'),
-                      child: const Text('Đã có tài khoản? Đăng nhập'),
+                      child: Text(l.haveAccountLogin),
                     ),
                   ],
                 ),

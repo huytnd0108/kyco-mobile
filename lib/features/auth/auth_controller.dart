@@ -30,6 +30,10 @@ final authControllerProvider =
     NotifierProvider<AuthController, AuthState>(AuthController.new);
 
 class AuthController extends Notifier<AuthState> {
+  /// Sentinel for a non-API failure; screens map it to a localized message
+  /// (the controller has no BuildContext / l10n).
+  static const genericError = '__generic__';
+
   KycoApi get _api => ref.read(kycoApiProvider);
   TokenStore get _tokens => ref.read(tokenStoreProvider);
 
@@ -82,7 +86,7 @@ class AuthController extends Notifier<AuthState> {
       state = state.copyWith(busy: false, error: e.message);
       return false;
     } catch (_) {
-      state = state.copyWith(busy: false, error: 'Something went wrong. Please try again.');
+      state = state.copyWith(busy: false, error: genericError);
       return false;
     }
   }

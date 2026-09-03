@@ -1,0 +1,98 @@
+{
+  "@@locale": "vi",
+  "appTitle": "Kyco",
+  "login": "Đăng nhập",
+  "signup": "Đăng ký",
+  "logout": "Đăng xuất",
+  "email": "Email",
+  "emailInvalid": "Email không hợp lệ",
+  "password": "Mật khẩu",
+  "passwordMin8": "Tối thiểu 8 ký tự",
+  "showPassword": "Hiện mật khẩu",
+  "hidePassword": "Ẩn mật khẩu",
+  "fullName": "Họ tên",
+  "createAccount": "Tạo tài khoản",
+  "noAccountSignup": "Chưa có tài khoản? Đăng ký",
+  "haveAccountLogin": "Đã có tài khoản? Đăng nhập",
+  "browseWithoutLogin": "Xem dịch vụ (không cần đăng nhập)",
+  "genericError": "Có lỗi xảy ra. Vui lòng thử lại.",
+  "retry": "Thử lại",
+  "helloGreeting": "Xin chào, {name} 👋",
+  "@helloGreeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeTagline": "Dịch vụ vệ sinh nhà cửa",
+  "noServicesYet": "Chưa có dịch vụ nào — sắp ra mắt.",
+  "homeLoadError": "Không tải được trang chủ.\n{error}",
+  "@homeLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "myBookings": "Đơn của tôi",
+  "bookingsLoadError": "Không tải được đơn.\n{error}",
+  "@bookingsLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noBookingsYet": "Chưa có đơn nào.",
+  "bookingNumber": "Đơn #{id}",
+  "@bookingNumber": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "bookingDetailTitle": "Chi tiết đơn",
+  "selectBookingPlaceholder": "Chọn một đơn để xem chi tiết",
+  "bookingNotFound": "Không tìm thấy đơn #{id}",
+  "@bookingNotFound": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "statusLabel": "Trạng thái",
+  "totalLabel": "Tổng tiền",
+  "createdLabel": "Ngày tạo",
+  "serviceLabel": "Dịch vụ",
+  "statusPending": "Chờ xác nhận",
+  "statusConfirmed": "Đã xác nhận",
+  "statusCompleted": "Hoàn thành",
+  "statusSettled": "Đã thanh toán",
+  "statusCancelled": "Đã hủy",
+  "statusBadDebt": "Nợ xấu",
+  "navHome": "Trang chủ",
+  "navBookings": "Đơn của tôi",
+  "navAccount": "Tài khoản",
+  "accountTitle": "Tài khoản",
+  "myAccount": "Tài khoản của tôi",
+  "appearance": "Giao diện",
+  "themeSystem": "Theo hệ thống",
+  "themeLight": "Sáng",
+  "themeDark": "Tối",
+  "language": "Ngôn ngữ",
+  "langSystem": "Theo hệ thống",
+  "langVi": "Tiếng Việt",
+  "langEn": "English",
+  "signInPrompt": "Đăng nhập để xem đơn và tài khoản của bạn",
+  "pageNotFound": "Không tìm thấy trang: {uri}",
+  "@pageNotFound": {
+    "placeholders": {
+      "uri": {
+        "type": "Object"
+      }
+    }
+  }
+}

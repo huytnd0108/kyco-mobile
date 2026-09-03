@@ -173,4 +173,20 @@ void main() {
     expect(list is List, isTrue);
     expect((list as List).length, 1);
   });
+
+  test('sends accept-language: vi by default', () async {
+    final adapter = _FakeAdapter((o) => _json({'ok': true, 'data': {}}, 200));
+    final c = _client(InMemoryTokenStore(), adapter);
+    await c.get('/home', auth: false);
+    expect(adapter.requests.single.headers['accept-language'], 'vi');
+  });
+
+  test('sends the resolved language from acceptLanguage()', () async {
+    final adapter = _FakeAdapter((o) => _json({'ok': true, 'data': {}}, 200));
+    final dio = Dio(BaseOptions(baseUrl: 'https://example.test/api/v1', validateStatus: (_) => true));
+    dio.httpClientAdapter = adapter;
+    final c = KycoApiClient(tokens: InMemoryTokenStore(), acceptLanguage: () => 'en', dio: dio);
+    await c.get('/home', auth: false);
+    expect(adapter.requests.single.headers['accept-language'], 'en');
+  });
 }
