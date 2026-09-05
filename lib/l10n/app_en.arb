@@ -108,5 +108,20 @@
   "aboutKyco": "About Kyco",
   "faqs": "FAQs",
   "notSignedIn": "Not signed in",
-  "loadMore": "Load more"
+  "loadMore": "Load more",
+  "noReviewsYet": "No reviews yet",
+  "noDescription": "No description",
+  "serviceNotFound": "Service not found",
+  "partnerNotFound": "Partner not found",
+  "noNotifications": "No notifications",
+  "wardsCount": "{count} wards",
+  "completeRequiredFields": "Please complete the required fields",
+  "confirmationCode": "Confirmation code",
+  "mySubscriptions": "My subscriptions",
+  "plansTitle": "Plans",
+  "monthsCount": "{count} months",
+  "noActiveSubscriptions": "No active subscriptions",
+  "sessionsProgress": "Sessions {done}/{total}",
+  "nextChargeLabel": "Next charge: {date}",
+  "manageOnWeb": "Create or change a plan on kyco.vn"
 }

@@ -95,7 +95,10 @@ ThemeData buildTheme(ColorScheme cs) {
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         shape: RoundedRectangleBorder(borderRadius: radius),
-        minimumSize: const Size.fromHeight(48),
+        // Min HEIGHT 48 only. Size.fromHeight sets width=infinity which makes a
+        // FilledButton demand infinite width as a non-flex child in a Row
+        // (e.g. the sticky CTA). Full-width buttons rely on stretch columns.
+        minimumSize: const Size(0, 48),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(

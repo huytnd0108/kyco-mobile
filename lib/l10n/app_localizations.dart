@@ -751,6 +751,96 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Tải thêm'**
   String get loadMore;
+
+  /// No description provided for @noReviewsYet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có đánh giá'**
+  String get noReviewsYet;
+
+  /// No description provided for @noDescription.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có mô tả'**
+  String get noDescription;
+
+  /// No description provided for @serviceNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy dịch vụ'**
+  String get serviceNotFound;
+
+  /// No description provided for @partnerNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy đối tác'**
+  String get partnerNotFound;
+
+  /// No description provided for @noNotifications.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có thông báo'**
+  String get noNotifications;
+
+  /// No description provided for @wardsCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} khu vực'**
+  String wardsCount(Object count);
+
+  /// No description provided for @completeRequiredFields.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng điền đủ thông tin bắt buộc'**
+  String get completeRequiredFields;
+
+  /// No description provided for @confirmationCode.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã xác nhận'**
+  String get confirmationCode;
+
+  /// No description provided for @mySubscriptions.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói của tôi'**
+  String get mySubscriptions;
+
+  /// No description provided for @plansTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Các gói'**
+  String get plansTitle;
+
+  /// No description provided for @monthsCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{count} tháng'**
+  String monthsCount(Object count);
+
+  /// No description provided for @noActiveSubscriptions.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có gói đang hoạt động'**
+  String get noActiveSubscriptions;
+
+  /// No description provided for @sessionsProgress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Buổi {done}/{total}'**
+  String sessionsProgress(Object done, Object total);
+
+  /// No description provided for @nextChargeLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kỳ tính kế: {date}'**
+  String nextChargeLabel(Object date);
+
+  /// No description provided for @manageOnWeb.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo hoặc đổi gói trên kyco.vn'**
+  String get manageOnWeb;
 }
 
 class _AppLocalizationsDelegate

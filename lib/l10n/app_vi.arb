@@ -206,5 +206,51 @@
   "aboutKyco": "Về Kyco",
   "faqs": "Câu hỏi thường gặp",
   "notSignedIn": "Chưa đăng nhập",
-  "loadMore": "Tải thêm"
+  "loadMore": "Tải thêm",
+  "noReviewsYet": "Chưa có đánh giá",
+  "noDescription": "Chưa có mô tả",
+  "serviceNotFound": "Không tìm thấy dịch vụ",
+  "partnerNotFound": "Không tìm thấy đối tác",
+  "noNotifications": "Chưa có thông báo",
+  "wardsCount": "{count} khu vực",
+  "@wardsCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "completeRequiredFields": "Vui lòng điền đủ thông tin bắt buộc",
+  "confirmationCode": "Mã xác nhận",
+  "mySubscriptions": "Gói của tôi",
+  "plansTitle": "Các gói",
+  "monthsCount": "{count} tháng",
+  "@monthsCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "noActiveSubscriptions": "Chưa có gói đang hoạt động",
+  "sessionsProgress": "Buổi {done}/{total}",
+  "@sessionsProgress": {
+    "placeholders": {
+      "done": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "nextChargeLabel": "Kỳ tính kế: {date}",
+  "@nextChargeLabel": {
+    "placeholders": {
+      "date": {
+        "type": "Object"
+      }
+    }
+  },
+  "manageOnWeb": "Tạo hoặc đổi gói trên kyco.vn"
 }

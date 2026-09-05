@@ -59,18 +59,37 @@ class ServiceCard extends StatelessWidget {
                         style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
                   ],
                   const SizedBox(height: 10),
+                  // Overflow-safe on narrow (2-col phone) cards: the duration
+                  // ellipsizes inside Expanded, the price shrinks via FittedBox.
                   Row(
                     children: [
-                      if (service.durationMinutes != null) ...[
-                        Icon(Icons.schedule, size: 15, color: cs.onSurfaceVariant),
-                        const SizedBox(width: 4),
-                        Text(l.minutesShort(service.durationMinutes!),
-                            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
+                      if (service.durationMinutes != null)
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Icon(Icons.schedule, size: 15, color: cs.onSurfaceVariant),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(l.minutesShort(service.durationMinutes!),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: false,
+                                    style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
                         const Spacer(),
-                      ] else
-                        const Spacer(),
-                      PriceText(service.basePriceVnd,
-                          from: true, style: Theme.of(context).textTheme.titleSmall),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: PriceText(service.basePriceVnd,
+                              from: true, style: Theme.of(context).textTheme.titleSmall),
+                        ),
+                      ),
                     ],
                   ),
                 ],

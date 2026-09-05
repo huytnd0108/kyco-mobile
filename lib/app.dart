@@ -23,6 +23,7 @@ import 'features/messages/messages_screen.dart';
 import 'features/notifications/notifications_screen.dart';
 import 'features/providers/provider_screen.dart';
 import 'features/service_detail/service_detail_screen.dart';
+import 'features/services/services_providers.dart';
 import 'features/services/services_screen.dart';
 import 'features/subscriptions/subscriptions_screen.dart';
 import 'theme/color_schemes.dart';
@@ -211,6 +212,8 @@ class _KycoAppState extends ConsumerState<KycoApp> {
     ref.listen(localeControllerProvider, (_, _) {
       ref.invalidate(homeProvider);
       ref.invalidate(bookingsProvider);
+      // Kept-alive shell branches (Services) must re-fetch in the new language.
+      ref.invalidate(catalogTreeProvider);
     });
     // Clear a stale two-pane selection across sign-out (user A → user B).
     ref.listen(authControllerProvider, (_, next) {

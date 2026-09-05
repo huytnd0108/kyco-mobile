@@ -1,17 +1,348 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
-/// Foundation stub — a parallel work-unit replaces the body. Compiles + renders
-/// so every route resolves.
-class SubscriptionsScreen extends StatelessWidget {
+import '../../core/adaptive.dart';
+import '../../core/format.dart';
+import '../../core/models.dart';
+import '../../core/widgets.dart';
+import '../auth/auth_controller.dart';
+import 'subscriptions_providers.dart';
+
+/// `/subscriptions` — GUEST-FIRST. Everyone browses the public marketing plan
+/// cards (`plans()`); signed-in customers additionally see their own recurring
+/// subscriptions (`subscriptions()`). Creating / pausing a plan is money-
+/// adjacent and OUT OF SCOPE here — an info row points members to the web.
+class SubscriptionsScreen extends ConsumerWidget {
   const SubscriptionsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final signedIn =
+        ref.watch(authControllerProvider).status == AuthStatus.signedIn;
+    final plans = ref.watch(plansProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l.subscriptionsTitle)),
+      body: SafeArea(
+        top: false,
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(plansProvider);
+            if (signedIn) ref.invalidate(mySubscriptionsProvider);
+            await ref.read(plansProvider.future);
+          },
+          child: CenteredMaxWidth(
+            maxWidth: 720,
+            child: plans.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => ListView(children: [
+                const SizedBox(height: 120),
+                ErrorRetry(
+                  message: l.homeLoadError(e.toString()),
+                  onRetry: () => ref.invalidate(plansProvider),
+                ),
+              ]),
+              data: (planCards) => _Body(
+                plans: planCards,
+                signedIn: signedIn,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Body extends ConsumerWidget {
+  const _Body({required this.plans, required this.signedIn});
+  final List<PlanCard> plans;
+  final bool signedIn;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 24),
+      children: [
+        // Own subscriptions (signed-in only)
+        if (signedIn) ...[
+          // TODO-i18n: "My subscriptions" section header (no ARB key)
+          SectionHeader(l.mySubscriptions),
+          const _MySubscriptions(),
+        ],
+
+        // Public marketing plans (guest-browsable)
+        // TODO-i18n: "Plans" section header (no ARB key)
+        SectionHeader(l.plansTitle),
+        if (plans.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: EmptyState(message: l.noResults),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                for (final p in plans) _PlanCardTile(p),
+              ],
+            ),
+          ),
+
+        // Money-adjacent management lives on the web (out of scope)
+        const _ManageOnWebNote(),
+      ],
+    );
+  }
+}
+
+class _PlanCardTile extends StatelessWidget {
+  const _PlanCardTile(this.plan);
+  final PlanCard plan;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text(l.subscriptionsTitle)),
-      body: const Center(child: CircularProgressIndicator()),
+    final cs = Theme.of(context).colorScheme;
+    final price = plan.priceMonthlyVnd;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(plan.title,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700)),
+            if (plan.body != null && plan.body!.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(plan.body!,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: cs.onSurfaceVariant)),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (price != null)
+                  Text(
+                    l.perMonth(formatVnd(price)),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(color: cs.primary, fontWeight: FontWeight.w700),
+                  ),
+                const Spacer(),
+                if (plan.durationMonths != null)
+                  // TODO-i18n: "{n} months" (no ARB key)
+                  _Pill(l.monthsCount(plan.durationMonths ?? 0)),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
+}
+
+class _MySubscriptions extends ConsumerWidget {
+  const _MySubscriptions();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final mine = ref.watch(mySubscriptionsProvider);
+
+    return mine.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: ErrorBanner(l.homeLoadError(e.toString())),
+      ),
+      data: (items) {
+        if (items.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            // TODO-i18n: "No active subscriptions" (no ARB key) — reuse noResults
+            child: EmptyState(message: l.noResults),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            children: [for (final s in items) _SubscriptionTile(s)],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SubscriptionTile extends StatelessWidget {
+  const _SubscriptionTile(this.sub);
+  final SubscriptionItem sub;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    // frequency is a backend enum (e.g. weekly) — shown raw.
+                    sub.frequency.isEmpty ? '#${sub.id}' : sub.frequency,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                _StatusChip(sub.status),
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (sub.monthlyAmountVnd > 0)
+              Text(
+                l.perMonth(formatVnd(sub.monthlyAmountVnd)),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyLarge
+                    ?.copyWith(color: cs.primary, fontWeight: FontWeight.w700),
+              ),
+            const SizedBox(height: 10),
+            // Sessions progress x/y.
+            Row(
+              children: [
+                Icon(Icons.event_available, size: 16, color: cs.onSurfaceVariant),
+                const SizedBox(width: 6),
+                // TODO-i18n: "Sessions {done}/{total}" (no ARB key)
+                Text(l.sessionsProgress(sub.sessionsCompleted, sub.sessionsTotal),
+                    style: TextStyle(color: cs.onSurfaceVariant)),
+              ],
+            ),
+            if (sub.sessionsTotal > 0) ...[
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: (sub.sessionsCompleted / sub.sessionsTotal).clamp(0.0, 1.0),
+                  minHeight: 6,
+                  backgroundColor: cs.surfaceContainerHighest,
+                ),
+              ),
+            ],
+            if (sub.nextChargeAt != null && sub.nextChargeAt!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Icon(Icons.schedule, size: 16, color: cs.onSurfaceVariant),
+                  const SizedBox(width: 6),
+                  // TODO-i18n: "Next charge {date}" (no ARB key)
+                  Text(l.nextChargeLabel(_shortDate(sub.nextChargeAt!)),
+                      style: TextStyle(color: cs.onSurfaceVariant)),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip(this.status);
+  final String status;
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final active = status.toLowerCase() == 'active';
+    final bg = active ? cs.primaryContainer : cs.surfaceContainerHighest;
+    final fg = active ? cs.onPrimaryContainer : cs.onSurfaceVariant;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+      // status is a backend enum — displayed raw (no localized mapping).
+      child: Text(status.isEmpty ? '—' : status,
+          style: TextStyle(color: fg, fontWeight: FontWeight.w600, fontSize: 12)),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill(this.label);
+  final String label;
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: cs.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(label,
+          style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600, fontSize: 12)),
+    );
+  }
+}
+
+class _ManageOnWebNote extends StatelessWidget {
+  const _ManageOnWebNote();
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.open_in_new, size: 20, color: cs.onSurfaceVariant),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context).manageOnWeb,
+                style: TextStyle(color: cs.onSurfaceVariant),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Best-effort ISO to dd/MM/yyyy. Falls back to the first 10 chars.
+String _shortDate(String iso) {
+  final dt = DateTime.tryParse(iso);
+  if (dt == null) return iso.length >= 10 ? iso.substring(0, 10) : iso;
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(dt.day)}/${two(dt.month)}/${dt.year}';
 }

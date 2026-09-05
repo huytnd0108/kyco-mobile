@@ -364,4 +364,57 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get loadMore => 'Tải thêm';
+
+  @override
+  String get noReviewsYet => 'Chưa có đánh giá';
+
+  @override
+  String get noDescription => 'Chưa có mô tả';
+
+  @override
+  String get serviceNotFound => 'Không tìm thấy dịch vụ';
+
+  @override
+  String get partnerNotFound => 'Không tìm thấy đối tác';
+
+  @override
+  String get noNotifications => 'Chưa có thông báo';
+
+  @override
+  String wardsCount(Object count) {
+    return '$count khu vực';
+  }
+
+  @override
+  String get completeRequiredFields => 'Vui lòng điền đủ thông tin bắt buộc';
+
+  @override
+  String get confirmationCode => 'Mã xác nhận';
+
+  @override
+  String get mySubscriptions => 'Gói của tôi';
+
+  @override
+  String get plansTitle => 'Các gói';
+
+  @override
+  String monthsCount(Object count) {
+    return '$count tháng';
+  }
+
+  @override
+  String get noActiveSubscriptions => 'Chưa có gói đang hoạt động';
+
+  @override
+  String sessionsProgress(Object done, Object total) {
+    return 'Buổi $done/$total';
+  }
+
+  @override
+  String nextChargeLabel(Object date) {
+    return 'Kỳ tính kế: $date';
+  }
+
+  @override
+  String get manageOnWeb => 'Tạo hoặc đổi gói trên kyco.vn';
 }

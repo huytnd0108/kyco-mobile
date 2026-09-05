@@ -11,6 +11,7 @@ class StickyBottomCta extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
+      width: double.infinity, // take full bar width so the Row's Expanded is bounded
       decoration: BoxDecoration(
         color: cs.surface,
         border: Border(top: BorderSide(color: cs.outlineVariant)),

@@ -363,4 +363,57 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loadMore => 'Load more';
+
+  @override
+  String get noReviewsYet => 'No reviews yet';
+
+  @override
+  String get noDescription => 'No description';
+
+  @override
+  String get serviceNotFound => 'Service not found';
+
+  @override
+  String get partnerNotFound => 'Partner not found';
+
+  @override
+  String get noNotifications => 'No notifications';
+
+  @override
+  String wardsCount(Object count) {
+    return '$count wards';
+  }
+
+  @override
+  String get completeRequiredFields => 'Please complete the required fields';
+
+  @override
+  String get confirmationCode => 'Confirmation code';
+
+  @override
+  String get mySubscriptions => 'My subscriptions';
+
+  @override
+  String get plansTitle => 'Plans';
+
+  @override
+  String monthsCount(Object count) {
+    return '$count months';
+  }
+
+  @override
+  String get noActiveSubscriptions => 'No active subscriptions';
+
+  @override
+  String sessionsProgress(Object done, Object total) {
+    return 'Sessions $done/$total';
+  }
+
+  @override
+  String nextChargeLabel(Object date) {
+    return 'Next charge: $date';
+  }
+
+  @override
+  String get manageOnWeb => 'Create or change a plan on kyco.vn';
 }
