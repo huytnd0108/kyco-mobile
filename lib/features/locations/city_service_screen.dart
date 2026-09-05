@@ -32,8 +32,16 @@ class CityServiceScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final landing = ref.watch(cityProvider(citySlug));
-    final resolved =
-        landing.maybeWhen(data: _resolve, orElse: () => null);
+    final serviceId = int.tryParse(service);
+
+    // Resolve against the city landing's own (24-capped) set first. On a miss,
+    // if the `:service` segment is a numeric id, fall back to fetching the
+    // service directly so a valid deep link outside the cap still renders.
+    final fromList = landing.maybeWhen(data: _resolve, orElse: () => null);
+    final fallback = (landing.hasValue && fromList == null && serviceId != null)
+        ? ref.watch(serviceByIdProvider(serviceId))
+        : null;
+    final resolved = fromList ?? fallback?.valueOrNull;
 
     return Scaffold(
       appBar: AppBar(title: Text(resolved?.name ?? l.locationsTitle)),
@@ -67,6 +75,7 @@ class CityServiceScreen extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(cityProvider(citySlug));
+            if (serviceId != null) ref.invalidate(serviceByIdProvider(serviceId));
             await ref.read(cityProvider(citySlug).future);
           },
           child: landing.when(
@@ -84,11 +93,31 @@ class CityServiceScreen extends ConsumerWidget {
             ),
             data: (data) {
               final svc = _resolve(data);
-              if (svc == null) {
+              if (svc != null) {
+                return _Intro(city: data.city, service: svc);
+              }
+              // Miss in the capped set: fall back to the by-id fetch when the
+              // segment is a service id; only then is it truly not-found.
+              if (serviceId == null || fallback == null) {
                 return _Scroll(
                     child: _NotFound(uri: '/locations/$citySlug/$service'));
               }
-              return _Intro(city: data.city, service: svc);
+              return fallback.when(
+                loading: () => const _Scroll(
+                    child: Center(child: CircularProgressIndicator())),
+                error: (e, _) => _Scroll(
+                  child: (e is ApiException && e.status == 404)
+                      ? _NotFound(uri: '/locations/$citySlug/$service')
+                      : Center(
+                          child: ErrorRetry(
+                            message: l.genericError,
+                            onRetry: () =>
+                                ref.invalidate(serviceByIdProvider(serviceId)),
+                          ),
+                        ),
+                ),
+                data: (detail) => _Intro(city: data.city, service: detail),
+              );
             },
           ),
         ),

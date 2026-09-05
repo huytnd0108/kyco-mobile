@@ -359,7 +359,9 @@ class _RelatedRail extends ConsumerWidget {
           children: [
             SectionHeader(l.relatedServices),
             SizedBox(
-              height: 260,
+              // A 240px-wide ServiceCard needs ~262px when the title wraps to
+              // 2 lines with a category pill; 290 clears it (Home's rail = 296).
+              height: 290,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),

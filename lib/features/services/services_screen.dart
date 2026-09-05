@@ -175,7 +175,8 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                   loading: () => const _ScrollableCenter(child: CircularProgressIndicator()),
                   error: (e, _) => _ScrollableCenter(
                     child: ErrorRetry(
-                      message: e.toString(),
+                      // Never leak raw `ApiException(...)` text to the user.
+                      message: l.genericError,
                       onRetry: () => ref.invalidate(servicesFeedProvider(_filter)),
                     ),
                   ),

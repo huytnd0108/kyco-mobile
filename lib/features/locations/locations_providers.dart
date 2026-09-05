@@ -18,6 +18,16 @@ final cityProvider =
   return ref.watch(kycoApiProvider).city(slug);
 });
 
+/// A single service fetched by id (public `GET /v1/service/:id`), keyed by id.
+/// Backs the `/locations/:city/:service` deep-link fallback: the city landing's
+/// service set is capped at 24 rows, so a valid id outside that window is
+/// resolved here instead of rendering not-found. Throws an [ApiException] with
+/// status 404 on an unknown id.
+final serviceByIdProvider =
+    FutureProvider.autoDispose.family<ServiceDetail, int>((ref, id) {
+  return ref.watch(kycoApiProvider).serviceDetail(id);
+});
+
 /// Cross-axis column count for the responsive card grids (city list + city
 /// service preview), a function of the WINDOW size class.
 int locationsGridColumns(WindowSize size) => switch (size) {

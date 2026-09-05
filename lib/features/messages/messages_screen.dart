@@ -84,7 +84,7 @@ class MessagesScreen extends ConsumerWidget {
             error: (e, _) => ListView(children: [
               const SizedBox(height: 120),
               ErrorRetry(
-                message: e.toString(),
+                message: l.genericError,
                 onRetry: () => ref.invalidate(conversationsProvider),
               ),
             ]),

@@ -135,7 +135,7 @@ class _NotificationsListState extends ConsumerState<_NotificationsList> {
             error: (e, _) => ListView(children: [
               const SizedBox(height: 120),
               ErrorRetry(
-                message: e.toString(),
+                message: l.genericError,
                 onRetry: () => ref.invalidate(notificationsControllerProvider),
               ),
             ]),

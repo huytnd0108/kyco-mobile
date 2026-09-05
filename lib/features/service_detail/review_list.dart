@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/models.dart';
 import '../../core/widgets.dart';
+import '../../theme/app_semantics.dart';
 import 'service_detail_providers.dart';
 
 /// The customer-reviews section: title, a verified-review list, and a numeric
@@ -30,7 +32,7 @@ class ReviewList extends ConsumerWidget {
               child: Center(child: CircularProgressIndicator()),
             ),
             error: (e, _) => ErrorRetry(
-              message: l.homeLoadError(e.toString()),
+              message: l.genericError,
               onRetry: () => ref.invalidate(reviewsControllerProvider(serviceId)),
             ),
             data: (s) => s.reviews.isEmpty
@@ -75,6 +77,15 @@ class _ReviewCard extends StatelessWidget {
   const _ReviewCard(this.review);
   final Review review;
 
+  /// Localized short date; falls back to the raw string if it isn't ISO-parseable
+  /// (consistent with how notifications format timestamps).
+  static String _formatDate(BuildContext context, String raw) {
+    final dt = DateTime.tryParse(raw);
+    if (dt == null) return raw;
+    return DateFormat.yMMMd(Localizations.localeOf(context).toString())
+        .format(dt.toLocal());
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -94,14 +105,14 @@ class _ReviewCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD1FAE5),
+                    color: context.semantics.successContainer,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     // TODO-i18n: no `verifiedBadge`-equivalent wired for reviews yet.
                     l.verifiedBadge,
-                    style: const TextStyle(
-                      color: Color(0xFF047857),
+                    style: TextStyle(
+                      color: context.semantics.onSuccessContainer,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -117,7 +128,7 @@ class _ReviewCard extends StatelessWidget {
                 if (review.createdAt.isNotEmpty) ...[
                   Text('  ·  ',
                       style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
-                  Text(review.createdAt,
+                  Text(_formatDate(context, review.createdAt),
                       style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
                 ],
               ],
