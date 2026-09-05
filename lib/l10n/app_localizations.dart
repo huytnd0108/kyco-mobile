@@ -415,6 +415,342 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Không tìm thấy trang: {uri}'**
   String pageNotFound(Object uri);
+
+  /// No description provided for @navServices.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dịch vụ'**
+  String get navServices;
+
+  /// No description provided for @navMessages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin nhắn'**
+  String get navMessages;
+
+  /// No description provided for @bookNow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt ngay'**
+  String get bookNow;
+
+  /// No description provided for @bookNowKicker.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt lịch nhanh'**
+  String get bookNowKicker;
+
+  /// No description provided for @servicesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dịch vụ'**
+  String get servicesTitle;
+
+  /// No description provided for @searchHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tìm dịch vụ…'**
+  String get searchHint;
+
+  /// No description provided for @allCategories.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tất cả'**
+  String get allCategories;
+
+  /// No description provided for @viewDetails.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem chi tiết'**
+  String get viewDetails;
+
+  /// No description provided for @viewAll.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem tất cả'**
+  String get viewAll;
+
+  /// No description provided for @fromPrice.
+  ///
+  /// In vi, this message translates to:
+  /// **'từ {price}'**
+  String fromPrice(String price);
+
+  /// No description provided for @minutesShort.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} phút'**
+  String minutesShort(int n);
+
+  /// No description provided for @noResults.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có kết quả'**
+  String get noResults;
+
+  /// No description provided for @popularCategories.
+  ///
+  /// In vi, this message translates to:
+  /// **'Danh mục phổ biến'**
+  String get popularCategories;
+
+  /// No description provided for @howItWorks.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cách hoạt động'**
+  String get howItWorks;
+
+  /// No description provided for @whyKyco.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vì sao chọn Kyco'**
+  String get whyKyco;
+
+  /// No description provided for @exploreServices.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khám phá dịch vụ'**
+  String get exploreServices;
+
+  /// No description provided for @relatedServices.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dịch vụ liên quan'**
+  String get relatedServices;
+
+  /// No description provided for @reviewsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá'**
+  String get reviewsTitle;
+
+  /// No description provided for @reviewCount.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} đánh giá'**
+  String reviewCount(int n);
+
+  /// No description provided for @providersAvailable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đối tác sẵn sàng'**
+  String get providersAvailable;
+
+  /// No description provided for @checkoutTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt dịch vụ'**
+  String get checkoutTitle;
+
+  /// No description provided for @dateLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ngày'**
+  String get dateLabel;
+
+  /// No description provided for @timeLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giờ'**
+  String get timeLabel;
+
+  /// No description provided for @wardLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phường xã'**
+  String get wardLabel;
+
+  /// No description provided for @neighborhoodLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu phố'**
+  String get neighborhoodLabel;
+
+  /// No description provided for @addressLineLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ'**
+  String get addressLineLabel;
+
+  /// No description provided for @notesLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú'**
+  String get notesLabel;
+
+  /// No description provided for @subtotalLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạm tính'**
+  String get subtotalLabel;
+
+  /// No description provided for @confirmBooking.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận đặt lịch'**
+  String get confirmBooking;
+
+  /// No description provided for @signInToConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng nhập để xác nhận'**
+  String get signInToConfirm;
+
+  /// No description provided for @guestCheckoutNotice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn có thể điền đầy đủ — chỉ cần đăng nhập khi xác nhận.'**
+  String get guestCheckoutNotice;
+
+  /// No description provided for @draftRestored.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã khôi phục thông tin'**
+  String get draftRestored;
+
+  /// No description provided for @deferredPaymentNotice.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán sau khi hoàn thành — tiền mặt.'**
+  String get deferredPaymentNotice;
+
+  /// No description provided for @bookingCreated.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đặt lịch #{id}'**
+  String bookingCreated(Object id);
+
+  /// No description provided for @step1Category.
+  ///
+  /// In vi, this message translates to:
+  /// **'1. Chọn danh mục'**
+  String get step1Category;
+
+  /// No description provided for @step2Service.
+  ///
+  /// In vi, this message translates to:
+  /// **'2. Chọn dịch vụ'**
+  String get step2Service;
+
+  /// No description provided for @locationsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu vực phục vụ'**
+  String get locationsTitle;
+
+  /// No description provided for @cityServices.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dịch vụ tại {city}'**
+  String cityServices(String city);
+
+  /// No description provided for @providerTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ đối tác'**
+  String get providerTitle;
+
+  /// No description provided for @verifiedBadge.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xác minh'**
+  String get verifiedBadge;
+
+  /// No description provided for @jobsCompleted.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} công việc'**
+  String jobsCompleted(int n);
+
+  /// No description provided for @memberSince.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thành viên từ {date}'**
+  String memberSince(String date);
+
+  /// No description provided for @subscriptionsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gói định kỳ'**
+  String get subscriptionsTitle;
+
+  /// No description provided for @perMonth.
+  ///
+  /// In vi, this message translates to:
+  /// **'{price}/tháng'**
+  String perMonth(String price);
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông báo'**
+  String get notificationsTitle;
+
+  /// No description provided for @markAllRead.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh dấu đã đọc'**
+  String get markAllRead;
+
+  /// No description provided for @messagesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tin nhắn'**
+  String get messagesTitle;
+
+  /// No description provided for @noMessages.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có tin nhắn'**
+  String get noMessages;
+
+  /// No description provided for @signInToView.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đăng nhập để xem'**
+  String get signInToView;
+
+  /// No description provided for @inviteFriends.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mời bạn bè'**
+  String get inviteFriends;
+
+  /// No description provided for @becomePartner.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trở thành đối tác'**
+  String get becomePartner;
+
+  /// No description provided for @contactUs.
+  ///
+  /// In vi, this message translates to:
+  /// **'Liên hệ'**
+  String get contactUs;
+
+  /// No description provided for @aboutKyco.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về Kyco'**
+  String get aboutKyco;
+
+  /// No description provided for @faqs.
+  ///
+  /// In vi, this message translates to:
+  /// **'Câu hỏi thường gặp'**
+  String get faqs;
+
+  /// No description provided for @notSignedIn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa đăng nhập'**
+  String get notSignedIn;
+
+  /// No description provided for @loadMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tải thêm'**
+  String get loadMore;
 }
 
 class _AppLocalizationsDelegate

@@ -178,4 +178,189 @@ class AppLocalizationsEn extends AppLocalizations {
   String pageNotFound(Object uri) {
     return 'Page not found: $uri';
   }
+
+  @override
+  String get navServices => 'Services';
+
+  @override
+  String get navMessages => 'Messages';
+
+  @override
+  String get bookNow => 'Book now';
+
+  @override
+  String get bookNowKicker => 'Fast booking';
+
+  @override
+  String get servicesTitle => 'Services';
+
+  @override
+  String get searchHint => 'Search services…';
+
+  @override
+  String get allCategories => 'All';
+
+  @override
+  String get viewDetails => 'View details';
+
+  @override
+  String get viewAll => 'View all';
+
+  @override
+  String fromPrice(String price) {
+    return 'from $price';
+  }
+
+  @override
+  String minutesShort(int n) {
+    return '$n min';
+  }
+
+  @override
+  String get noResults => 'No results';
+
+  @override
+  String get popularCategories => 'Popular categories';
+
+  @override
+  String get howItWorks => 'How it works';
+
+  @override
+  String get whyKyco => 'Why Kyco';
+
+  @override
+  String get exploreServices => 'Explore services';
+
+  @override
+  String get relatedServices => 'Related services';
+
+  @override
+  String get reviewsTitle => 'Reviews';
+
+  @override
+  String reviewCount(int n) {
+    return '$n reviews';
+  }
+
+  @override
+  String get providersAvailable => 'Providers available';
+
+  @override
+  String get checkoutTitle => 'Book service';
+
+  @override
+  String get dateLabel => 'Date';
+
+  @override
+  String get timeLabel => 'Time';
+
+  @override
+  String get wardLabel => 'Ward';
+
+  @override
+  String get neighborhoodLabel => 'Neighborhood';
+
+  @override
+  String get addressLineLabel => 'Street address';
+
+  @override
+  String get notesLabel => 'Notes';
+
+  @override
+  String get subtotalLabel => 'Subtotal';
+
+  @override
+  String get confirmBooking => 'Confirm booking';
+
+  @override
+  String get signInToConfirm => 'Sign in to confirm';
+
+  @override
+  String get guestCheckoutNotice =>
+      'You can fill everything now — sign in only to confirm.';
+
+  @override
+  String get draftRestored => 'Draft restored';
+
+  @override
+  String get deferredPaymentNotice => 'Pay after the service — cash.';
+
+  @override
+  String bookingCreated(Object id) {
+    return 'Booking #$id confirmed';
+  }
+
+  @override
+  String get step1Category => '1. Pick a category';
+
+  @override
+  String get step2Service => '2. Pick a service';
+
+  @override
+  String get locationsTitle => 'Service areas';
+
+  @override
+  String cityServices(String city) {
+    return 'Services in $city';
+  }
+
+  @override
+  String get providerTitle => 'Partner profile';
+
+  @override
+  String get verifiedBadge => 'Verified';
+
+  @override
+  String jobsCompleted(int n) {
+    return '$n jobs';
+  }
+
+  @override
+  String memberSince(String date) {
+    return 'Member since $date';
+  }
+
+  @override
+  String get subscriptionsTitle => 'Subscriptions';
+
+  @override
+  String perMonth(String price) {
+    return '$price/month';
+  }
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get markAllRead => 'Mark all read';
+
+  @override
+  String get messagesTitle => 'Messages';
+
+  @override
+  String get noMessages => 'No messages yet';
+
+  @override
+  String get signInToView => 'Sign in to view';
+
+  @override
+  String get inviteFriends => 'Invite friends';
+
+  @override
+  String get becomePartner => 'Become a partner';
+
+  @override
+  String get contactUs => 'Contact';
+
+  @override
+  String get aboutKyco => 'About Kyco';
+
+  @override
+  String get faqs => 'FAQs';
+
+  @override
+  String get notSignedIn => 'Not signed in';
+
+  @override
+  String get loadMore => 'Load more';
 }

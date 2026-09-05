@@ -178,4 +178,190 @@ class AppLocalizationsVi extends AppLocalizations {
   String pageNotFound(Object uri) {
     return 'Không tìm thấy trang: $uri';
   }
+
+  @override
+  String get navServices => 'Dịch vụ';
+
+  @override
+  String get navMessages => 'Tin nhắn';
+
+  @override
+  String get bookNow => 'Đặt ngay';
+
+  @override
+  String get bookNowKicker => 'Đặt lịch nhanh';
+
+  @override
+  String get servicesTitle => 'Dịch vụ';
+
+  @override
+  String get searchHint => 'Tìm dịch vụ…';
+
+  @override
+  String get allCategories => 'Tất cả';
+
+  @override
+  String get viewDetails => 'Xem chi tiết';
+
+  @override
+  String get viewAll => 'Xem tất cả';
+
+  @override
+  String fromPrice(String price) {
+    return 'từ $price';
+  }
+
+  @override
+  String minutesShort(int n) {
+    return '$n phút';
+  }
+
+  @override
+  String get noResults => 'Không có kết quả';
+
+  @override
+  String get popularCategories => 'Danh mục phổ biến';
+
+  @override
+  String get howItWorks => 'Cách hoạt động';
+
+  @override
+  String get whyKyco => 'Vì sao chọn Kyco';
+
+  @override
+  String get exploreServices => 'Khám phá dịch vụ';
+
+  @override
+  String get relatedServices => 'Dịch vụ liên quan';
+
+  @override
+  String get reviewsTitle => 'Đánh giá';
+
+  @override
+  String reviewCount(int n) {
+    return '$n đánh giá';
+  }
+
+  @override
+  String get providersAvailable => 'Đối tác sẵn sàng';
+
+  @override
+  String get checkoutTitle => 'Đặt dịch vụ';
+
+  @override
+  String get dateLabel => 'Ngày';
+
+  @override
+  String get timeLabel => 'Giờ';
+
+  @override
+  String get wardLabel => 'Phường xã';
+
+  @override
+  String get neighborhoodLabel => 'Khu phố';
+
+  @override
+  String get addressLineLabel => 'Địa chỉ';
+
+  @override
+  String get notesLabel => 'Ghi chú';
+
+  @override
+  String get subtotalLabel => 'Tạm tính';
+
+  @override
+  String get confirmBooking => 'Xác nhận đặt lịch';
+
+  @override
+  String get signInToConfirm => 'Đăng nhập để xác nhận';
+
+  @override
+  String get guestCheckoutNotice =>
+      'Bạn có thể điền đầy đủ — chỉ cần đăng nhập khi xác nhận.';
+
+  @override
+  String get draftRestored => 'Đã khôi phục thông tin';
+
+  @override
+  String get deferredPaymentNotice =>
+      'Thanh toán sau khi hoàn thành — tiền mặt.';
+
+  @override
+  String bookingCreated(Object id) {
+    return 'Đã đặt lịch #$id';
+  }
+
+  @override
+  String get step1Category => '1. Chọn danh mục';
+
+  @override
+  String get step2Service => '2. Chọn dịch vụ';
+
+  @override
+  String get locationsTitle => 'Khu vực phục vụ';
+
+  @override
+  String cityServices(String city) {
+    return 'Dịch vụ tại $city';
+  }
+
+  @override
+  String get providerTitle => 'Hồ sơ đối tác';
+
+  @override
+  String get verifiedBadge => 'Đã xác minh';
+
+  @override
+  String jobsCompleted(int n) {
+    return '$n công việc';
+  }
+
+  @override
+  String memberSince(String date) {
+    return 'Thành viên từ $date';
+  }
+
+  @override
+  String get subscriptionsTitle => 'Gói định kỳ';
+
+  @override
+  String perMonth(String price) {
+    return '$price/tháng';
+  }
+
+  @override
+  String get notificationsTitle => 'Thông báo';
+
+  @override
+  String get markAllRead => 'Đánh dấu đã đọc';
+
+  @override
+  String get messagesTitle => 'Tin nhắn';
+
+  @override
+  String get noMessages => 'Chưa có tin nhắn';
+
+  @override
+  String get signInToView => 'Đăng nhập để xem';
+
+  @override
+  String get inviteFriends => 'Mời bạn bè';
+
+  @override
+  String get becomePartner => 'Trở thành đối tác';
+
+  @override
+  String get contactUs => 'Liên hệ';
+
+  @override
+  String get aboutKyco => 'Về Kyco';
+
+  @override
+  String get faqs => 'Câu hỏi thường gặp';
+
+  @override
+  String get notSignedIn => 'Chưa đăng nhập';
+
+  @override
+  String get loadMore => 'Tải thêm';
 }

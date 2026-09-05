@@ -94,5 +94,117 @@
         "type": "Object"
       }
     }
-  }
+  },
+  "navServices": "Dịch vụ",
+  "navMessages": "Tin nhắn",
+  "bookNow": "Đặt ngay",
+  "bookNowKicker": "Đặt lịch nhanh",
+  "servicesTitle": "Dịch vụ",
+  "searchHint": "Tìm dịch vụ…",
+  "allCategories": "Tất cả",
+  "viewDetails": "Xem chi tiết",
+  "viewAll": "Xem tất cả",
+  "fromPrice": "từ {price}",
+  "@fromPrice": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "minutesShort": "{n} phút",
+  "@minutesShort": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "noResults": "Không có kết quả",
+  "popularCategories": "Danh mục phổ biến",
+  "howItWorks": "Cách hoạt động",
+  "whyKyco": "Vì sao chọn Kyco",
+  "exploreServices": "Khám phá dịch vụ",
+  "relatedServices": "Dịch vụ liên quan",
+  "reviewsTitle": "Đánh giá",
+  "reviewCount": "{n} đánh giá",
+  "@reviewCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "providersAvailable": "Đối tác sẵn sàng",
+  "checkoutTitle": "Đặt dịch vụ",
+  "dateLabel": "Ngày",
+  "timeLabel": "Giờ",
+  "wardLabel": "Phường xã",
+  "neighborhoodLabel": "Khu phố",
+  "addressLineLabel": "Địa chỉ",
+  "notesLabel": "Ghi chú",
+  "subtotalLabel": "Tạm tính",
+  "confirmBooking": "Xác nhận đặt lịch",
+  "signInToConfirm": "Đăng nhập để xác nhận",
+  "guestCheckoutNotice": "Bạn có thể điền đầy đủ — chỉ cần đăng nhập khi xác nhận.",
+  "draftRestored": "Đã khôi phục thông tin",
+  "deferredPaymentNotice": "Thanh toán sau khi hoàn thành — tiền mặt.",
+  "bookingCreated": "Đã đặt lịch #{id}",
+  "@bookingCreated": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "step1Category": "1. Chọn danh mục",
+  "step2Service": "2. Chọn dịch vụ",
+  "locationsTitle": "Khu vực phục vụ",
+  "cityServices": "Dịch vụ tại {city}",
+  "@cityServices": {
+    "placeholders": {
+      "city": {
+        "type": "String"
+      }
+    }
+  },
+  "providerTitle": "Hồ sơ đối tác",
+  "verifiedBadge": "Đã xác minh",
+  "jobsCompleted": "{n} công việc",
+  "@jobsCompleted": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "memberSince": "Thành viên từ {date}",
+  "@memberSince": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionsTitle": "Gói định kỳ",
+  "perMonth": "{price}/tháng",
+  "@perMonth": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsTitle": "Thông báo",
+  "markAllRead": "Đánh dấu đã đọc",
+  "messagesTitle": "Tin nhắn",
+  "noMessages": "Chưa có tin nhắn",
+  "signInToView": "Đăng nhập để xem",
+  "inviteFriends": "Mời bạn bè",
+  "becomePartner": "Trở thành đối tác",
+  "contactUs": "Liên hệ",
+  "aboutKyco": "Về Kyco",
+  "faqs": "Câu hỏi thường gặp",
+  "notSignedIn": "Chưa đăng nhập",
+  "loadMore": "Tải thêm"
 }

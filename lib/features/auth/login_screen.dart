@@ -6,6 +6,12 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 import '../../core/widgets.dart';
 import 'auth_controller.dart';
 
+/// The web's `callbackUrl` — the flow the guest came from, to resume after
+/// sign-in. Safe when there is no GoRouter in the tree (e.g. golden harness).
+String? authFromParam(BuildContext context) => GoRouter.maybeOf(context) == null
+    ? null
+    : GoRouterState.of(context).uri.queryParameters['from'];
+
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
   @override
@@ -31,12 +37,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           email: _email.text.trim(),
           password: _password.text,
         );
-    if (ok && mounted) context.go('/');
+    if (ok && mounted) {
+      // Resume the flow the guest came from (?from=, the web's callbackUrl).
+      context.go(authFromParam(context) ?? '/');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final from = authFromParam(context);
+    final signupPath = from == null ? '/signup' : '/signup?from=${Uri.encodeQueryComponent(from)}';
     final auth = ref.watch(authControllerProvider);
     final errorText =
         auth.error == null ? null : (auth.error == AuthController.genericError ? l.genericError : auth.error!);
@@ -93,7 +104,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     TextButton(
-                      onPressed: auth.busy ? null : () => context.go('/signup'),
+                      onPressed: auth.busy ? null : () => context.go(signupPath),
                       child: Text(l.noAccountSignup),
                     ),
                     TextButton(

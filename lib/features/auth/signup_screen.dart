@@ -5,6 +5,7 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/widgets.dart';
 import 'auth_controller.dart';
+import 'login_screen.dart' show authFromParam;
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -34,12 +35,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           password: _password.text,
           name: _name.text.trim(),
         );
-    if (ok && mounted) context.go('/');
+    if (ok && mounted) {
+      // Resume the flow the guest came from (?from=, the web's callbackUrl).
+      context.go(authFromParam(context) ?? '/');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final from = authFromParam(context);
+    final loginPath = from == null ? '/login' : '/login?from=${Uri.encodeQueryComponent(from)}';
     final auth = ref.watch(authControllerProvider);
     final errorText =
         auth.error == null ? null : (auth.error == AuthController.genericError ? l.genericError : auth.error!);
@@ -102,7 +108,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           : Text(l.createAccount),
                     ),
                     TextButton(
-                      onPressed: auth.busy ? null : () => context.go('/login'),
+                      onPressed: auth.busy ? null : () => context.go(loginPath),
                       child: Text(l.haveAccountLogin),
                     ),
                   ],

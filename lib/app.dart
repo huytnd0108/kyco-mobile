@@ -12,8 +12,19 @@ import 'features/auth/signup_screen.dart';
 import 'features/bookings/booking_detail_screen.dart';
 import 'features/bookings/bookings_providers.dart';
 import 'features/bookings/bookings_screen.dart';
+import 'features/checkout/book_now_screen.dart';
+import 'features/checkout/checkout_screen.dart';
 import 'features/home/home_providers.dart';
 import 'features/home/home_screen.dart';
+import 'features/locations/city_screen.dart';
+import 'features/locations/city_service_screen.dart';
+import 'features/locations/locations_screen.dart';
+import 'features/messages/messages_screen.dart';
+import 'features/notifications/notifications_screen.dart';
+import 'features/providers/provider_screen.dart';
+import 'features/service_detail/service_detail_screen.dart';
+import 'features/services/services_screen.dart';
+import 'features/subscriptions/subscriptions_screen.dart';
 import 'theme/color_schemes.dart';
 import 'theme/theme_mode_controller.dart';
 
@@ -30,31 +41,116 @@ final _authRefreshProvider = Provider<_AuthRefresh>((ref) => _AuthRefresh(ref));
 
 final _rootKey = GlobalKey<NavigatorState>();
 
+/// The GUEST-FIRST redirect rule, pure + table-testable (see redirect_test).
+/// PUBLIC forever: / /services /services/:id /book-now /checkout/* /locations/*
+/// /providers/:id /subscriptions /notifications /account. The confirm-booking
+/// gate is IN-SCREEN, never here — NEVER add /checkout (or anything) to the
+/// protected set.
+String? guestFirstRedirect({required AuthStatus status, required String loc, String? from}) {
+  const authScreens = {'/login', '/signup'};
+  final isProtected = loc.startsWith('/bookings') || loc.startsWith('/messages');
+  if (status == AuthStatus.unknown) return isProtected ? '/' : null;
+  final signedIn = status == AuthStatus.signedIn;
+  if (signedIn && authScreens.contains(loc)) {
+    // Resume the flow the guest came from (e.g. checkout) after signing in.
+    return from ?? '/';
+  }
+  if (!signedIn && isProtected) return '/login?from=$loc';
+  return null;
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootKey,
     initialLocation: '/',
     refreshListenable: ref.watch(_authRefreshProvider),
-    redirect: (context, state) {
-      final status = ref.read(authControllerProvider).status;
-      final loc = state.matchedLocation;
-      const authScreens = {'/login', '/signup'};
-      final isProtected = loc.startsWith('/bookings'); // '/account' stays public
-      if (status == AuthStatus.unknown) return isProtected ? '/' : null;
-      final signedIn = status == AuthStatus.signedIn;
-      if (signedIn && authScreens.contains(loc)) return '/';
-      if (!signedIn && isProtected) return '/login';
-      return null;
-    },
+    // GUEST-FIRST. Only owned-data areas are protected; everything else
+    // (home, services, book-now, checkout, locations, providers, subscriptions,
+    // notifications, account) is public. The confirm-booking wall is IN-SCREEN,
+    // never a route redirect — NEVER add /checkout (or anything else) here.
+    redirect: (context, state) => guestFirstRedirect(
+      status: ref.read(authControllerProvider).status,
+      loc: state.matchedLocation,
+      from: state.uri.queryParameters['from'],
+    ),
     routes: [
       // Auth OUTSIDE the shell (full-screen, no tabs).
       GoRoute(path: '/login', parentNavigatorKey: _rootKey, builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/signup', parentNavigatorKey: _rootKey, builder: (_, _) => const SignupScreen()),
+
+      // Full-screen flows on the ROOT navigator (over the tab shell).
+      GoRoute(
+        path: '/book-now',
+        parentNavigatorKey: _rootKey,
+        builder: (_, s) => BookNowScreen(
+          category: s.uri.queryParameters['category'],
+          q: s.uri.queryParameters['q'],
+        ),
+      ),
+      GoRoute(
+        path: '/checkout/:serviceId',
+        parentNavigatorKey: _rootKey,
+        builder: (_, s) => CheckoutScreen(serviceId: int.tryParse(s.pathParameters['serviceId'] ?? '') ?? 0),
+      ),
+      GoRoute(
+        path: '/locations',
+        parentNavigatorKey: _rootKey,
+        builder: (_, _) => const LocationsScreen(),
+        routes: [
+          GoRoute(
+            path: ':city',
+            builder: (_, s) => CityScreen(slug: s.pathParameters['city'] ?? ''),
+            routes: [
+              GoRoute(
+                path: ':service',
+                builder: (_, s) => CityServiceScreen(
+                  citySlug: s.pathParameters['city'] ?? '',
+                  service: s.pathParameters['service'] ?? '',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/providers/:id',
+        parentNavigatorKey: _rootKey,
+        builder: (_, s) => ProviderScreen(id: int.tryParse(s.pathParameters['id'] ?? '') ?? 0),
+      ),
+      GoRoute(
+        path: '/subscriptions',
+        parentNavigatorKey: _rootKey,
+        builder: (_, _) => const SubscriptionsScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        parentNavigatorKey: _rootKey,
+        builder: (_, _) => const NotificationsScreen(),
+      ),
+
+      // The 5-tab shell (mirrors web bottom-nav order).
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => AdaptiveScaffold(navigationShell: shell),
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/services',
+              builder: (_, s) => ServicesScreen(
+                category: s.uri.queryParameters['category'],
+                subcategory: s.uri.queryParameters['subcategory'],
+                q: s.uri.queryParameters['q'],
+              ),
+              routes: [
+                GoRoute(
+                  path: ':id',
+                  parentNavigatorKey: _rootKey,
+                  builder: (_, s) => ServiceDetailScreen(id: int.tryParse(s.pathParameters['id'] ?? '') ?? 0),
+                ),
+              ],
+            ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
@@ -64,6 +160,19 @@ final routerProvider = Provider<GoRouter>((ref) {
                 GoRoute(
                   path: ':id',
                   builder: (_, s) => BookingDetailScreen(id: int.tryParse(s.pathParameters['id'] ?? '')),
+                ),
+              ],
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/messages',
+              builder: (_, _) => const MessagesScreen(),
+              routes: [
+                GoRoute(
+                  path: ':id',
+                  parentNavigatorKey: _rootKey,
+                  builder: (_, s) => MessageThreadScreen(id: int.tryParse(s.pathParameters['id'] ?? '') ?? 0),
                 ),
               ],
             ),

@@ -9,6 +9,14 @@ import 'token_store.dart';
 /// revoked). The app listens and routes back to sign-in.
 typedef OnAuthLost = void Function();
 
+/// A meta-aware read result: the unwrapped `data` plus the envelope `meta`
+/// (paging cursors, unread counts). `meta` is never null (empty map when absent).
+class Envelope {
+  const Envelope(this.data, this.meta);
+  final dynamic data;
+  final Map<String, dynamic> meta;
+}
+
 /// Low-level HTTP client for the kyco /api/v1 backend:
 ///  - attaches the Bearer access token,
 ///  - on 401, refreshes ONCE (single-flight) via /auth/refresh and retries,
@@ -55,6 +63,47 @@ class KycoApiClient {
   /// POST → unwrapped `data`.
   Future<dynamic> post(String path, {Object? body, bool auth = true}) =>
       _send('POST', path, body: body, auth: auth);
+
+  /// GET → the full `{data, meta}` envelope (for cursor-paged reads). Shares
+  /// the same single-flight 401 → refresh → retry behaviour as [get].
+  Future<Envelope> getWithMeta(String path,
+          {Map<String, String>? query, bool auth = true}) =>
+      _sendMeta('GET', path, query: query, auth: auth);
+
+  Future<Envelope> _sendMeta(String method, String path,
+      {Map<String, dynamic>? query, Object? body, required bool auth, bool retried = false}) async {
+    final Response<dynamic> res;
+    try {
+      res = await _dio.request<dynamic>(
+        path,
+        data: body,
+        queryParameters: query,
+        options: Options(method: method, extra: {'noAuth': !auth}),
+      );
+    } on DioException catch (e) {
+      throw ApiException('network', e.message ?? 'Network error');
+    }
+
+    final status = res.statusCode ?? 0;
+    final envelope = res.data is Map<String, dynamic> ? res.data as Map<String, dynamic> : null;
+
+    if (status == 401 && auth) {
+      if (!retried) {
+        final ok = await _refreshOnce();
+        if (ok) {
+          return _sendMeta(method, path, query: query, body: body, auth: auth, retried: true);
+        }
+      }
+      await tokens.clear();
+      onAuthLost?.call();
+    }
+
+    if (status >= 200 && status < 300 && envelope?['ok'] == true) {
+      final meta = envelope!['meta'];
+      return Envelope(envelope['data'], meta is Map<String, dynamic> ? meta : const {});
+    }
+    throw ApiException.fromEnvelope(envelope, status);
+  }
 
   Future<dynamic> _send(String method, String path,
       {Map<String, dynamic>? query, Object? body, required bool auth, bool retried = false}) async {

@@ -39,7 +39,9 @@ class AdaptiveScaffold extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final dests = [
       _Dest(Icons.home_outlined, Icons.home, l.navHome),
+      _Dest(Icons.grid_view_outlined, Icons.grid_view, l.navServices),
       _Dest(Icons.receipt_long_outlined, Icons.receipt_long, l.navBookings),
+      _Dest(Icons.chat_bubble_outline, Icons.chat_bubble, l.navMessages),
       _Dest(Icons.person_outline, Icons.person, l.navAccount),
     ];
     final size = windowSizeOf(context);
@@ -48,6 +50,13 @@ class AdaptiveScaffold extends StatelessWidget {
     if (size == WindowSize.compact) {
       return Scaffold(
         body: navigationShell,
+        // Persistent primary CTA mirroring the web header's "⚡ Đặt ngay" pill.
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => context.push('/book-now'),
+          icon: const Text('⚡', style: TextStyle(fontSize: 16)),
+          label: Text(l.bookNow),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         bottomNavigationBar: NavigationBar(
           selectedIndex: i,
           onDestinationSelected: _go,
@@ -75,6 +84,22 @@ class AdaptiveScaffold extends StatelessWidget {
               selectedIndex: i,
               onDestinationSelected: _go,
               backgroundColor: cs.surface,
+              // Same persistent primary CTA on the rail (leading button).
+              leading: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: extended
+                    ? FloatingActionButton.extended(
+                        heroTag: 'bookNowRail',
+                        onPressed: () => context.push('/book-now'),
+                        icon: const Text('⚡', style: TextStyle(fontSize: 16)),
+                        label: Text(l.bookNow),
+                      )
+                    : FloatingActionButton(
+                        heroTag: 'bookNowRail',
+                        onPressed: () => context.push('/book-now'),
+                        child: const Text('⚡', style: TextStyle(fontSize: 20)),
+                      ),
+              ),
               destinations: [
                 for (final d in dests)
                   NavigationRailDestination(

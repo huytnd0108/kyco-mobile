@@ -3,6 +3,18 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../theme/app_semantics.dart';
 
+// Shared UI kit (core/ui) — screens import `core/widgets.dart` and get the full
+// set: ServiceCard, CategoryTile, StickyBottomCta, SearchField, SectionHeader,
+// PriceText, RatingStars, EmptyState — alongside the brand/error helpers below.
+export 'ui/service_card.dart';
+export 'ui/category_tile.dart';
+export 'ui/sticky_bottom_cta.dart';
+export 'ui/search_field.dart';
+export 'ui/section_header.dart';
+export 'ui/price_text.dart';
+export 'ui/rating_stars.dart';
+export 'ui/empty_state.dart';
+
 /// Kyco gradient mark + wordmark, reused on the auth screens.
 class KycoBrand extends StatelessWidget {
   const KycoBrand({super.key});
