@@ -25,14 +25,16 @@ class AppSemantics extends ThemeExtension<AppSemantics> {
     successContainer: Color(0xFFDCFCE7), onSuccessContainer: Color(0xFF166534),
     infoContainer: Color(0xFFE0F2FE), onInfoContainer: Color(0xFF075985),
     warningContainer: Color(0xFFFEF3C7), onWarningContainer: Color(0xFF92400E),
-    brandGradient: [Color(0xFF0EA5E9), Color(0xFF2563EB)],
+    // Pure sky (sky-500 → sky-600) to match the web's sky brand — no blue-600.
+    brandGradient: [Color(0xFF0EA5E9), Color(0xFF0284C7)],
   );
 
   static const dark = AppSemantics(
     successContainer: Color(0xFF14532D), onSuccessContainer: Color(0xFF86EFAC),
     infoContainer: Color(0xFF0C4A6E), onInfoContainer: Color(0xFF7DD3FC),
     warningContainer: Color(0xFF78350F), onWarningContainer: Color(0xFFFCD34D),
-    brandGradient: [Color(0xFF0369A1), Color(0xFF1E40AF)],
+    // Dimmed pure sky (sky-700 → sky-800) for dark.
+    brandGradient: [Color(0xFF0369A1), Color(0xFF075985)],
   );
 
   @override

@@ -15,6 +15,15 @@ final ColorScheme lightColorScheme = ColorScheme.fromSeed(seedColor: kSeed).copy
   onPrimaryContainer: const Color(0xFF0369A1), // web accent-fg (sky-700)
   secondary: const Color(0xFF0EA5E9),
   onSecondary: Colors.white,
+  secondaryContainer: const Color(0xFFE0F2FE), // sky-100 (keep sky family)
+  onSecondaryContainer: const Color(0xFF0369A1), // sky-700
+  // Pin tertiary to the sky family so fromSeed's algorithmic off-hue never
+  // leaks into chips/containers — the whole palette stays sky/slate like web.
+  tertiary: const Color(0xFF0EA5E9),
+  onTertiary: Colors.white,
+  tertiaryContainer: const Color(0xFFE0F2FE),
+  onTertiaryContainer: const Color(0xFF0369A1),
+  surfaceTint: const Color(0xFF0284C7), // elevation tint = sky primary
   error: const Color(0xFFC52020),
   onError: const Color(0xFFFAFAFA),
   errorContainer: const Color(0xFFFEE2E2), // red-100
@@ -37,6 +46,13 @@ final ColorScheme darkColorScheme =
   onPrimaryContainer: const Color(0xFFFAFAFA),
   secondary: const Color(0xFF0369A1),
   onSecondary: const Color(0xFFFAFAFA),
+  secondaryContainer: const Color(0xFF204A60),
+  onSecondaryContainer: const Color(0xFFE0F2FE),
+  tertiary: const Color(0xFF3EBAF4),
+  onTertiary: const Color(0xFF080C17),
+  tertiaryContainer: const Color(0xFF204A60),
+  onTertiaryContainer: const Color(0xFFE0F2FE),
+  surfaceTint: const Color(0xFF3EBAF4),
   error: const Color(0xFFD02F2F),
   onError: const Color(0xFFFAFAFA),
   errorContainer: const Color(0xFF7F1D1D), // red-900
