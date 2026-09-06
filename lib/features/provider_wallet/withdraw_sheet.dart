@@ -191,7 +191,12 @@ Future<String?> runWithdrawFlow(
         // Server-returned insufficient message already carries the live balance.
         return e.fields?['amount_vnd'] ?? e.message;
       case 403:
-        return l.provWalletWithdrawStepUp;
+        // B7 — only a STEP_UP_REQUIRED 403 is the step-up gate; a plain
+        // FORBIDDEN (non-provider / banned) must surface the server reason
+        // rather than loop the user through step-up forever.
+        return e.code == 'STEP_UP_REQUIRED'
+            ? l.provWalletWithdrawStepUp
+            : e.message;
       default:
         return e.isMaintenance ? l.provWalletMaintenance : e.message;
     }
