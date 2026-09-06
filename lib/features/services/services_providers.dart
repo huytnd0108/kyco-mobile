@@ -88,8 +88,13 @@ class ServicesFeedController
   String? get _categoryParam =>
       (arg.category != null && arg.category!.isNotEmpty) ? arg.category : null;
 
+  /// Set on dispose so a page fetch that resolves after the controller is gone
+  /// never touches `state` (which would throw and surface as an unhandled async).
+  bool _disposed = false;
+
   @override
   Future<ServicesFeed> build(ServicesFilter arg) async {
+    ref.onDispose(() => _disposed = true);
     final sub = await _resolveSub(arg);
     if (arg.isSearching) return _searchFeed(arg, sub);
 
@@ -191,7 +196,8 @@ class ServicesFeedController
     if (cur == null || cur.searching || !cur.hasMore || cur.loadingMore) return;
     if (cur.nextCursor == null) return;
 
-    state = AsyncData(cur.copyWith(loadingMore: true));
+    final loading = cur.copyWith(loadingMore: true);
+    state = AsyncData(loading);
     try {
       final sub = await _resolveSub(arg);
       final page = await _api.services(
@@ -199,6 +205,9 @@ class ServicesFeedController
         cursor: cur.nextCursor,
         limit: _pageSize,
       );
+      // Bail if the controller was disposed or a pull-refresh reset page 1 while
+      // we awaited — never clobber fresh state with a stale append.
+      if (_disposed || !identical(state.valueOrNull, loading)) return;
       state = AsyncData(cur.copyWith(
         items: [...cur.items, ..._applySubcategory(page.items, sub)],
         nextCursor: page.nextCursor,
@@ -210,7 +219,13 @@ class ServicesFeedController
       ));
     } catch (_) {
       // Keep what we have; a transient next-page failure must not blank the grid.
-      state = AsyncData(cur.copyWith(loadingMore: false));
+      // Guard the write: on a disposed notifier `state=` throws and would rethrow.
+      if (_disposed) return;
+      try {
+        if (identical(state.valueOrNull, loading)) {
+          state = AsyncData(cur.copyWith(loadingMore: false));
+        }
+      } catch (_) {}
     }
   }
 }

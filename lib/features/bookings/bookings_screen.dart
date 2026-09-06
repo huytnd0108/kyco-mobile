@@ -78,7 +78,7 @@ class _BookingsList extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(bookingsProvider);
-        await ref.read(bookingsProvider.future);
+        try { await ref.read(bookingsProvider.future); } catch (_) {/* offline pull — UI recovers via .when(error:) */}
       },
       child: bookings.when(
         loading: () => const Center(child: CircularProgressIndicator()),

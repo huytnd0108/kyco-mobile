@@ -77,7 +77,7 @@ class MessagesScreen extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(conversationsProvider);
-            await ref.read(conversationsProvider.future);
+            try { await ref.read(conversationsProvider.future); } catch (_) {/* offline pull — UI recovers via .when(error:) */}
           },
           child: async.when(
             loading: () => const Center(child: CircularProgressIndicator()),

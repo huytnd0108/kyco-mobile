@@ -45,8 +45,13 @@ final assignedJobsControllerProvider =
 class AssignedJobsController extends AutoDisposeAsyncNotifier<AssignedJobsData> {
   KycoApi get _api => ref.read(kycoApiProvider);
 
+  /// Set on dispose so a page fetch that resolves after the controller is gone
+  /// never touches `state` (which would throw and surface as an unhandled async).
+  bool _disposed = false;
+
   @override
   Future<AssignedJobsData> build() async {
+    ref.onDispose(() => _disposed = true);
     final page = await _api.providerJobs();
     return AssignedJobsData(
       items: page.items,
@@ -62,17 +67,30 @@ class AssignedJobsController extends AutoDisposeAsyncNotifier<AssignedJobsData> 
     if (cur == null || cur.loadingMore || !cur.hasMore || cur.nextCursor == null) {
       return;
     }
-    state = AsyncData(cur.copyWith(loadingMore: true));
+    final loading = cur.copyWith(loadingMore: true);
+    state = AsyncData(loading);
     try {
       final page = await _api.providerJobs(cursor: cur.nextCursor);
-      state = AsyncData(cur.copyWith(
+      // Bail if the controller was disposed or a pull-refresh reset page 1 while
+      // we awaited — never clobber fresh state with a stale append.
+      if (_disposed || !identical(state.valueOrNull, loading)) return;
+      // Rebuild explicitly (not copyWith) so a null `nextCursor` on the last
+      // page is stored rather than silently keeping the stale cursor.
+      state = AsyncData(AssignedJobsData(
         items: [...cur.items, ...page.items],
         nextCursor: page.nextCursor,
         hasMore: page.hasMore,
         loadingMore: false,
       ));
     } catch (_) {
-      state = AsyncData(cur.copyWith(loadingMore: false));
+      // Guard the failure write too: on a disposed notifier `state=` throws and
+      // would rethrow as an unhandled async error.
+      if (_disposed) return;
+      try {
+        if (identical(state.valueOrNull, loading)) {
+          state = AsyncData(cur.copyWith(loadingMore: false));
+        }
+      } catch (_) {}
     }
   }
 }

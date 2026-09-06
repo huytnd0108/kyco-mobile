@@ -49,8 +49,13 @@ class NotificationsController
     extends AutoDisposeAsyncNotifier<NotificationsData> {
   KycoApi get _api => ref.read(kycoApiProvider);
 
+  /// Set on dispose so a page fetch that resolves after the controller is gone
+  /// never touches `state` (which would throw and surface as an unhandled async).
+  bool _disposed = false;
+
   @override
   Future<NotificationsData> build() async {
+    ref.onDispose(() => _disposed = true);
     final (page, unread) = await _api.notifications();
     return NotificationsData(
       items: page.items,
@@ -69,10 +74,16 @@ class NotificationsController
         cur.nextCursor == null) {
       return;
     }
-    state = AsyncData(cur.copyWith(loadingMore: true));
+    final loading = cur.copyWith(loadingMore: true);
+    state = AsyncData(loading);
     try {
       final (page, unread) = await _api.notifications(cursor: cur.nextCursor);
-      state = AsyncData(cur.copyWith(
+      // Bail if the controller was disposed or a pull-refresh reset page 1 while
+      // we awaited — never clobber fresh state with a stale append.
+      if (_disposed || !identical(state.valueOrNull, loading)) return;
+      // Rebuild explicitly (not copyWith) so a null `nextCursor` on the last
+      // page is stored rather than silently keeping the stale cursor.
+      state = AsyncData(NotificationsData(
         items: [...cur.items, ...page.items],
         unread: unread,
         nextCursor: page.nextCursor,
@@ -80,8 +91,14 @@ class NotificationsController
         loadingMore: false,
       ));
     } catch (_) {
-      // Keep the pages already shown; just drop the loading flag.
-      state = AsyncData(cur.copyWith(loadingMore: false));
+      // Keep the pages already shown; just drop the loading flag. Guard the
+      // write: on a disposed notifier `state=` throws and would rethrow.
+      if (_disposed) return;
+      try {
+        if (identical(state.valueOrNull, loading)) {
+          state = AsyncData(cur.copyWith(loadingMore: false));
+        }
+      } catch (_) {}
     }
   }
 

@@ -268,26 +268,37 @@ class _LoadMoreFooter extends StatelessWidget {
 
 // ── Available (pool) tab ─────────────────────────────────────────────────────
 
-class _AvailableTab extends ConsumerWidget {
+class _AvailableTab extends ConsumerStatefulWidget {
   const _AvailableTab();
 
-  Future<void> _claim(BuildContext context, WidgetRef ref, int jobId) async {
+  @override
+  ConsumerState<_AvailableTab> createState() => _AvailableTabState();
+}
+
+class _AvailableTabState extends ConsumerState<_AvailableTab> {
+  Future<void> _claim(int jobId) async {
     final messenger = ScaffoldMessenger.of(context);
     final l = AppLocalizations.of(context);
     try {
       await ref.read(kycoApiProvider).claimJob(jobId);
+      if (!mounted) return;
       messenger.showSnackBar(SnackBar(content: Text(l.provClaimSuccess)));
     } catch (_) {
+      if (!mounted) return;
       messenger.showSnackBar(SnackBar(content: Text(l.provClaimError)));
     }
     // Refresh both surfaces — the claimed job leaves the pool and enters the
-    // assigned pipeline / list.
+    // assigned pipeline / list. Guard on `mounted`: swiping tabs / navigating
+    // away mid-claim disposes this element, and invalidating a disposed ref
+    // throws. When unmounted, the autoDispose `poolProvider` refetches fresh on
+    // the next build anyway, so the claimed job never reappears.
+    if (!mounted) return;
     ref.invalidate(poolProvider);
     ref.invalidate(assignedJobsControllerProvider);
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final async = ref.watch(poolProvider);
     final l = AppLocalizations.of(context);
     return RefreshIndicator(
@@ -337,7 +348,7 @@ class _AvailableTab extends ConsumerWidget {
                     child: _ClaimCard(
                       job,
                       canClaim: view.canClaim,
-                      onClaim: () => _claim(context, ref, job.jobId),
+                      onClaim: () => _claim(job.jobId),
                     ),
                   ),
             ],

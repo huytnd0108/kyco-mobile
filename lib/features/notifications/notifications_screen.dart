@@ -128,7 +128,7 @@ class _NotificationsListState extends ConsumerState<_NotificationsList> {
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(notificationsControllerProvider);
-            await ref.read(notificationsControllerProvider.future);
+            try { await ref.read(notificationsControllerProvider.future); } catch (_) {/* offline pull — UI recovers via .when(error:) */}
           },
           child: async.when(
             loading: () => const Center(child: CircularProgressIndicator()),

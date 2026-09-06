@@ -178,19 +178,11 @@ Future<String?> runWithdrawFlow(
     if (!ok) return null;
   }
 
+  // Only the money POST lives in this try. A failure here is a genuine payout
+  // failure and maps to the right message.
+  final PayoutRequestResult result;
   try {
-    final result = await api.requestPayout(amount);
-    // Refresh balance + ledger + payouts so the pending debit shows immediately.
-    ref.invalidate(walletSummaryProvider);
-    ref.invalidate(walletTxnsControllerProvider);
-    ref.invalidate(payoutsControllerProvider);
-    final tail = result.accountTail;
-    final bank = result.bankCode;
-    if (tail != null && bank != null) {
-      return l.provWalletWithdrawSubmitted(
-          formatVnd(result.amountVnd), bank, tail);
-    }
-    return l.provWalletWithdrawSubmittedNoBank(formatVnd(result.amountVnd));
+    result = await api.requestPayout(amount);
   } on ApiException catch (e) {
     switch (e.status) {
       case 409:
@@ -206,4 +198,23 @@ Future<String?> runWithdrawFlow(
   } catch (_) {
     return l.genericError;
   }
+
+  // Payout CONFIRMED accepted — the money has moved. From here a dead-ref error
+  // (sheet unmounted mid-POST) must NEVER be reported as a payout failure, or
+  // the provider sees an error for a debit that succeeded and re-submits. Do the
+  // balance/ledger refresh best-effort and always return the success message.
+  try {
+    ref.invalidate(walletSummaryProvider);
+    ref.invalidate(walletTxnsControllerProvider);
+    ref.invalidate(payoutsControllerProvider);
+  } catch (_) {
+    // Ref disposed after unmount — the balance refreshes on the next wallet open.
+  }
+  final tail = result.accountTail;
+  final bank = result.bankCode;
+  if (tail != null && bank != null) {
+    return l.provWalletWithdrawSubmitted(
+        formatVnd(result.amountVnd), bank, tail);
+  }
+  return l.provWalletWithdrawSubmittedNoBank(formatVnd(result.amountVnd));
 }

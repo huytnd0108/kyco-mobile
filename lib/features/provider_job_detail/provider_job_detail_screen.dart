@@ -77,7 +77,7 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
           data: (d) => RefreshIndicator(
             onRefresh: () async {
               ref.invalidate(providerJobDetailProvider(id));
-              await ref.read(providerJobDetailProvider(id).future);
+              try { await ref.read(providerJobDetailProvider(id).future); } catch (_) {/* offline pull — UI recovers via .when(error:) */}
             },
             child: JobDetailBody(
               detail: d,
@@ -492,6 +492,8 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
     required String confirmLabel,
   }) {
     final controller = TextEditingController();
+    // whenComplete disposes the controller once the dialog route is gone —
+    // without it every open/dismiss leaks one TextEditingController.
     return showDialog<String>(
       context: context,
       builder: (ctx) {
@@ -534,7 +536,7 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
           ],
         );
       },
-    );
+    ).whenComplete(controller.dispose);
   }
 
   /// Photo-gated complete dialog: shows the per-slot deficit and only enables the

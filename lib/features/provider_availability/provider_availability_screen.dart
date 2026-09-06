@@ -116,6 +116,19 @@ class _EditorState extends ConsumerState<_Editor> {
     _seed();
   }
 
+  @override
+  void didUpdateWidget(covariant _Editor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A pull-refresh or post-save invalidate re-reads the provider and delivers
+    // a NEW AvailabilityWeek instance into this kept-alive editor. Without a
+    // re-seed here the grid keeps its stale optimistic copy: cross-device edits
+    // stay invisible and a cancelled save-conflict leaves the unsaved grid
+    // looking saved. Re-seed on every fresh fetch so the server stays canonical.
+    if (!identical(oldWidget.week, widget.week)) {
+      _seed();
+    }
+  }
+
   void _seed() {
     _weekly = {
       for (final dow in kAvailabilityDows)
@@ -126,7 +139,11 @@ class _EditorState extends ConsumerState<_Editor> {
 
   Future<void> _refresh() async {
     ref.invalidate(availabilityProvider);
-    await ref.read(availabilityProvider.future);
+    // Swallow the reload error — an offline pull would otherwise throw an
+    // uncaught ApiException; the UI already recovers via async.when(error:).
+    try {
+      await ref.read(availabilityProvider.future);
+    } catch (_) {/* offline pull — UI recovers via async.when(error:) */}
   }
 
   // ── weekly grid save ────────────────────────────────────────────────────

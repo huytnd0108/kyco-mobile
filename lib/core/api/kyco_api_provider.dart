@@ -135,7 +135,7 @@ extension KycoApiProvider on KycoApi {
   /// GET the provider's own live position feed for a job (used by W3's live
   /// panel). Returns the raw map — shape is bound by the consuming unit.
   Future<Map<String, dynamic>> jobLocation(int id) async {
-    final data = await _c.get('/provider/jobs/$id/location');
+    final data = await _c.get('/jobs/$id/location');
     return data is Map<String, dynamic> ? data : <String, dynamic>{};
   }
 

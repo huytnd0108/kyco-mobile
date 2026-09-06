@@ -70,6 +70,25 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
+  /// Backfill the user when bootstrap entered optimistically (signedIn with a
+  /// null user after a non-401 /me failure). Cheap and idempotent: no-ops unless
+  /// the role is still unknown, and a failure leaves the optimistic session
+  /// untouched so a later authed refresh can fill the role instead.
+  Future<void> refreshMe() async {
+    final s = state;
+    if (s.status != AuthStatus.signedIn || s.user != null || s.busy) return;
+    try {
+      final user = await _api.me();
+      // Re-check: only apply if we're still signed-in with no user (never race
+      // a logout / sign-out that happened while /me was in flight).
+      if (state.status == AuthStatus.signedIn && state.user == null) {
+        state = AuthState(status: AuthStatus.signedIn, user: user);
+      }
+    } catch (_) {
+      // Still offline / dark-launched — keep the optimistic session as-is.
+    }
+  }
+
   Future<bool> login({required String email, required String password}) =>
       _run(() => _api.login(email: email, password: password));
 

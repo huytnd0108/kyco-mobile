@@ -51,8 +51,13 @@ class ReviewsState {
 /// Loads the first review page, then appends subsequent pages on [loadMore].
 class ReviewsController
     extends AutoDisposeFamilyAsyncNotifier<ReviewsState, int> {
+  /// Set on dispose so a page fetch that resolves after the controller is gone
+  /// never touches `state` (which would throw and surface as an unhandled async).
+  bool _disposed = false;
+
   @override
   Future<ReviewsState> build(int id) async {
+    ref.onDispose(() => _disposed = true);
     final page = await ref.watch(kycoApiProvider).serviceReviews(id);
     return ReviewsState(
       reviews: page.reviews,
@@ -66,11 +71,15 @@ class ReviewsController
   Future<void> loadMore() async {
     final cur = state.valueOrNull;
     if (cur == null || cur.nextCursor == null || cur.loadingMore) return;
-    state = AsyncData(cur.copyWith(loadingMore: true));
+    final loading = cur.copyWith(loadingMore: true);
+    state = AsyncData(loading);
     try {
       final page = await ref
           .read(kycoApiProvider)
           .serviceReviews(arg, cursor: cur.nextCursor);
+      // Bail if the controller was disposed or a pull-refresh reset page 1 while
+      // we awaited — never clobber fresh state with a stale append.
+      if (_disposed || !identical(state.valueOrNull, loading)) return;
       state = AsyncData(cur.copyWith(
         reviews: [...cur.reviews, ...page.reviews],
         aggregate: page.aggregate,
@@ -79,7 +88,13 @@ class ReviewsController
         loadingMore: false,
       ));
     } catch (_) {
-      state = AsyncData(cur.copyWith(loadingMore: false));
+      // Guard the write: on a disposed notifier `state=` throws and would rethrow.
+      if (_disposed) return;
+      try {
+        if (identical(state.valueOrNull, loading)) {
+          state = AsyncData(cur.copyWith(loadingMore: false));
+        }
+      } catch (_) {}
     }
   }
 }

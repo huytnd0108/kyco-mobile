@@ -108,7 +108,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         return;
       }
       await _draftCtrl.clear();
-      if (mounted) await _showSuccess(result);
+      if (!mounted) return;
+      await _showSuccess(result);
+      // Draft is cleared and the _seeded latch blocks a re-seed, so the checkout
+      // underneath is now blank and inert. Leave for the booking on ANY sheet
+      // dismissal — tap or swipe — instead of stranding the user on it. (When the
+      // in-sheet button navigated, this screen is already gone → mounted false.)
+      if (mounted) context.go('/bookings/${result.bookingId}');
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.genericError)));

@@ -29,7 +29,7 @@ class HomeScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(homeProvider);
-          await ref.read(homeProvider.future);
+          try { await ref.read(homeProvider.future); } catch (_) {/* offline pull — UI recovers via .when(error:) */}
         },
         child: home.when(
           loading: () => const Center(child: CircularProgressIndicator()),

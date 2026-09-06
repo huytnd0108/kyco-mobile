@@ -170,7 +170,7 @@ class _OrderInfoCard extends StatelessWidget {
           _kv(context, l.email, _s(cust['email']).isEmpty ? '—' : _s(cust['email'])),
           _kv(context, l.provJdTime, fmtJobTime(_s(b['scheduledAt']).isEmpty ? null : _s(b['scheduledAt']))),
           _kv(context, l.provJdDuration,
-              duration == null ? '—' : l.minutesShort((duration as num).toInt())),
+              duration is num ? l.minutesShort(duration.toInt()) : '—'),
           _kv(context, l.provJdAddress, where.isEmpty ? '—' : where),
           if (_s(b['notes']).isNotEmpty)
             _kv(context, l.notesLabel, _s(b['notes'])),

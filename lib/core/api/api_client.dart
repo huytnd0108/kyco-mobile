@@ -127,7 +127,10 @@ class KycoApiClient {
       if (!retried) {
         final ok = await _refreshOnce();
         if (ok) {
-          return _sendMeta(method, path, query: query, body: body, auth: auth, retried: true);
+          // Dio FormData is single-use (finalized by the first send); rebuild it
+          // for the retry so we don't hit StateError "already finalized".
+          final retryBody = body is FormData ? body.clone() : body;
+          return _sendMeta(method, path, query: query, body: retryBody, auth: auth, retried: true);
         }
       }
       await tokens.clear();
@@ -163,7 +166,10 @@ class KycoApiClient {
       if (!retried) {
         final ok = await _refreshOnce();
         if (ok) {
-          return _send(method, path, query: query, body: body, auth: auth, retried: true);
+          // Dio FormData is single-use (finalized by the first send); rebuild it
+          // for the retry so we don't hit StateError "already finalized".
+          final retryBody = body is FormData ? body.clone() : body;
+          return _send(method, path, query: query, body: retryBody, auth: auth, retried: true);
         }
       }
       // Either the refresh failed, or we already refreshed and STILL got 401

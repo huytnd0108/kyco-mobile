@@ -95,6 +95,13 @@ String? appRedirect({
     // Mid-bootstrap: never bounce to login (mirrors the guest-first unknown rule).
     if (status == AuthStatus.unknown) return '/';
     if (status != AuthStatus.signedIn) return '/login?from=$loc';
+    // Role-UNKNOWN: bootstrap entered optimistically (signedIn with user==null
+    // after a non-401 /me failure — offline / 503 dark-launch), so `role` is
+    // null but the account may well be a provider. Treat it exactly like the
+    // `unknown` status above (send /p* home), NEVER to become-tasker — otherwise
+    // a real provider is misrouted to onboarding for the whole session. Role
+    // backfills via AuthController.refreshMe once /me succeeds.
+    if (role == null) return '/';
     // A signed-in non-provider is sent to onboarding (pending_provider sees the
     // "under review" status inside /become-tasker).
     if (role != 'provider' && role != 'admin') return '/become-tasker';
@@ -332,6 +339,12 @@ class _KycoAppState extends ConsumerState<KycoApp> {
     ref.listen(authControllerProvider, (_, next) {
       if (next.status == AuthStatus.signedOut) {
         ref.read(selectedBookingIdProvider.notifier).state = null;
+      }
+      // Role-unknown optimistic session (bootstrap's non-401 /me failure): try
+      // once to backfill the user so a real provider can reach /p this session.
+      // refreshMe no-ops unless still signedIn-with-null-user, so no loop.
+      if (next.status == AuthStatus.signedIn && next.user == null) {
+        ref.read(authControllerProvider.notifier).refreshMe();
       }
     });
     final router = ref.watch(routerProvider);
