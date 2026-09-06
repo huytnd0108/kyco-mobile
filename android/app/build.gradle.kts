@@ -58,12 +58,23 @@ android {
 
     buildTypes {
         release {
-            // Real release keystore when key.properties exists; else debug keys so
-            // `flutter run --release` still works locally (that APK is not publishable).
-            signingConfig = if (keystorePropertiesFile.exists())
+            // Release must be signed with the real keystore (android/key.properties,
+            // gitignored). When it is absent we FAIL LOUDLY rather than silently
+            // fall back to debug keys — a debug-signed AAB is rejected by the Play
+            // Console and shipping one is worse than a broken build. Local dev that
+            // needs an unpublishable release build (e.g. `flutter run --release`)
+            // opts in with `-Pallow-debug-signing` (or ./gradlew … -PallowDebugSigning).
+            signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
-            else
+            } else if (project.hasProperty("allowDebugSigning") || project.hasProperty("allow-debug-signing")) {
                 signingConfigs.getByName("debug")
+            } else {
+                throw GradleException(
+                    "key.properties missing — release signing not configured. " +
+                    "Provide android/key.properties + the keystore, or pass " +
+                    "-PallowDebugSigning for a local, NON-PUBLISHABLE debug-signed release build."
+                )
+            }
             // R8: shrink + obfuscate code and strip unused resources.
             isMinifyEnabled = true
             isShrinkResources = true

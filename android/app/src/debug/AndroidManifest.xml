@@ -1,7 +1,13 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- The INTERNET permission is required for development. Specifically,
          the Flutter tool needs it to communicate with the running application
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- DEBUG builds only: allow cleartext HTTP so the documented emulator dev
+         flow (API_BASE=http://10.0.2.2:3088) works on targetSdk>=28, where the
+         default network-security policy blocks cleartext. Production/release use
+         https and are unaffected — this manifest is not merged into release. -->
+    <application android:usesCleartextTraffic="true" tools:targetApi="28"/>
 </manifest>
