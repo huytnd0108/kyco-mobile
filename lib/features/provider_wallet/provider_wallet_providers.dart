@@ -1,0 +1,203 @@
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+
+import '../../core/api/kyco_api.dart';
+import '../../core/di.dart';
+import '../../core/models.dart';
+
+// Provider wallet data plumbing — every read is a frozen kycoApiProvider money
+// method (💰 server-derived). Nothing here computes a fee, net, or balance; the
+// app only DISPLAYS server figures. The one user-supplied number is the payout
+// amount, and even that is validated + balance-checked server-side.
+
+/// Payout bounds mirrored from the web (`wallet-self-service-write.ts`) — used
+/// ONLY for client-side hints. The SERVER is the source of truth: it re-checks
+/// the range, whole-đồng integrality, and the live balance on every request.
+const int kPayoutMinVnd = 100000;
+const int kPayoutMaxVnd = 50000000;
+
+/// Wallet summary (`GET /v1/provider/wallet`) — balance + lifetime/month/fee
+/// aggregates. All figures server-derived. 💰
+final walletSummaryProvider = FutureProvider.autoDispose<WalletSummary>((ref) {
+  return ref.watch(kycoApiProvider).providerWallet();
+});
+
+/// The provider's step-up posture (`GET /v1/auth/step-up`) — is a fresh grant
+/// present, and can this account use a password (else OTP)? Never trusted as a
+/// gate; the server re-checks on the payout POST. Fetched on demand (autoDispose
+/// so a stale "fresh" never lingers between withdraw attempts).
+final stepUpStatusProvider = FutureProvider.autoDispose<StepUpStatus>((ref) {
+  return ref.watch(kycoApiProvider).stepUpStatus();
+});
+
+/// Accumulated cursor-paged data for a provider-wallet list read.
+class WalletTxnsData {
+  const WalletTxnsData({
+    required this.items,
+    this.nextCursor,
+    this.hasMore = false,
+    this.loadingMore = false,
+  });
+
+  final List<WalletTxn> items;
+  final String? nextCursor;
+  final bool hasMore;
+  final bool loadingMore;
+
+  WalletTxnsData copyWith({
+    List<WalletTxn>? items,
+    String? nextCursor,
+    bool? hasMore,
+    bool? loadingMore,
+  }) =>
+      WalletTxnsData(
+        items: items ?? this.items,
+        nextCursor: nextCursor ?? this.nextCursor,
+        hasMore: hasMore ?? this.hasMore,
+        loadingMore: loadingMore ?? this.loadingMore,
+      );
+}
+
+/// Transaction ledger (`GET /v1/provider/wallet/transactions`) with opaque
+/// forward-cursor paging. 💰
+final walletTxnsControllerProvider =
+    AsyncNotifierProvider.autoDispose<WalletTxnsController, WalletTxnsData>(
+        WalletTxnsController.new);
+
+class WalletTxnsController extends AutoDisposeAsyncNotifier<WalletTxnsData> {
+  KycoApi get _api => ref.read(kycoApiProvider);
+
+  @override
+  Future<WalletTxnsData> build() async {
+    final page = await _api.walletTxns();
+    return WalletTxnsData(
+      items: page.items,
+      nextCursor: page.nextCursor,
+      hasMore: page.hasMore,
+    );
+  }
+
+  /// Append the next page. No-op when already loading, exhausted, or cursorless.
+  Future<void> loadMore() async {
+    final cur = state.valueOrNull;
+    if (cur == null || cur.loadingMore || !cur.hasMore || cur.nextCursor == null) {
+      return;
+    }
+    state = AsyncData(cur.copyWith(loadingMore: true));
+    try {
+      final page = await _api.walletTxns(cursor: cur.nextCursor);
+      state = AsyncData(cur.copyWith(
+        items: [...cur.items, ...page.items],
+        nextCursor: page.nextCursor,
+        hasMore: page.hasMore,
+        loadingMore: false,
+      ));
+    } catch (_) {
+      // Keep the pages already shown; just drop the loading flag.
+      state = AsyncData(cur.copyWith(loadingMore: false));
+    }
+  }
+}
+
+/// Accumulated cursor-paged payouts.
+class PayoutsData {
+  const PayoutsData({
+    required this.items,
+    this.nextCursor,
+    this.hasMore = false,
+    this.loadingMore = false,
+  });
+
+  final List<Payout> items;
+  final String? nextCursor;
+  final bool hasMore;
+  final bool loadingMore;
+
+  PayoutsData copyWith({
+    List<Payout>? items,
+    String? nextCursor,
+    bool? hasMore,
+    bool? loadingMore,
+  }) =>
+      PayoutsData(
+        items: items ?? this.items,
+        nextCursor: nextCursor ?? this.nextCursor,
+        hasMore: hasMore ?? this.hasMore,
+        loadingMore: loadingMore ?? this.loadingMore,
+      );
+}
+
+/// Payout history (`GET /v1/provider/payouts`) — held / released / withdrawn
+/// rows with cursor paging. 💰
+final payoutsControllerProvider =
+    AsyncNotifierProvider.autoDispose<PayoutsController, PayoutsData>(
+        PayoutsController.new);
+
+class PayoutsController extends AutoDisposeAsyncNotifier<PayoutsData> {
+  KycoApi get _api => ref.read(kycoApiProvider);
+
+  @override
+  Future<PayoutsData> build() async {
+    final page = await _api.payouts();
+    return PayoutsData(
+      items: page.items,
+      nextCursor: page.nextCursor,
+      hasMore: page.hasMore,
+    );
+  }
+
+  Future<void> loadMore() async {
+    final cur = state.valueOrNull;
+    if (cur == null || cur.loadingMore || !cur.hasMore || cur.nextCursor == null) {
+      return;
+    }
+    state = AsyncData(cur.copyWith(loadingMore: true));
+    try {
+      final page = await _api.payouts(cursor: cur.nextCursor);
+      state = AsyncData(cur.copyWith(
+        items: [...cur.items, ...page.items],
+        nextCursor: page.nextCursor,
+        hasMore: page.hasMore,
+        loadingMore: false,
+      ));
+    } catch (_) {
+      state = AsyncData(cur.copyWith(loadingMore: false));
+    }
+  }
+}
+
+// ── display helpers (labels only — never money math) ─────────────────────────
+
+/// Human label for a wallet-transaction `reason`, mirroring the web's
+/// REASON_LABELS. Falls back to the raw reason so an unknown kind still shows.
+String walletReasonLabel(String? reason) => switch (reason) {
+      'provider_earning' || 'cleaner_pay' => 'Thu nhập công việc',
+      'tip' => 'Tiền tip',
+      'bonus' => 'Thưởng',
+      'payout' => 'Rút tiền',
+      'commission_due' => 'Hoa hồng',
+      'clawback' => 'Thu hồi',
+      'adjustment' => 'Điều chỉnh',
+      _ => (reason == null || reason.isEmpty) ? 'Giao dịch' : reason,
+    };
+
+/// Vietnamese label + a semantic tone key for a payout status (mirrors the
+/// web's PAYOUT_STATUS_LABEL). Tone is resolved to colours by the screen.
+({String label, String tone}) payoutStatusLabel(String? status) => switch (status) {
+      'released' => (label: 'Đã giải ngân', tone: 'success'),
+      'withdrawn' => (label: 'Đã rút', tone: 'info'),
+      'reversed' => (label: 'Đã hoàn', tone: 'error'),
+      _ => (label: 'Đang giữ', tone: 'warning'),
+    };
+
+/// Localized date-time for a raw ISO-8601 timestamp; falls back to the raw
+/// string, then to an em dash — never leaks an ISO blob or "null".
+String formatWalletDate(BuildContext context, String? raw) {
+  if (raw == null || raw.isEmpty) return '—';
+  final dt = DateTime.tryParse(raw);
+  if (dt == null) return raw;
+  return DateFormat.yMd(Localizations.localeOf(context).toString())
+      .add_Hm()
+      .format(dt.toLocal());
+}
