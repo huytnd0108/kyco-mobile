@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/api/kyco_api.dart';
@@ -183,6 +184,18 @@ class _AssignedTabState extends ConsumerState<_AssignedTab> {
   }
 }
 
+/// Locale-driven, local-time date/time for an ISO `scheduledAt`, mirroring the
+/// wallet/bookings screens (`DateFormat.yMd(locale).add_Hm()`) and resolving to
+/// local time like job-detail's `fmtJobTime`. Never leaks a raw ISO blob.
+String _fmtJobWhen(BuildContext context, String? raw) {
+  if (raw == null || raw.isEmpty) return '';
+  final dt = DateTime.tryParse(raw);
+  if (dt == null) return raw;
+  return DateFormat.yMd(Localizations.localeOf(context).toString())
+      .add_Hm()
+      .format(dt.toLocal());
+}
+
 class _AssignedJobTile extends StatelessWidget {
   const _AssignedJobTile(this.job, {required this.onTap});
   final ProviderJob job;
@@ -193,7 +206,8 @@ class _AssignedJobTile extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final title = job.serviceName ?? job.confirmationCode ?? '#${job.bookingId ?? job.jobId}';
     final where = [job.addressLine, job.ward, job.district].whereType<String>().where((s) => s.isNotEmpty).join(', ');
-    final subtitle = [if ((job.scheduledAt ?? '').isNotEmpty) job.scheduledAt!, if (where.isNotEmpty) where].join('\n');
+    final when = _fmtJobWhen(context, job.scheduledAt);
+    final subtitle = [if (when.isNotEmpty) when, if (where.isNotEmpty) where].join('\n');
     return Card(
       child: ListTile(
         onTap: onTap,
@@ -405,7 +419,8 @@ class _AssignedPoolTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = job.serviceName ?? job.confirmationCode ?? '#${job.bookingId ?? job.jobId}';
     final where = [job.addressLine, job.ward, job.district].whereType<String>().where((s) => s.isNotEmpty).join(', ');
-    final subtitle = [if ((job.scheduledAt ?? '').isNotEmpty) job.scheduledAt!, if (where.isNotEmpty) where].join('\n');
+    final when = _fmtJobWhen(context, job.scheduledAt);
+    final subtitle = [if (when.isNotEmpty) when, if (where.isNotEmpty) where].join('\n');
     return Card(
       margin: EdgeInsets.zero,
       child: ListTile(
@@ -431,14 +446,35 @@ class _AssignedPoolTile extends StatelessWidget {
 /// total (💰) and a rate hint (`≈ 80% về bạn`) — the net is never computed in
 /// the app. "Claim" calls `claimJob(id)` (no amount) and is disabled when the
 /// server gate (`canClaim`) is closed.
-class _ClaimCard extends StatelessWidget {
+class _ClaimCard extends StatefulWidget {
   const _ClaimCard(this.job, {required this.canClaim, required this.onClaim});
   final PoolJob job;
   final bool canClaim;
-  final VoidCallback onClaim;
+  final Future<void> Function() onClaim;
+
+  @override
+  State<_ClaimCard> createState() => _ClaimCardState();
+}
+
+class _ClaimCardState extends State<_ClaimCard> {
+  /// In-flight guard: a claim is running, so the button is disabled and a
+  /// second tap cannot fire `claimJob` again before the pool refresh lands.
+  bool _claiming = false;
+
+  Future<void> _onPressed() async {
+    if (_claiming) return;
+    setState(() => _claiming = true);
+    try {
+      await widget.onClaim();
+    } finally {
+      if (mounted) setState(() => _claiming = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final job = widget.job;
+    final canClaim = widget.canClaim;
     final cs = Theme.of(context).colorScheme;
     final title = job.serviceName ?? '#${job.bookingId ?? job.jobId}';
     final where = [job.addressLine, job.ward, job.district].whereType<String>().where((s) => s.isNotEmpty).join(', ');
@@ -464,7 +500,8 @@ class _ClaimCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           [
-                            if ((job.scheduledAt ?? '').isNotEmpty) job.scheduledAt!,
+                            if (_fmtJobWhen(context, job.scheduledAt).isNotEmpty)
+                              _fmtJobWhen(context, job.scheduledAt),
                             if (job.durationMinutes != null) '${job.durationMinutes} phút',
                           ].join(' · '),
                           style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
@@ -498,8 +535,13 @@ class _ClaimCard extends StatelessWidget {
             Align(
               alignment: Alignment.centerRight,
               child: FilledButton.icon(
-                onPressed: canClaim ? onClaim : null,
-                icon: const Icon(Icons.add_task, size: 18),
+                onPressed: (canClaim && !_claiming) ? _onPressed : null,
+                icon: _claiming
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.add_task, size: 18),
                 label: const Text(_kClaimAction),
               ),
             ),

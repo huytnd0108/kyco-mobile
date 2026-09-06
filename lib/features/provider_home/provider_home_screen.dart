@@ -448,15 +448,15 @@ class _JobTile extends StatelessWidget {
     );
   }
 
-  /// TZ-independent, deterministic date/time (UTC components) so the same
-  /// payload renders the same pixels regardless of the host timezone.
+  /// Local date/time, matching job-detail's `fmtJobTime` so the same
+  /// `scheduledAt` renders identically on the dashboard and job detail.
   static String _fmtWhen(String? iso) {
     if (iso == null || iso.isEmpty) return '';
     final dt = DateTime.tryParse(iso);
     if (dt == null) return iso;
-    final u = dt.toUtc();
+    final l = dt.toLocal();
     String two(int n) => n.toString().padLeft(2, '0');
-    return '${two(u.day)}/${two(u.month)}/${u.year} ${two(u.hour)}:${two(u.minute)}';
+    return '${two(l.day)}/${two(l.month)}/${l.year} ${two(l.hour)}:${two(l.minute)}';
   }
 }
 

@@ -53,7 +53,7 @@ class _Subtitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Text(
-      'Hỗ trợ 24/7 — gọi hotline, nhắn Zalo, email, hoặc gửi yêu cầu bên dưới.',
+      'Hỗ trợ 24/7 — nhắn Zalo, email, hoặc gửi yêu cầu bên dưới.',
       style: TextStyle(color: cs.onSurfaceVariant),
     );
   }
@@ -61,21 +61,18 @@ class _Subtitle extends StatelessWidget {
 
 // ── quick contact ────────────────────────────────────────────────────────────
 
-/// Three info rows. These are display-only contact details (no dialer/URL
-/// launch dependency added in this unit) mirroring the web quick-contact grid.
+/// Quick-contact info rows (Zalo / email). Display-only contact details (no
+/// dialer/URL launch dependency added in this unit) mirroring the web
+/// quick-contact grid. The hotline row is omitted until a real number exists.
 class _ContactCards extends StatelessWidget {
   const _ContactCards();
   @override
   Widget build(BuildContext context) {
+    // NOTE: the hotline row is intentionally omitted — no real 24/7 partner
+    // number has been provisioned yet, and shipping the '1900-XXXX' placeholder
+    // as a live number is a dishonest UX. Restore it only with a real number.
     return const Column(
       children: [
-        _ContactRow(
-          icon: Icons.phone_outlined,
-          label: 'Hotline',
-          value: '1900-XXXX',
-          hint: 'Hoạt động 24/7',
-        ),
-        SizedBox(height: 10),
         _ContactRow(
           icon: Icons.chat_bubble_outline,
           label: 'Zalo',

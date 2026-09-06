@@ -91,9 +91,16 @@ class _EditorState extends ConsumerState<_Editor> {
     try {
       final res = await ref.read(kycoApiProvider).setWeeklyAvailability(_weekly, force: force);
       if (!mounted) return;
-      if (!res.saved && res.conflicts.isNotEmpty) {
-        final ok = await _confirmConflict(res.conflicts);
-        if (ok == true) { await _saveWeekly(force: true); }
+      if (!res.saved) {
+        // Conflicts → offer the force-overwrite confirm; otherwise the server
+        // declined for another reason and this is NOT a success — never snack
+        // "Đã lưu" on a saved:false response.
+        if (res.conflicts.isNotEmpty) {
+          final ok = await _confirmConflict(res.conflicts);
+          if (ok == true) { await _saveWeekly(force: true); }
+          return;
+        }
+        _snack(s.saveFailed, error: true);
         return;
       }
       _snack(s.saved);
@@ -112,9 +119,13 @@ class _EditorState extends ConsumerState<_Editor> {
     try {
       final res = await ref.read(kycoApiProvider).setDateAvailability(date, slots, force: force);
       if (!mounted) return;
-      if (!res.saved && res.conflicts.isNotEmpty) {
-        final ok = await _confirmConflict(res.conflicts);
-        if (ok == true) { await _saveDate(date, slots, force: true); }
+      if (!res.saved) {
+        if (res.conflicts.isNotEmpty) {
+          final ok = await _confirmConflict(res.conflicts);
+          if (ok == true) { await _saveDate(date, slots, force: true); }
+          return;
+        }
+        _snack(s.saveFailed, error: true);
         return;
       }
       setState(() {

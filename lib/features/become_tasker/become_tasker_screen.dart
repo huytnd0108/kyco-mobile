@@ -18,9 +18,13 @@ import '../../core/widgets.dart';
 /// SUBMIT: the web signup is a Next.js server action (`submitTaskerSignup`) — it
 /// is NOT exposed as an `/api/v1` route, so there is no mobile submit endpoint to
 /// call, and the frozen [KycoApiProvider.kycUpload] is Bearer-only (a guest has
-/// no token). The wizard therefore captures + best-effort uploads the KYC docs
-/// then shows the same "pending admin approval" completion the web ends on. See
-/// the unit report's "missing onboarding submit route".
+/// no token). For a guest (the primary audience of this PUBLIC route) NOTHING is
+/// persisted — the upload 401s — so the terminal state must NOT claim receipt.
+/// The wizard captures the fields, attempts the upload, and branches on the REAL
+/// result: an honest "documents submitted" only when the upload actually
+/// succeeded (a signed-in re-applicant with a real token), otherwise an honest
+/// "coming soon — finish on the web" state. See the unit report's "missing
+/// onboarding submit route".
 ///
 /// NOTE: copy is inlined (VN-first) — the `partner.form.*` strings are NOT in the
 /// mobile ARB (l10n is out of this unit's scope). See report's "missing ARB".
@@ -60,6 +64,10 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
   bool _submitting = false;
   String? _error;
   bool _done = false;
+  // True ONLY when kycUpload actually persisted the docs (a signed-in
+  // re-applicant with a real token). A guest upload 401s → stays false, and the
+  // terminal state then honestly says registration isn't live yet.
+  bool _uploaded = false;
 
   @override
   void dispose() {
@@ -169,18 +177,24 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
             bytes: await _files[kind]!.readAsBytes(),
           ),
       ];
-      // Best-effort: kycUpload is Bearer-only and there is no public /api/v1
-      // tasker-signup route yet, so a guest upload cannot persist a signup.
-      // Attempt it anyway (a signed-in re-applicant succeeds) and always land on
-      // the pending-approval completion — the honest end-state until the backend
-      // exposes a public signup+KYC submit endpoint.
+      // kycUpload is Bearer-only and there is no public /api/v1 tasker-signup
+      // route yet, so a guest upload cannot persist a signup (it 401s). Attempt
+      // it and branch on the ACTUAL result: a signed-in re-applicant with a real
+      // token persists their docs (honest "submitted"); a guest does not, so the
+      // terminal state must NOT claim receipt — see [_DoneView].
+      var uploaded = false;
       try {
         await ref.read(kycoApiProvider).kycUpload(uploads);
+        uploaded = true;
       } catch (_) {
-        // Swallowed by design — see comment above; no submit route to report to.
+        // Guest/401 or a transient failure — nothing was stored.
+        uploaded = false;
       }
       if (!mounted) return;
-      setState(() => _done = true);
+      setState(() {
+        _uploaded = uploaded;
+        _done = true;
+      });
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Không đọc được ảnh. Vui lòng chụp lại.');
@@ -196,7 +210,7 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l.becomePartner)),
       body: _done
-          ? const _DoneView()
+          ? _DoneView(uploaded: _uploaded)
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
               children: [
@@ -323,7 +337,13 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
 // ── completion ─────────────────────────────────────────────────────────────
 
 class _DoneView extends StatelessWidget {
-  const _DoneView();
+  const _DoneView({required this.uploaded});
+
+  /// Whether the KYC upload actually persisted (a signed-in re-applicant with a
+  /// real Bearer token). For a guest the upload 401s and NOTHING is stored, so
+  /// we must not claim receipt — see [_BecomeTaskerScreenState._submit].
+  final bool uploaded;
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -332,33 +352,66 @@ class _DoneView extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 32,
-              backgroundColor: cs.primary,
-              foregroundColor: cs.onPrimary,
-              child: const Icon(Icons.check, size: 34),
-            ),
-            const SizedBox(height: 16),
-            Text('Đã nhận hồ sơ của bạn!',
-                style: Theme.of(context).textTheme.titleLarge,
-                textAlign: TextAlign.center),
-            const SizedBox(height: 8),
-            Text(
-              'Đội ngũ Kyco sẽ xét duyệt trong vòng 24 giờ và liên hệ với bạn qua số điện thoại đã đăng ký.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: cs.onSurfaceVariant),
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: () => context.go('/'),
-              child: const Text('Về trang chủ'),
-            ),
-          ],
+          children: uploaded ? _submitted(context, cs) : _notLive(context, cs),
         ),
       ),
     );
   }
+
+  // Honest success — reached ONLY when kycUpload actually succeeded (real token).
+  List<Widget> _submitted(BuildContext context, ColorScheme cs) => [
+        CircleAvatar(
+          radius: 32,
+          backgroundColor: cs.primary,
+          foregroundColor: cs.onPrimary,
+          child: const Icon(Icons.check, size: 34),
+        ),
+        const SizedBox(height: 16),
+        Text('Đã gửi hồ sơ • Documents submitted',
+            style: Theme.of(context).textTheme.titleLarge,
+            textAlign: TextAlign.center),
+        const SizedBox(height: 8),
+        Text(
+          'Kyco đã nhận giấy tờ của bạn và sẽ liên hệ để hoàn tất đăng ký. '
+          'We have received your documents and will contact you to finish signing up.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: cs.onSurfaceVariant),
+        ),
+        const SizedBox(height: 24),
+        FilledButton(
+          onPressed: () => context.go('/'),
+          child: const Text('Về trang chủ • Home'),
+        ),
+      ];
+
+  // Honest not-live state — the guest path, where nothing was persisted. It must
+  // NOT promise receipt or a 24h callback the backend cannot deliver.
+  List<Widget> _notLive(BuildContext context, ColorScheme cs) => [
+        CircleAvatar(
+          radius: 32,
+          backgroundColor: cs.secondaryContainer,
+          foregroundColor: cs.onSecondaryContainer,
+          child: const Icon(Icons.hourglass_top, size: 34),
+        ),
+        const SizedBox(height: 16),
+        Text('Sắp ra mắt trên ứng dụng • Coming soon in the app',
+            style: Theme.of(context).textTheme.titleLarge,
+            textAlign: TextAlign.center),
+        const SizedBox(height: 8),
+        Text(
+          'Đăng ký cộng tác viên chưa mở trên ứng dụng, nên hồ sơ chưa được gửi đi. '
+          'Vui lòng hoàn tất đăng ký tại kyco.vn hoặc email tasker@kyco.vn.\n'
+          'Partner registration isn’t live in the app yet, so your details were '
+          'not submitted. Please finish signing up at kyco.vn or email tasker@kyco.vn.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: cs.onSurfaceVariant),
+        ),
+        const SizedBox(height: 24),
+        FilledButton(
+          onPressed: () => context.go('/'),
+          child: const Text('Về trang chủ • Home'),
+        ),
+      ];
 }
 
 // ── small UI helpers ─────────────────────────────────────────────────────────

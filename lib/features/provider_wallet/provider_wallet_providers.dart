@@ -87,7 +87,11 @@ class WalletTxnsController extends AutoDisposeAsyncNotifier<WalletTxnsData> {
     state = AsyncData(cur.copyWith(loadingMore: true));
     try {
       final page = await _api.walletTxns(cursor: cur.nextCursor);
-      state = AsyncData(cur.copyWith(
+      // Rebuild explicitly (not copyWith) so a null `nextCursor` on the last
+      // page is actually stored — copyWith's `?? this.nextCursor` would keep
+      // the stale cursor. `hasMore` already rides along, but this makes the
+      // exhausted state self-consistent and un-paginatable on its own.
+      state = AsyncData(WalletTxnsData(
         items: [...cur.items, ...page.items],
         nextCursor: page.nextCursor,
         hasMore: page.hasMore,
@@ -155,7 +159,9 @@ class PayoutsController extends AutoDisposeAsyncNotifier<PayoutsData> {
     state = AsyncData(cur.copyWith(loadingMore: true));
     try {
       final page = await _api.payouts(cursor: cur.nextCursor);
-      state = AsyncData(cur.copyWith(
+      // Rebuild explicitly (not copyWith) so a null `nextCursor` on the last
+      // page is stored rather than silently keeping the stale cursor.
+      state = AsyncData(PayoutsData(
         items: [...cur.items, ...page.items],
         nextCursor: page.nextCursor,
         hasMore: page.hasMore,

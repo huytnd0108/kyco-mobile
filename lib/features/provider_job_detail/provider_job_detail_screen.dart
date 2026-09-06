@@ -91,7 +91,7 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
               onCapture: (slot) => _capturePhoto(id, slot),
               onFaceVerify: () => _faceVerify(id),
               onComplete: () => _complete(id, d),
-              onCashReceived: () => _cashReceived(d),
+              onCashReceived: () => _cashReceived(id, d),
               onComplaint: () => _complaint(id),
               onSos: () => _sos(id),
               onSendMessage: (body) => _sendMessage(id, body),
@@ -201,6 +201,7 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
     final generic = AppLocalizations.of(context).genericError;
     // Prove location access up front so "en route" reflects a real permission.
     final gps = await const LocationService().currentPosition();
+    if (!mounted) return; // GPS can take 10-30s; the screen may be gone.
     if (!gps.isOk) {
       _snack(_gpsFailureMessage(en, gps.failure!));
       return;
@@ -225,6 +226,7 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
     final en = isEnglish(context);
     final generic = AppLocalizations.of(context).genericError;
     final gps = await const LocationService().currentPosition();
+    if (!mounted) return; // GPS can take 10-30s; the screen may be gone.
     if (!gps.isOk) {
       _snack(_gpsFailureMessage(en, gps.failure!));
       return;
@@ -249,6 +251,7 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
     final en = isEnglish(context);
     final generic = AppLocalizations.of(context).genericError;
     final gps = await const LocationService().currentPosition();
+    if (!mounted) return; // GPS can take 10-30s; the screen may be gone.
     if (!gps.isOk) {
       _snack(_gpsFailureMessage(en, gps.failure!));
       return;
@@ -315,7 +318,7 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
     }
   }
 
-  Future<void> _cashReceived(ProviderJobDetail d) async {
+  Future<void> _cashReceived(int id, ProviderJobDetail d) async {
     final bookingId = d.bookingId;
     if (bookingId == null) return;
     final ok = await _confirmDialog(
@@ -328,7 +331,9 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
     if (ok != true) return;
     // Money is server-derived: cashReceived charges the 20% commission and
     // returns the computed figures — we DISPLAY them, never compute.
-    final resp = await _runMap('cash', d.jobId ?? bookingId, (api) => api.cashReceived(bookingId));
+    // Invalidate the SAME family key the screen watches (the route id) so the
+    // post-cash refresh hits this instance, not a stale jobId-keyed one.
+    final resp = await _runMap('cash', id, (api) => api.cashReceived(bookingId));
     if (resp != null && mounted) _showCashOutcome(resp);
   }
 

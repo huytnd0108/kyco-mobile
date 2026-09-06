@@ -314,7 +314,7 @@ class _LifecycleActionsCard extends StatelessWidget {
       case JobPhase.settled:
         children.add(_settled(context));
       case JobPhase.closed:
-        children.add(_info(context, tr(context, vi: '✅ Đã check-out. Đơn đã chuyển cho khách xác nhận & thanh toán.', en: '✅ Checked out. Sent to the customer for confirmation & payment.')));
+        children.add(_info(context, tr(context, vi: '🔒 Công việc đã đóng. Không còn hành động nào.', en: '🔒 This job is closed. No further actions.')));
       case JobPhase.cancelled:
         children.add(_info(context, tr(context, vi: 'Công việc đã huỷ.', en: 'This job was cancelled.')));
       case JobPhase.unknown:
@@ -523,30 +523,24 @@ class _LiveShareCard extends StatelessWidget {
   }
 }
 
-/// A local sharing toggle. Turning it on proves location permission via a real
-/// GPS read; there is no fabricated position and no fake ping loop.
-class _LiveShareToggle extends StatefulWidget {
+/// Live-location sharing has no backend endpoint wired yet, so this is an honest
+/// "coming soon" stub: the control is disabled and it never claims to be sharing.
+class _LiveShareToggle extends StatelessWidget {
   const _LiveShareToggle();
-  @override
-  State<_LiveShareToggle> createState() => _LiveShareToggleState();
-}
-
-class _LiveShareToggleState extends State<_LiveShareToggle> {
-  bool _sharing = false;
 
   @override
   Widget build(BuildContext context) {
     return SwitchListTile(
       contentPadding: EdgeInsets.zero,
-      value: _sharing,
-      title: Text(tr(context, vi: 'Chia sẻ vị trí trực tiếp', en: 'Share my live location')),
+      value: false,
+      onChanged: null,
+      title: Text(tr(context, vi: 'Chia sẻ vị trí trực tiếp — sắp ra mắt', en: 'Share my live location — coming soon')),
       subtitle: Text(
-        _sharing
-            ? tr(context, vi: 'Đang chia sẻ vị trí với khách.', en: 'Sharing your location with the customer.')
-            : tr(context, vi: 'Tắt — khách không thấy vị trí của bạn.', en: 'Off — the customer cannot see your location.'),
+        tr(context,
+            vi: 'Tính năng đang được phát triển. Khách chưa thể xem vị trí của bạn.',
+            en: 'This feature is in development. The customer cannot see your location yet.'),
         style: const TextStyle(fontSize: 12),
       ),
-      onChanged: (v) => setState(() => _sharing = v),
     );
   }
 }
