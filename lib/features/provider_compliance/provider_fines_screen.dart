@@ -57,7 +57,7 @@ class _FinesBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    // TODO-i18n: fines summary tile labels (no ARB key) — server-side enums.
+    final l = AppLocalizations.of(context);
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
@@ -65,7 +65,7 @@ class _FinesBody extends StatelessWidget {
           children: [
             Expanded(
               child: _SummaryTile(
-                label: 'Đang chờ',
+                label: l.provFinesPending,
                 vnd: view.totalPendingVnd,
                 tone: _FineTone.pending.color(cs),
               ),
@@ -73,7 +73,7 @@ class _FinesBody extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: _SummaryTile(
-                label: 'Đã trừ',
+                label: l.provFinesDeducted,
                 vnd: view.totalChargedVnd,
                 tone: _FineTone.charged.color(cs),
               ),
@@ -81,7 +81,7 @@ class _FinesBody extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: _SummaryTile(
-                label: 'Hoàn lại',
+                label: l.provFinesRefunded,
                 vnd: view.totalRefundedVnd,
                 tone: _FineTone.refunded.color(cs),
               ),
@@ -89,13 +89,11 @@ class _FinesBody extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        // TODO-i18n: "Lịch sử phạt" history header (no ARB key).
-        SectionHeader('Lịch sử phạt'),
+        SectionHeader(l.provFinesHistory),
         if (view.rows.isEmpty)
           Padding(
             padding: const EdgeInsets.all(8),
-            // TODO-i18n: fines empty copy (no ARB key) — reuse noResults.
-            child: EmptyState(message: AppLocalizations.of(context).noResults),
+            child: EmptyState(message: l.noResults),
           )
         else
           for (final f in view.rows) _FineRow(f),
@@ -172,6 +170,7 @@ class _FineRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     final tone = _FineTone.of(fine.status);
     final canAppeal = fine.status != 'refunded';
 
@@ -226,8 +225,7 @@ class _FineRow extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // TODO-i18n: "Khiếu nại" appeal affordance (no ARB key).
-                        Text('Khiếu nại',
+                        Text(l.provFineAppealAction,
                             style: TextStyle(
                                 color: cs.primary,
                                 fontSize: 12,

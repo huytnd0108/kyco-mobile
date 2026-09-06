@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/api/kyco_api.dart';
 import '../../core/di.dart';
@@ -177,24 +178,24 @@ class PayoutsController extends AutoDisposeAsyncNotifier<PayoutsData> {
 
 /// Human label for a wallet-transaction `reason`, mirroring the web's
 /// REASON_LABELS. Falls back to the raw reason so an unknown kind still shows.
-String walletReasonLabel(String? reason) => switch (reason) {
-      'provider_earning' || 'cleaner_pay' => 'Thu nhập công việc',
-      'tip' => 'Tiền tip',
-      'bonus' => 'Thưởng',
-      'payout' => 'Rút tiền',
-      'commission_due' => 'Hoa hồng',
-      'clawback' => 'Thu hồi',
-      'adjustment' => 'Điều chỉnh',
-      _ => (reason == null || reason.isEmpty) ? 'Giao dịch' : reason,
+String walletReasonLabel(AppLocalizations l, String? reason) => switch (reason) {
+      'provider_earning' || 'cleaner_pay' => l.provWalletReasonEarning,
+      'tip' => l.provWalletReasonTip,
+      'bonus' => l.provWalletReasonBonus,
+      'payout' => l.provWalletReasonPayout,
+      'commission_due' => l.provWalletReasonCommission,
+      'clawback' => l.provWalletReasonClawback,
+      'adjustment' => l.provWalletReasonAdjustment,
+      _ => (reason == null || reason.isEmpty) ? l.provWalletReasonDefault : reason,
     };
 
 /// Vietnamese label + a semantic tone key for a payout status (mirrors the
 /// web's PAYOUT_STATUS_LABEL). Tone is resolved to colours by the screen.
-({String label, String tone}) payoutStatusLabel(String? status) => switch (status) {
-      'released' => (label: 'Đã giải ngân', tone: 'success'),
-      'withdrawn' => (label: 'Đã rút', tone: 'info'),
-      'reversed' => (label: 'Đã hoàn', tone: 'error'),
-      _ => (label: 'Đang giữ', tone: 'warning'),
+({String label, String tone}) payoutStatusLabel(AppLocalizations l, String? status) => switch (status) {
+      'released' => (label: l.provWalletPayoutReleased, tone: 'success'),
+      'withdrawn' => (label: l.provWalletPayoutWithdrawn, tone: 'info'),
+      'reversed' => (label: l.provWalletPayoutReversed, tone: 'error'),
+      _ => (label: l.provWalletPayoutHeld, tone: 'warning'),
     };
 
 /// Localized date-time for a raw ISO-8601 timestamp; falls back to the raw

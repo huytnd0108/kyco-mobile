@@ -36,7 +36,7 @@ Future<String?> exportWalletCsv(BuildContext context, WidgetRef ref) async {
     );
     return null;
   } on ApiException catch (e) {
-    return e.isMaintenance ? 'Tính năng xuất CSV sắp ra mắt.' : e.message;
+    return e.isMaintenance ? l.provWalletExportMaintenance : e.message;
   } catch (_) {
     return l.genericError;
   }

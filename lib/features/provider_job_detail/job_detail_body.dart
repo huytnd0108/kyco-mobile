@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/format.dart';
 import '../../core/models.dart';
@@ -91,7 +92,7 @@ class JobDetailBody extends StatelessWidget {
           child: TextButton.icon(
             onPressed: _anyBusy ? null : onComplaint,
             icon: const Icon(Icons.report_gmailerrorred_outlined, size: 18),
-            label: Text(tr(context, vi: 'Gửi khiếu nại về đơn này', en: 'Report a problem with this job')),
+            label: Text(AppLocalizations.of(context).provJdReportProblem),
           ),
         ),
       ],
@@ -111,18 +112,19 @@ class _PhaseBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     final (label, icon, tone) = switch (phase) {
-      JobPhase.pending => (tr(context, vi: 'Chờ bạn xác nhận', en: 'Awaiting your confirmation'), Icons.hourglass_top, cs.tertiary),
-      JobPhase.enRoute => (tr(context, vi: 'Chuẩn bị di chuyển', en: 'Ready to head out'), Icons.directions_car, cs.primary),
-      JobPhase.onSite => (tr(context, vi: 'Đang làm việc tại địa điểm', en: 'On site — in service'), Icons.cleaning_services, cs.primary),
-      JobPhase.wrapUp => (tr(context, vi: 'Hoàn tất & báo xong', en: 'Wrap up & mark complete'), Icons.task_alt, cs.primary),
-      JobPhase.awaitingCustomer => (tr(context, vi: 'Chờ khách xác nhận (tự động sau 2h)', en: 'Awaiting customer confirmation (auto in 2h)'), Icons.schedule, cs.tertiary),
-      JobPhase.awaitingCash => (tr(context, vi: 'Chờ xác nhận tiền mặt', en: 'Awaiting cash confirmation'), Icons.payments, cs.tertiary),
-      JobPhase.awaitingPayment => (tr(context, vi: 'Khách đang thanh toán', en: 'Customer is paying'), Icons.account_balance, cs.tertiary),
-      JobPhase.settled => (tr(context, vi: 'Đã tất toán', en: 'Settled'), Icons.verified, Colors.green),
-      JobPhase.closed => (tr(context, vi: 'Đã đóng', en: 'Closed'), Icons.lock_outline, cs.onSurfaceVariant),
-      JobPhase.cancelled => (tr(context, vi: 'Đã huỷ', en: 'Cancelled'), Icons.cancel_outlined, cs.error),
-      JobPhase.unknown => (tr(context, vi: 'Trạng thái công việc', en: 'Job status'), Icons.info_outline, cs.onSurfaceVariant),
+      JobPhase.pending => (l.provJdPhasePending, Icons.hourglass_top, cs.tertiary),
+      JobPhase.enRoute => (l.provJdPhaseEnRoute, Icons.directions_car, cs.primary),
+      JobPhase.onSite => (l.provJdPhaseOnSite, Icons.cleaning_services, cs.primary),
+      JobPhase.wrapUp => (l.provJdPhaseWrapUp, Icons.task_alt, cs.primary),
+      JobPhase.awaitingCustomer => (l.provJdPhaseAwaitingCustomer, Icons.schedule, cs.tertiary),
+      JobPhase.awaitingCash => (l.provJdPhaseAwaitingCash, Icons.payments, cs.tertiary),
+      JobPhase.awaitingPayment => (l.provJdPhaseAwaitingPayment, Icons.account_balance, cs.tertiary),
+      JobPhase.settled => (l.provJdPhaseSettled, Icons.verified, Colors.green),
+      JobPhase.closed => (l.provJdPhaseClosed, Icons.lock_outline, cs.onSurfaceVariant),
+      JobPhase.cancelled => (l.provJdPhaseCancelled, Icons.cancel_outlined, cs.error),
+      JobPhase.unknown => (l.provJdPhaseUnknown, Icons.info_outline, cs.onSurfaceVariant),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -158,19 +160,20 @@ class _OrderInfoCard extends StatelessWidget {
         .where((s) => s.isNotEmpty)
         .join(', ');
     final duration = svc['durationMinutes'];
+    final l = AppLocalizations.of(context);
     return _Card(
-      title: tr(context, vi: 'Thông tin đơn', en: 'Order info'),
+      title: l.provJdOrderInfo,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _kv(context, tr(context, vi: 'Khách hàng', en: 'Customer'), _s(cust['name']).isEmpty ? '—' : _s(cust['name'])),
-          _kv(context, 'Email', _s(cust['email']).isEmpty ? '—' : _s(cust['email'])),
-          _kv(context, tr(context, vi: 'Thời gian', en: 'Time'), fmtJobTime(_s(b['scheduledAt']).isEmpty ? null : _s(b['scheduledAt']))),
-          _kv(context, tr(context, vi: 'Thời lượng', en: 'Duration'),
-              duration == null ? '—' : tr(context, vi: '$duration phút', en: '$duration min')),
-          _kv(context, tr(context, vi: 'Địa chỉ', en: 'Address'), where.isEmpty ? '—' : where),
+          _kv(context, l.provJdCustomer, _s(cust['name']).isEmpty ? '—' : _s(cust['name'])),
+          _kv(context, l.email, _s(cust['email']).isEmpty ? '—' : _s(cust['email'])),
+          _kv(context, l.provJdTime, fmtJobTime(_s(b['scheduledAt']).isEmpty ? null : _s(b['scheduledAt']))),
+          _kv(context, l.provJdDuration,
+              duration == null ? '—' : l.minutesShort((duration as num).toInt())),
+          _kv(context, l.provJdAddress, where.isEmpty ? '—' : where),
           if (_s(b['notes']).isNotEmpty)
-            _kv(context, tr(context, vi: 'Ghi chú', en: 'Notes'), _s(b['notes'])),
+            _kv(context, l.notesLabel, _s(b['notes'])),
         ],
       ),
     );
@@ -203,9 +206,10 @@ class _PaymentCard extends StatelessWidget {
     final b = detail.booking ?? const {};
     final total = detail.totalVnd;
     final earnings = detail.job['earningsVnd'];
+    final l = AppLocalizations.of(context);
     final method = _payLabel(context, _s(b['paymentMethod']));
     return _Card(
-      title: tr(context, vi: 'Thanh toán', en: 'Payment'),
+      title: l.provJdPayment,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -218,16 +222,14 @@ class _PaymentCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(tr(context, vi: 'Thu nhập của bạn', en: 'Your earnings')),
+                Text(l.provJdYourEarnings),
                 Text(formatVnd(earnings.toInt()), style: const TextStyle(fontWeight: FontWeight.w700)),
               ],
             ),
           ],
           const SizedBox(height: 4),
           Text(
-            tr(context,
-                vi: 'Số tiền do Kyco tính và hiển thị — ứng dụng không tự tính.',
-                en: 'Amounts are computed and shown by Kyco — the app never calculates them.'),
+            l.provJdAmountsComputed,
             style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, fontStyle: FontStyle.italic),
           ),
         ],
@@ -236,11 +238,11 @@ class _PaymentCard extends StatelessWidget {
   }
 
   String _payLabel(BuildContext context, String m) => switch (m) {
-        'cash' => tr(context, vi: 'Tiền mặt', en: 'Cash'),
+        'cash' => AppLocalizations.of(context).provJdPayCash,
         'vnpay' => 'VNPay',
         'momo' => 'MoMo',
         'zalopay' => 'ZaloPay',
-        'bank_transfer' => tr(context, vi: 'Chuyển khoản', en: 'Bank transfer'),
+        'bank_transfer' => AppLocalizations.of(context).provJdPayBankTransfer,
         '' => '—',
         _ => m,
       };
@@ -276,53 +278,48 @@ class _LifecycleActionsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final children = <Widget>[];
 
     switch (phase) {
       case JobPhase.pending:
-        children.add(_action(context, 'confirm', tr(context, vi: 'Xác nhận & nhận việc', en: 'Confirm & accept'), Icons.check, onConfirm, primary: true));
-        children.add(_action(context, 'decline', tr(context, vi: 'Từ chối', en: 'Decline'), Icons.close, onDecline, outlined: true));
-        children.add(_action(context, 'cancel', tr(context, vi: 'Huỷ công việc', en: 'Cancel job'), Icons.cancel_outlined, onCancel, danger: true));
+        children.add(_action(context, 'confirm', l.provJdConfirmAccept, Icons.check, onConfirm, primary: true));
+        children.add(_action(context, 'decline', l.provJdDecline, Icons.close, onDecline, outlined: true));
+        children.add(_action(context, 'cancel', l.provJdCancelTitle, Icons.cancel_outlined, onCancel, danger: true));
       case JobPhase.enRoute:
-        children.add(_action(context, 'start', tr(context, vi: 'Bắt đầu di chuyển (dùng GPS)', en: 'Start heading out (GPS)'), Icons.directions_car, onStartTracking, primary: true));
-        children.add(_action(context, 'checkin', tr(context, vi: 'Check-in tại địa điểm (GPS)', en: 'Check in on site (GPS)'), Icons.my_location, onCheckIn, primary: true));
-        children.add(_action(context, 'cancel', tr(context, vi: 'Huỷ công việc', en: 'Cancel job'), Icons.cancel_outlined, onCancel, danger: true));
+        children.add(_action(context, 'start', l.provJdStartTracking, Icons.directions_car, onStartTracking, primary: true));
+        children.add(_action(context, 'checkin', l.provJdCheckIn, Icons.my_location, onCheckIn, primary: true));
+        children.add(_action(context, 'cancel', l.provJdCancelTitle, Icons.cancel_outlined, onCancel, danger: true));
       case JobPhase.onSite:
         if (!counts.meetsCheckout) {
-          children.add(_note(context,
-              tr(context,
-                  vi: 'Cần ≥ $kBeforePhotosRequired ảnh "trước ca" mới được check-out (hiện ${counts.before}/$kBeforePhotosRequired). Chụp ở khung ảnh bên dưới.',
-                  en: 'Need ≥ $kBeforePhotosRequired "before" photos to check out (have ${counts.before}/$kBeforePhotosRequired). Capture in the photo box below.')));
+          children.add(_note(context, l.provJdBeforePhotoGate(kBeforePhotosRequired, counts.before)));
         }
-        children.add(_action(context, 'face', tr(context, vi: 'Xác minh khuôn mặt', en: 'Face verify'), Icons.face_retouching_natural, onFaceVerify, outlined: true));
-        children.add(_action(context, 'checkout', tr(context, vi: 'Check-out (GPS)', en: 'Check out (GPS)'), Icons.logout, onCheckOut, primary: true));
+        children.add(_action(context, 'face', l.provJdFaceVerify, Icons.face_retouching_natural, onFaceVerify, outlined: true));
+        children.add(_action(context, 'checkout', l.provJdCheckOut, Icons.logout, onCheckOut, primary: true));
       case JobPhase.wrapUp:
         children.add(_progress(context));
-        children.add(_action(context, 'complete', tr(context, vi: 'Báo hoàn thành', en: 'Mark complete'), Icons.task_alt, onComplete, primary: true));
+        children.add(_action(context, 'complete', l.provJdMarkComplete, Icons.task_alt, onComplete, primary: true));
       case JobPhase.awaitingCash:
         if (_s(detail.booking?['paymentMethod']) == 'cash') {
-          children.add(_action(context, 'cash', tr(context, vi: '✅ Đã nhận tiền mặt từ khách', en: '✅ Cash received from customer'), Icons.payments, onCashReceived, primary: true));
-          children.add(_warn(context,
-              tr(context,
-                  vi: 'Kyco sẽ thu hoa hồng 20% cho đơn tiền mặt này (số tiền do hệ thống tính).',
-                  en: 'Kyco charges a 20% commission on this cash order (system-computed).')));
+          children.add(_action(context, 'cash', l.provJdCashReceivedAction, Icons.payments, onCashReceived, primary: true));
+          children.add(_warn(context, l.provJdCashCommissionNote));
         }
       case JobPhase.awaitingCustomer:
-        children.add(_info(context, tr(context, vi: '⏳ Chờ khách xác nhận hoàn thành (tự động sau 2h).', en: '⏳ Awaiting customer confirmation (auto-confirms in 2h).')));
+        children.add(_info(context, l.provJdAwaitingCustomerInfo));
       case JobPhase.awaitingPayment:
-        children.add(_info(context, tr(context, vi: '⏳ Khách đang thanh toán — Kyco sẽ chuyển 80% khi xác nhận.', en: '⏳ Customer is paying — Kyco transfers 80% on confirmation.')));
+        children.add(_info(context, l.provJdAwaitingPaymentInfo));
       case JobPhase.settled:
         children.add(_settled(context));
       case JobPhase.closed:
-        children.add(_info(context, tr(context, vi: '🔒 Công việc đã đóng. Không còn hành động nào.', en: '🔒 This job is closed. No further actions.')));
+        children.add(_info(context, l.provJdClosedInfo));
       case JobPhase.cancelled:
-        children.add(_info(context, tr(context, vi: 'Công việc đã huỷ.', en: 'This job was cancelled.')));
+        children.add(_info(context, l.provJdCancelledInfo));
       case JobPhase.unknown:
-        children.add(_info(context, tr(context, vi: 'Không có hành động khả dụng.', en: 'No actions available.')));
+        children.add(_info(context, l.provJdNoActions));
     }
 
     return _Card(
-      title: tr(context, vi: 'Vòng đời công việc', en: 'Job lifecycle'),
+      title: l.provJdLifecycle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -359,6 +356,7 @@ class _LifecycleActionsCard extends StatelessWidget {
   }
 
   Widget _progress(BuildContext context) {
+    final l = AppLocalizations.of(context);
     Widget row(String label, int have, int need) => Row(
           children: [
             Icon(have >= need ? Icons.check_circle : Icons.radio_button_unchecked,
@@ -376,12 +374,12 @@ class _LifecycleActionsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(tr(context, vi: 'Ảnh cần để hoàn thành (${counts.total}/$kPhotosTotalRequired)', en: 'Photos required to complete (${counts.total}/$kPhotosTotalRequired)'),
+          Text(l.provJdPhotosRequired(counts.total, kPhotosTotalRequired),
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
-          row(tr(context, vi: 'Trước ca', en: 'Before'), counts.before, kBeforePhotosRequired),
-          row(tr(context, vi: 'Giữa ca', en: 'Mid'), counts.mid, kMidPhotosRequired),
-          row(tr(context, vi: 'Sau ca', en: 'After'), counts.after, kAfterPhotosRequired),
+          row(l.provJdBefore, counts.before, kBeforePhotosRequired),
+          row(l.provJdMid, counts.mid, kMidPhotosRequired),
+          row(l.provJdAfter, counts.after, kAfterPhotosRequired),
         ],
       ),
     );
@@ -402,9 +400,7 @@ class _LifecycleActionsCard extends StatelessWidget {
           border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
         ),
         child: Text(
-          tr(context,
-              vi: '✅ Kyco đã thanh toán cho bạn 80% giá trị đơn hàng, cảm ơn bạn đã đồng hành!',
-              en: '✅ Kyco has paid you 80% of the booking total. Thank you for working with us!'),
+          AppLocalizations.of(context).provJdSettledThanks,
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
       );
@@ -434,15 +430,16 @@ class _PhotosCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return _Card(
-      title: tr(context, vi: 'Ảnh công việc (camera)', en: 'Job photos (camera)'),
+      title: l.provJdJobPhotos,
       child: Column(
         children: [
-          _slot(context, PhotoSlot.before, tr(context, vi: 'Trước ca', en: 'Before'), counts.before, kBeforePhotosRequired),
+          _slot(context, PhotoSlot.before, l.provJdBefore, counts.before, kBeforePhotosRequired),
           const SizedBox(height: 8),
-          _slot(context, PhotoSlot.mid, tr(context, vi: 'Giữa ca', en: 'Mid'), counts.mid, kMidPhotosRequired),
+          _slot(context, PhotoSlot.mid, l.provJdMid, counts.mid, kMidPhotosRequired),
           const SizedBox(height: 8),
-          _slot(context, PhotoSlot.after, tr(context, vi: 'Sau ca', en: 'After'), counts.after, kAfterPhotosRequired),
+          _slot(context, PhotoSlot.after, l.provJdAfter, counts.after, kAfterPhotosRequired),
         ],
       ),
     );
@@ -463,7 +460,7 @@ class _PhotosCard extends StatelessWidget {
           icon: busyHere
               ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.add_a_photo_outlined, size: 16),
-          label: Text(tr(context, vi: 'Chụp', en: 'Capture')),
+          label: Text(AppLocalizations.of(context).provJdCapture),
         ),
       ],
     );
@@ -482,7 +479,7 @@ class _SosCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return _Card(
-      title: tr(context, vi: 'An toàn', en: 'Safety'),
+      title: AppLocalizations.of(context).provJdSafety,
       child: SizedBox(
         width: double.infinity,
         child: FilledButton.icon(
@@ -491,7 +488,7 @@ class _SosCard extends StatelessWidget {
           icon: busy == 'sos'
               ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.sos),
-          label: Text(tr(context, vi: 'Gửi SOS khẩn cấp', en: 'Send emergency SOS')),
+          label: Text(AppLocalizations.of(context).provJdSendSos),
         ),
       ),
     );
@@ -509,7 +506,7 @@ class _LiveShareCard extends StatelessWidget {
     final b = detail.booking ?? const {};
     final where = [b['addressLine'], b['ward'], b['district']].map(_s).where((s) => s.isNotEmpty).join(', ');
     return _Card(
-      title: tr(context, vi: '📍 Chia sẻ vị trí với khách', en: '📍 Share location with the customer'),
+      title: AppLocalizations.of(context).provJdShareLocation,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -530,15 +527,14 @@ class _LiveShareToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return SwitchListTile(
       contentPadding: EdgeInsets.zero,
       value: false,
       onChanged: null,
-      title: Text(tr(context, vi: 'Chia sẻ vị trí trực tiếp — sắp ra mắt', en: 'Share my live location — coming soon')),
+      title: Text(l.provJdShareLiveTitle),
       subtitle: Text(
-        tr(context,
-            vi: 'Tính năng đang được phát triển. Khách chưa thể xem vị trí của bạn.',
-            en: 'This feature is in development. The customer cannot see your location yet.'),
+        l.provJdShareLiveBody,
         style: const TextStyle(fontSize: 12),
       ),
     );
@@ -576,16 +572,17 @@ class _ChatCardState extends State<_ChatCard> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     final thread = widget.detail.thread;
     return _Card(
-      title: tr(context, vi: 'Trò chuyện với khách', en: 'Chat with the customer'),
+      title: l.provJdChatTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (thread.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(tr(context, vi: 'Chưa có tin nhắn nào.', en: 'No messages yet.'),
+              child: Text(l.provJdChatEmpty,
                   style: TextStyle(color: cs.onSurfaceVariant)),
             )
           else
@@ -606,7 +603,7 @@ class _ChatCardState extends State<_ChatCard> {
                   minLines: 1,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText: tr(context, vi: 'Nhập tin nhắn…', en: 'Type a message…'),
+                    hintText: l.provJdChatHint,
                     border: const OutlineInputBorder(),
                     isDense: true,
                   ),

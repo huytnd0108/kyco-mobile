@@ -44,8 +44,7 @@ class ProviderFineAppealScreen extends ConsumerWidget {
             data: (view) {
               final fine = view.fine;
               if (fine == null) {
-                // TODO-i18n: "Không tìm thấy khoản phạt" not-found (no ARB key).
-                return EmptyState(message: 'Không tìm thấy khoản phạt', icon: '🔍');
+                return EmptyState(message: l.provAppealNotFound, icon: '🔍');
               }
               return ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -115,14 +114,14 @@ class _ExistingAppeal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // TODO-i18n: "Khiếu nại của bạn" existing-appeal header (no ARB key).
-            Text('Khiếu nại của bạn',
+            Text(l.provAppealYours,
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
@@ -130,8 +129,8 @@ class _ExistingAppeal extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                // TODO-i18n: "Trạng thái" status label (no ARB key).
-                Text('Trạng thái: ', style: TextStyle(color: cs.onSurfaceVariant)),
+                Text(l.provAppealStatusLabel,
+                    style: TextStyle(color: cs.onSurfaceVariant)),
                 // status is a backend enum — shown raw.
                 Text(appeal.status ?? '—',
                     style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -193,8 +192,7 @@ class _AppealFormState extends ConsumerState<_AppealForm> {
       ref.invalidate(fineDetailProvider(widget.fineId));
       ref.invalidate(finesProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        // TODO-i18n: "Đã gửi khiếu nại" success toast (no ARB key).
-        const SnackBar(content: Text('Đã gửi khiếu nại')),
+        SnackBar(content: Text(AppLocalizations.of(context).provAppealSent)),
       );
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -210,12 +208,10 @@ class _AppealFormState extends ConsumerState<_AppealForm> {
   /// Map the two documented rejections; fall back to the server message.
   String _messageFor(ApiException e) {
     if (e.status == 409) {
-      // TODO-i18n: 409 already-appealed copy (no ARB key).
-      return 'Khoản phạt này đã được khiếu nại.';
+      return AppLocalizations.of(context).provAppealAlready;
     }
     if (e.status == 422) {
-      // TODO-i18n: 422 too-short copy (no ARB key).
-      return 'Nội dung khiếu nại phải có ít nhất $_kMinAppealChars ký tự.';
+      return AppLocalizations.of(context).provAppealMinChars(_kMinAppealChars);
     }
     return e.message;
   }
@@ -223,14 +219,14 @@ class _AppealFormState extends ConsumerState<_AppealForm> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // TODO-i18n: "Lý do khiếu nại" form label (no ARB key).
-            Text('Lý do khiếu nại',
+            Text(l.provAppealReasonLabel,
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
@@ -243,10 +239,8 @@ class _AppealFormState extends ConsumerState<_AppealForm> {
               enabled: !_submitting,
               decoration: InputDecoration(
                 border: const OutlineInputBorder(),
-                // TODO-i18n: appeal placeholder (no ARB key).
-                hintText: 'Mô tả vì sao bạn cho rằng khoản phạt này chưa hợp lý…',
-                // TODO-i18n: "{n}/20 ký tự" counter (no ARB key).
-                helperText: '$_len/$_kMinAppealChars ký tự',
+                hintText: l.provAppealPlaceholder,
+                helperText: l.provAppealCounter(_len, _kMinAppealChars),
                 helperStyle: TextStyle(
                     color: _valid ? const Color(0xFF047857) : cs.onSurfaceVariant),
               ),
@@ -266,8 +260,7 @@ class _AppealFormState extends ConsumerState<_AppealForm> {
                         width: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    // TODO-i18n: "Gửi khiếu nại" submit label (no ARB key).
-                    : const Text('Gửi khiếu nại'),
+                    : Text(l.provAppealSubmit),
               ),
             ),
           ],
@@ -282,6 +275,7 @@ class _AppealNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -294,8 +288,7 @@ class _AppealNote extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              // TODO-i18n: appeal-review note (no ARB key).
-              'Đội ngũ Kyco sẽ xem xét khiếu nại của bạn trong thời gian sớm nhất.',
+              l.provAppealReviewNote,
               style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
             ),
           ),

@@ -25,9 +25,6 @@ import '../../core/widgets.dart';
 /// succeeded (a signed-in re-applicant with a real token), otherwise an honest
 /// "coming soon — finish on the web" state. See the unit report's "missing
 /// onboarding submit route".
-///
-/// NOTE: copy is inlined (VN-first) — the `partner.form.*` strings are NOT in the
-/// mobile ARB (l10n is out of this unit's scope). See report's "missing ARB".
 class BecomeTaskerScreen extends ConsumerStatefulWidget {
   const BecomeTaskerScreen({super.key});
   @override
@@ -36,19 +33,25 @@ class BecomeTaskerScreen extends ConsumerStatefulWidget {
 
 enum _Step { phone, verify, profile }
 
-const _cities = <(String, String)>[
-  ('hcm', 'TP. Hồ Chí Minh'),
-  ('hn', 'Hà Nội (sắp khai trương)'),
-  ('dn', 'Đà Nẵng (sắp khai trương)'),
-];
+const _cityValues = <String>['hcm', 'hn', 'dn'];
 
 /// The 3 required KYC doc kinds — must match ALLOWED_DOC_KINDS server-side
 /// (see [KycUploadFile] + the web REQUIRED_KYC).
-const _kycKinds = <(String, String)>[
-  ('cccd_front', 'CCCD mặt trước'),
-  ('cccd_back', 'CCCD mặt sau'),
-  ('selfie', 'Ảnh chân dung'),
-];
+const _kycKindValues = <String>['cccd_front', 'cccd_back', 'selfie'];
+
+/// Localized label for a city value.
+String _cityLabel(AppLocalizations l, String v) => switch (v) {
+      'hn' => l.provTaskerCityHn,
+      'dn' => l.provTaskerCityDn,
+      _ => l.provTaskerCityHcm,
+    };
+
+/// Localized label for a KYC doc kind.
+String _kycKindLabel(AppLocalizations l, String v) => switch (v) {
+      'cccd_back' => l.provTaskerKycBack,
+      'selfie' => l.provTaskerKycSelfie,
+      _ => l.provTaskerKycFront,
+    };
 
 class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
   _Step _step = _Step.phone;
@@ -84,10 +87,11 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
 
   // ── step 1: request OTP ────────────────────────────────────────────────────
   Future<void> _requestOtp() async {
+    final l = AppLocalizations.of(context);
     setState(() => _error = null);
     final phone = _phone.text.trim();
     if (!_phoneRe.hasMatch(phone)) {
-      setState(() => _error = 'Số điện thoại không hợp lệ.');
+      setState(() => _error = l.provOtpInvalidPhone);
       return;
     }
     if (_otpSending) return;
@@ -105,13 +109,13 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
       if (!mounted) return;
       final reason = e.fields?['phone'];
       setState(() => _error = switch (reason) {
-            'rate_limited' => 'Bạn đã yêu cầu quá nhiều lần. Vui lòng thử lại sau.',
-            'invalid_phone' || 'invalid' => 'Số điện thoại không hợp lệ.',
-            _ => 'Không gửi được mã OTP. Vui lòng thử lại.',
+            'rate_limited' => l.provOtpRateLimited,
+            'invalid_phone' || 'invalid' => l.provOtpInvalidPhone,
+            _ => l.provOtpSendFailed,
           });
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Không gửi được mã OTP. Vui lòng thử lại.');
+        setState(() => _error = l.provOtpSendFailed);
       }
     } finally {
       if (mounted) setState(() => _otpSending = false);
@@ -121,7 +125,8 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
   // ── step 2: verify (client format only; server binds OTP at signup) ─────────
   void _continueToProfile() {
     if (!_codeRe.hasMatch(_code.text.trim())) {
-      setState(() => _error = 'Mã OTP gồm 6–8 chữ số.');
+      setState(() =>
+          _error = AppLocalizations.of(context).provTaskerOtpFormat);
       return;
     }
     setState(() {
@@ -132,6 +137,7 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
 
   // ── step 3: camera capture ─────────────────────────────────────────────────
   Future<void> _capture(String kind) async {
+    final l = AppLocalizations.of(context);
     try {
       final x = await ImagePicker().pickImage(
         source: ImageSource.camera,
@@ -145,24 +151,22 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
       // Permission denied / no camera / channel error — all surface here.
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Không mở được camera. Vui lòng cấp quyền camera trong Cài đặt.'),
-        ),
+        SnackBar(content: Text(l.provTaskerCameraDenied)),
       );
     }
   }
 
   // ── submit ─────────────────────────────────────────────────────────────────
   Future<void> _submit() async {
+    final l = AppLocalizations.of(context);
     setState(() => _error = null);
     if (_name.text.trim().isEmpty || _district.text.trim().isEmpty) {
-      setState(() => _error = 'Vui lòng nhập họ tên và quận/huyện.');
+      setState(() => _error = l.provTaskerNameDistrictRequired);
       return;
     }
-    for (final (kind, _) in _kycKinds) {
+    for (final kind in _kycKindValues) {
       if (!_files.containsKey(kind)) {
-        setState(() => _error = 'Vui lòng chụp đủ 3 ảnh giấy tờ.');
+        setState(() => _error = l.provTaskerNeed3Photos);
         return;
       }
     }
@@ -170,7 +174,7 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
     try {
       // Build the multipart payload from the captures.
       final uploads = <KycUploadFile>[
-        for (final (kind, _) in _kycKinds)
+        for (final kind in _kycKindValues)
           KycUploadFile(
             kind: kind,
             filename: _files[kind]!.name,
@@ -197,7 +201,7 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
       });
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Không đọc được ảnh. Vui lòng chụp lại.');
+        setState(() => _error = l.provTaskerPhotoReadFailed);
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -216,23 +220,23 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
               children: [
                 _Stepper(step: _step),
                 const SizedBox(height: 20),
-                if (_step == _Step.phone) _phoneStep(),
-                if (_step == _Step.verify) _verifyStep(),
-                if (_step == _Step.profile) _profileStep(),
+                if (_step == _Step.phone) _phoneStep(l),
+                if (_step == _Step.verify) _verifyStep(l),
+                if (_step == _Step.profile) _profileStep(l),
               ],
             ),
     );
   }
 
   // ── step views ─────────────────────────────────────────────────────────────
-  Widget _phoneStep() => _Card(
-        title: 'Xác minh số điện thoại',
+  Widget _phoneStep(AppLocalizations l) => _Card(
+        title: l.provTaskerVerifyPhoneTitle,
         children: [
           TextField(
             controller: _phone,
             keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Số điện thoại',
+            decoration: InputDecoration(
+              labelText: l.provPhoneLabel,
               hintText: '09xxxxxxxx',
             ),
           ),
@@ -242,62 +246,63 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
           ],
           const SizedBox(height: 16),
           _PrimaryButton(
-            label: _otpSending ? 'Đang gửi…' : 'Gửi mã OTP',
+            label: _otpSending ? l.provTaskerSending : l.provSendOtp,
             busy: _otpSending,
             onPressed: _otpSending ? null : _requestOtp,
           ),
         ],
       );
 
-  Widget _verifyStep() => _Card(
-        title: 'Nhập mã OTP',
+  Widget _verifyStep(AppLocalizations l) => _Card(
+        title: l.provTaskerEnterOtpTitle,
         children: [
-          Text('Mã đã gửi tới ${_phone.text.trim()}',
+          Text(l.provTaskerOtpSentTo(_phone.text.trim()),
               style: Theme.of(context).textTheme.bodySmall),
           TextButton(
             onPressed: () => setState(() => _step = _Step.phone),
-            child: const Text('Đổi số điện thoại'),
+            child: Text(l.provTaskerChangePhone),
           ),
           TextField(
             controller: _code,
             keyboardType: TextInputType.number,
             maxLength: 8,
             textAlign: TextAlign.center,
-            decoration: const InputDecoration(labelText: 'Mã OTP'),
+            decoration: InputDecoration(labelText: l.provOtpLabel),
           ),
           if (_error != null) ...[
             const SizedBox(height: 4),
             ErrorBanner(_error!),
           ],
           const SizedBox(height: 16),
-          _PrimaryButton(label: 'Tiếp tục', onPressed: _continueToProfile),
+          _PrimaryButton(
+              label: l.provTaskerContinue, onPressed: _continueToProfile),
         ],
       );
 
-  Widget _profileStep() => _Card(
-        title: 'Thông tin & giấy tờ',
+  Widget _profileStep(AppLocalizations l) => _Card(
+        title: l.provTaskerProfileTitle,
         children: [
           TextField(
             controller: _name,
-            decoration: const InputDecoration(labelText: 'Họ và tên'),
+            decoration: InputDecoration(labelText: l.provTaskerFullName),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             initialValue: _city,
             isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Thành phố'),
+            decoration: InputDecoration(labelText: l.provTaskerCity),
             items: [
-              for (final (v, label) in _cities)
-                DropdownMenuItem(value: v, child: Text(label)),
+              for (final v in _cityValues)
+                DropdownMenuItem(value: v, child: Text(_cityLabel(l, v))),
             ],
             onChanged: (v) => setState(() => _city = v ?? 'hcm'),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _district,
-            decoration: const InputDecoration(
-              labelText: 'Quận / Huyện',
-              hintText: 'VD: Quận 1',
+            decoration: InputDecoration(
+              labelText: l.provTaskerDistrict,
+              hintText: l.provTaskerDistrictHint,
             ),
           ),
           const SizedBox(height: 12),
@@ -305,17 +310,17 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
             controller: _referral,
             textCapitalization: TextCapitalization.characters,
             maxLength: 8,
-            decoration: const InputDecoration(
-              labelText: 'Mã giới thiệu (tuỳ chọn)',
+            decoration: InputDecoration(
+              labelText: l.provTaskerReferral,
             ),
           ),
           const SizedBox(height: 8),
-          const Text('Chụp ảnh giấy tờ',
-              style: TextStyle(fontWeight: FontWeight.w600)),
+          Text(l.provTaskerCaptureDocsTitle,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
-          for (final (kind, label) in _kycKinds)
+          for (final kind in _kycKindValues)
             _KycTile(
-              label: label,
+              label: _kycKindLabel(l, kind),
               captured: _files.containsKey(kind),
               fileName: _files[kind]?.name,
               onTap: () => _capture(kind),
@@ -326,7 +331,7 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
           ],
           const SizedBox(height: 16),
           _PrimaryButton(
-            label: _submitting ? 'Đang gửi…' : 'Gửi hồ sơ',
+            label: _submitting ? l.provTaskerSending : l.provTaskerSubmit,
             busy: _submitting,
             onPressed: _submitting ? null : _submit,
           ),
@@ -359,59 +364,61 @@ class _DoneView extends StatelessWidget {
   }
 
   // Honest success — reached ONLY when kycUpload actually succeeded (real token).
-  List<Widget> _submitted(BuildContext context, ColorScheme cs) => [
-        CircleAvatar(
-          radius: 32,
-          backgroundColor: cs.primary,
-          foregroundColor: cs.onPrimary,
-          child: const Icon(Icons.check, size: 34),
-        ),
-        const SizedBox(height: 16),
-        Text('Đã gửi hồ sơ • Documents submitted',
-            style: Theme.of(context).textTheme.titleLarge,
-            textAlign: TextAlign.center),
-        const SizedBox(height: 8),
-        Text(
-          'Kyco đã nhận giấy tờ của bạn và sẽ liên hệ để hoàn tất đăng ký. '
-          'We have received your documents and will contact you to finish signing up.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: cs.onSurfaceVariant),
-        ),
-        const SizedBox(height: 24),
-        FilledButton(
-          onPressed: () => context.go('/'),
-          child: const Text('Về trang chủ • Home'),
-        ),
-      ];
+  List<Widget> _submitted(BuildContext context, ColorScheme cs) {
+    final l = AppLocalizations.of(context);
+    return [
+      CircleAvatar(
+        radius: 32,
+        backgroundColor: cs.primary,
+        foregroundColor: cs.onPrimary,
+        child: const Icon(Icons.check, size: 34),
+      ),
+      const SizedBox(height: 16),
+      Text(l.provTaskerDoneTitle,
+          style: Theme.of(context).textTheme.titleLarge,
+          textAlign: TextAlign.center),
+      const SizedBox(height: 8),
+      Text(
+        l.provTaskerDoneBody,
+        textAlign: TextAlign.center,
+        style: TextStyle(color: cs.onSurfaceVariant),
+      ),
+      const SizedBox(height: 24),
+      FilledButton(
+        onPressed: () => context.go('/'),
+        child: Text(l.provTaskerBackHome),
+      ),
+    ];
+  }
 
   // Honest not-live state — the guest path, where nothing was persisted. It must
   // NOT promise receipt or a 24h callback the backend cannot deliver.
-  List<Widget> _notLive(BuildContext context, ColorScheme cs) => [
-        CircleAvatar(
-          radius: 32,
-          backgroundColor: cs.secondaryContainer,
-          foregroundColor: cs.onSecondaryContainer,
-          child: const Icon(Icons.hourglass_top, size: 34),
-        ),
-        const SizedBox(height: 16),
-        Text('Sắp ra mắt trên ứng dụng • Coming soon in the app',
-            style: Theme.of(context).textTheme.titleLarge,
-            textAlign: TextAlign.center),
-        const SizedBox(height: 8),
-        Text(
-          'Đăng ký cộng tác viên chưa mở trên ứng dụng, nên hồ sơ chưa được gửi đi. '
-          'Vui lòng hoàn tất đăng ký tại kyco.vn hoặc email tasker@kyco.vn.\n'
-          'Partner registration isn’t live in the app yet, so your details were '
-          'not submitted. Please finish signing up at kyco.vn or email tasker@kyco.vn.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: cs.onSurfaceVariant),
-        ),
-        const SizedBox(height: 24),
-        FilledButton(
-          onPressed: () => context.go('/'),
-          child: const Text('Về trang chủ • Home'),
-        ),
-      ];
+  List<Widget> _notLive(BuildContext context, ColorScheme cs) {
+    final l = AppLocalizations.of(context);
+    return [
+      CircleAvatar(
+        radius: 32,
+        backgroundColor: cs.secondaryContainer,
+        foregroundColor: cs.onSecondaryContainer,
+        child: const Icon(Icons.hourglass_top, size: 34),
+      ),
+      const SizedBox(height: 16),
+      Text(l.provTaskerNotLiveTitle,
+          style: Theme.of(context).textTheme.titleLarge,
+          textAlign: TextAlign.center),
+      const SizedBox(height: 8),
+      Text(
+        l.provTaskerNotLiveBody,
+        textAlign: TextAlign.center,
+        style: TextStyle(color: cs.onSurfaceVariant),
+      ),
+      const SizedBox(height: 24),
+      FilledButton(
+        onPressed: () => context.go('/'),
+        child: Text(l.provTaskerBackHome),
+      ),
+    ];
+  }
 }
 
 // ── small UI helpers ─────────────────────────────────────────────────────────
@@ -422,9 +429,14 @@ class _Stepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     // Both phone + verify map to the "verify phone" stage (web parity).
     final idx = step == _Step.profile ? 1 : 0;
-    const labels = ['Xác minh SĐT', 'Hồ sơ & KYC', 'Duyệt hồ sơ'];
+    final labels = [
+      l.provTaskerStepPhone,
+      l.provTaskerStepProfile,
+      l.provTaskerStepReview,
+    ];
     return Row(
       children: [
         for (var i = 0; i < labels.length; i++) ...[
@@ -560,7 +572,10 @@ class _KycTile extends StatelessWidget {
                   ],
                 ),
               ),
-              Text(captured ? 'Chụp lại' : 'Chụp ảnh',
+              Text(
+                  captured
+                      ? AppLocalizations.of(context).provTaskerRetake
+                      : AppLocalizations.of(context).provTaskerCapturePhoto,
                   style: TextStyle(color: cs.primary)),
             ],
           ),

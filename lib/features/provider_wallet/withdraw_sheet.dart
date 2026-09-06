@@ -52,14 +52,15 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
     final raw = _controller.text.replaceAll(RegExp(r'[^0-9]'), '');
     final amount = int.tryParse(raw) ?? 0;
     // Soft, advisory pre-check only — the server is authoritative.
+    final l = AppLocalizations.of(context);
     if (amount < kPayoutMinVnd) {
       setState(() => _error =
-          'Số tiền tối thiểu là ${formatVnd(kPayoutMinVnd)}.');
+          l.provWalletWithdrawMinError(formatVnd(kPayoutMinVnd)));
       return;
     }
     if (amount > kPayoutMaxVnd) {
       setState(() => _error =
-          'Số tiền tối đa mỗi lần là ${formatVnd(kPayoutMaxVnd)}.');
+          l.provWalletWithdrawMaxError(formatVnd(kPayoutMaxVnd)));
       return;
     }
     Navigator.of(context).pop(amount);
@@ -67,6 +68,7 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final insets = MediaQuery.of(context).viewInsets;
 
@@ -86,7 +88,7 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
               Icon(Icons.payments_outlined, color: cs.primary),
               const SizedBox(width: 10),
               Expanded(
-                child: Text('Rút tiền',
+                child: Text(l.provWalletWithdrawAction,
                     style: Theme.of(context)
                         .textTheme
                         .titleLarge
@@ -95,7 +97,7 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
             ],
           ),
           const SizedBox(height: 8),
-          Text('Số dư khả dụng: ${formatVnd(widget.balanceVnd)}',
+          Text(l.provWalletSheetBalance(formatVnd(widget.balanceVnd)),
               style: TextStyle(color: cs.onSurfaceVariant)),
           const SizedBox(height: 16),
           if (_error != null) ...[
@@ -107,17 +109,16 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
             autofocus: true,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(
-              labelText: 'Số tiền (₫)',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.attach_money),
+            decoration: InputDecoration(
+              labelText: l.provWalletAmountLabel,
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.attach_money),
             ),
             onSubmitted: (_) => _submit(),
           ),
           const SizedBox(height: 8),
           Text(
-            'Từ ${formatVnd(kPayoutMinVnd)} đến ${formatVnd(_cap)} · số nguyên đồng. '
-            'Kyco kiểm tra và trừ số dư trên máy chủ.',
+            l.provWalletAmountHint(formatVnd(kPayoutMinVnd), formatVnd(_cap)),
             style: Theme.of(context)
                 .textTheme
                 .bodySmall
@@ -127,7 +128,7 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
           FilledButton.icon(
             onPressed: _submit,
             icon: const Icon(Icons.send),
-            label: const Text('Tiếp tục'),
+            label: Text(l.provWalletContinue),
           ),
         ],
       ),
@@ -165,7 +166,7 @@ Future<String?> runWithdrawFlow(
   try {
     status = await api.stepUpStatus();
   } on ApiException catch (e) {
-    return e.isMaintenance ? 'Tính năng rút tiền sắp ra mắt.' : e.message;
+    return e.isMaintenance ? l.provWalletMaintenance : e.message;
   } catch (_) {
     return l.genericError;
   }
@@ -186,22 +187,21 @@ Future<String?> runWithdrawFlow(
     final tail = result.accountTail;
     final bank = result.bankCode;
     if (tail != null && bank != null) {
-      return 'Đã gửi yêu cầu rút ${formatVnd(result.amountVnd)} về $bank ••••$tail. '
-          'Kyco chuyển trong 1-2 ngày làm việc.';
+      return l.provWalletWithdrawSubmitted(
+          formatVnd(result.amountVnd), bank, tail);
     }
-    return 'Đã ghi nhận yêu cầu rút ${formatVnd(result.amountVnd)}. '
-        'Kyco chuyển trong 1-2 ngày làm việc.';
+    return l.provWalletWithdrawSubmittedNoBank(formatVnd(result.amountVnd));
   } on ApiException catch (e) {
     switch (e.status) {
       case 409:
-        return 'Một yêu cầu rút tiền đang được xử lý. Vui lòng thử lại sau giây lát.';
+        return l.provWalletWithdrawPending;
       case 422:
         // Server-returned insufficient message already carries the live balance.
         return e.fields?['amount_vnd'] ?? e.message;
       case 403:
-        return 'Cần xác minh bảo mật để rút tiền. Vui lòng thử lại.';
+        return l.provWalletWithdrawStepUp;
       default:
-        return e.isMaintenance ? 'Tính năng rút tiền sắp ra mắt.' : e.message;
+        return e.isMaintenance ? l.provWalletMaintenance : e.message;
     }
   } catch (_) {
     return l.genericError;

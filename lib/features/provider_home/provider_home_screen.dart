@@ -9,12 +9,6 @@ import '../../core/widgets.dart';
 import '../auth/auth_controller.dart';
 import 'provider_home_providers.dart';
 
-// TODO-i18n: this screen needs prov* home keys that the WF foundation did not
-// add (only the tab/section-title keys exist). The VI literals below are lifted
-// verbatim from the web `lib/i18n/sweep/provider.ts` (`prov.home.*`, `prov.kpi.*`,
-// `prov.status.*`) so the integration pass can key them 1:1. See the unit report
-// for the full missing-key list.
-
 /// `/p` — the provider (CTV) dashboard. Mirrors the web `/provider` home, fully
 /// API-backed from `providerWorkspace()` (single hop): greeting, KPI row (30d),
 /// earnings + balance 💰 (display-only, server-derived), job counters, and the
@@ -76,6 +70,7 @@ class _Dashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final d = workspace.dashboard;
     final (today, upcoming) = _splitJobs(workspace.jobs.items);
 
@@ -84,12 +79,12 @@ class _Dashboard extends StatelessWidget {
       children: [
         // ── header ────────────────────────────────────────────────────────
         Text(
-          firstName.isEmpty ? 'Xin chào' : 'Xin chào, $firstName', // prov.home.greeting
+          firstName.isEmpty ? l.provHomeGreetingPlain : l.provHomeGreeting(firstName),
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 4),
         Text(
-          'Quản lý công việc, theo dõi thu nhập, và tận dụng giờ cao điểm.', // prov.home.subtitle
+          l.provHomeSubtitle,
           style: Theme.of(context)
               .textTheme
               .bodySmall
@@ -98,7 +93,7 @@ class _Dashboard extends StatelessWidget {
         const SizedBox(height: 20),
 
         // ── KPI row (30d) ─────────────────────────────────────────────────
-        _CapsLabel('KPI 30 ngày qua'), // prov.home.kpi_30d
+        _CapsLabel(l.provHomeKpi30d),
         const SizedBox(height: 8),
         _KpiGrid(kpi: d.kpi),
         const SizedBox(height: 20),
@@ -110,31 +105,31 @@ class _Dashboard extends StatelessWidget {
         // ── job counters ──────────────────────────────────────────────────
         Row(
           children: [
-            Expanded(child: _StatTile(label: 'Đang làm', value: '${d.jobs.active}')), // prov.home.stat_active
+            Expanded(child: _StatTile(label: l.provHomeStatActive, value: '${d.jobs.active}')),
             const SizedBox(width: 12),
-            Expanded(child: _StatTile(label: 'Tổng', value: '${d.jobs.total}')), // prov.home.stat_total
+            Expanded(child: _StatTile(label: l.provHomeStatTotal, value: '${d.jobs.total}')),
           ],
         ),
         const SizedBox(height: 12),
 
         // ── today ─────────────────────────────────────────────────────────
-        SectionHeader('Hôm nay'), // prov.home.today
+        SectionHeader(l.provHomeToday),
         if (today.isEmpty)
-          const _EmptyLine('Không có lịch hôm nay. Tận hưởng ngày nghỉ ☕.') // prov.home.today_empty
+          _EmptyLine(l.provHomeTodayEmpty)
         else
           for (final j in today) _JobTile(job: j, showDuration: true),
         const SizedBox(height: 8),
 
         // ── upcoming ──────────────────────────────────────────────────────
         SectionHeader(
-          'Sắp tới', // prov.home.upcoming
+          l.provHomeUpcoming,
           trailing: TextButton(
             onPressed: () => context.push('/p/jobs'),
-            child: const Text('Xem tất cả →'), // prov.home.see_all
+            child: Text(l.provHomeSeeAll),
           ),
         ),
         if (upcoming.isEmpty)
-          const _EmptyLine('Chưa có lịch sắp tới.') // prov.home.upcoming_empty
+          _EmptyLine(l.provHomeUpcomingEmpty)
         else
           for (final j in upcoming) _JobTile(job: j, showDuration: false),
       ],
@@ -174,11 +169,12 @@ class _KpiGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cards = [
-      _kpiCard('🎯', 'Nhận job', _pct(_entry('acceptance')['rate']), _tone('acceptance')), // prov.kpi.acceptance_label
-      _kpiCard('✅', 'Hoàn thành', _pct(_entry('completion')['rate']), _tone('completion')), // prov.kpi.completion_label
-      _kpiCard('⭐', 'Đánh giá', _rating(_entry('rating')['value']), _tone('rating')), // prov.kpi.rating_label
-      _kpiCard('⏰', 'Đúng giờ', _pct(_entry('punctuality')['rate']), _tone('punctuality')), // prov.kpi.punctuality_label
+      _kpiCard('🎯', l.provKpiAcceptanceLabel, _pct(_entry('acceptance')['rate']), _tone('acceptance')),
+      _kpiCard('✅', l.provKpiCompletionLabel, _pct(_entry('completion')['rate']), _tone('completion')),
+      _kpiCard('⭐', l.provKpiRatingLabel, _rating(_entry('rating')['value']), _tone('rating')),
+      _kpiCard('⏰', l.provKpiPunctualityLabel, _pct(_entry('punctuality')['rate']), _tone('punctuality')),
     ];
     return GridView.count(
       crossAxisCount: 2,
@@ -283,6 +279,7 @@ class _EarningsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     return Container(
@@ -295,7 +292,7 @@ class _EarningsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('THU NHẬP THÁNG', // prov.home.earnings_30d (server: monthVnd)
+          Text(l.provHomeEarningsMonth,
               style: tt.labelSmall?.copyWith(
                   color: cs.onSurfaceVariant, letterSpacing: 0.6, fontWeight: FontWeight.w600)),
           const SizedBox(height: 2),
@@ -305,10 +302,10 @@ class _EarningsCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _MoneyRow(icon: '💰', label: 'Số dư ví', vnd: earnings.balanceVnd), // prov balance
+                child: _MoneyRow(icon: '💰', label: l.provHomeBalance, vnd: earnings.balanceVnd),
               ),
               Expanded(
-                child: _MoneyRow(icon: '📈', label: 'Luỹ kế', vnd: earnings.lifetimeVnd), // lifetime
+                child: _MoneyRow(icon: '📈', label: l.provHomeLifetime, vnd: earnings.lifetimeVnd),
               ),
             ],
           ),
@@ -382,12 +379,13 @@ class _JobTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final title = job.serviceName ?? 'Booking #${job.bookingId ?? job.jobId}';
     final when = _fmtWhen(job.scheduledAt);
     final line2 = showDuration
-        ? [when, '${job.durationMinutes ?? 60} phút'].where((s) => s.isNotEmpty).join(' · ')
+        ? [when, l.minutesShort(job.durationMinutes ?? 60)].where((s) => s.isNotEmpty).join(' · ')
         : when;
     final address = [job.addressLine, job.ward, job.district]
         .where((s) => s != null && s.isNotEmpty)
@@ -466,12 +464,13 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     // prov.status.* labels + web tint mapping.
     final (label, bg, fg) = switch (status) {
-      'pending' => ('đang chờ', const Color(0xFFFEF3C7), const Color(0xFFB45309)),
-      'active' => ('đang làm', const Color(0xFFDCFCE7), const Color(0xFF15803D)),
-      'closed' => ('đã đóng', cs.surfaceContainerHighest, cs.onSurfaceVariant),
+      'pending' => (l.provStatusPending, const Color(0xFFFEF3C7), const Color(0xFFB45309)),
+      'active' => (l.provStatusActive, const Color(0xFFDCFCE7), const Color(0xFF15803D)),
+      'closed' => (l.provStatusClosed, cs.surfaceContainerHighest, cs.onSurfaceVariant),
       _ => (status ?? '', cs.surfaceContainerHighest, cs.onSurfaceVariant),
     };
     if (label.isEmpty) return const SizedBox.shrink();

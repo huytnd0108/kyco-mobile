@@ -51,6 +51,7 @@ class _GoalsBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final now = DateTime.now();
     final wKey = isoWeekKeyOf(now);
     final mKey = monthKeyOf(now);
@@ -62,8 +63,7 @@ class _GoalsBody extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
-          // MISSING-ARB: 'Tuần này' / 'This week'
-          SectionHeader('Tuần này · $wKey'),
+          SectionHeader('${l.provGoalsThisWeek} · $wKey'),
           _GoalCard(
             periodKind: 'week',
             periodKey: wKey,
@@ -71,8 +71,7 @@ class _GoalsBody extends ConsumerWidget {
             achievedJobs: null, // no frozen weekly-achieved source
             achievedVnd: null,
           ),
-          // MISSING-ARB: 'Tháng này' / 'This month'
-          SectionHeader('Tháng này · $mKey'),
+          SectionHeader('${l.provGoalsThisMonth} · $mKey'),
           _GoalCard(
             periodKind: 'month',
             periodKey: mKey,
@@ -103,6 +102,7 @@ class _GoalCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final targetJobs = goal?.targetJobs ?? 0;
     final targetVnd = goal?.targetVnd ?? 0;
@@ -120,8 +120,7 @@ class _GoalCard extends ConsumerWidget {
         children: [
           // Jobs target.
           _GoalMetric(
-            // MISSING-ARB: 'Số đơn' / 'Jobs'
-            label: 'Số đơn',
+            label: l.provGoalJobs,
             achievedText: achievedJobs?.toString() ?? '—',
             targetText: targetJobs > 0 ? '$targetJobs' : '—',
             value: (achievedJobs ?? 0).toDouble(),
@@ -130,8 +129,7 @@ class _GoalCard extends ConsumerWidget {
           const SizedBox(height: 14),
           // Income target (display-only VND).
           _GoalMetric(
-            // MISSING-ARB: 'Thu nhập' / 'Income'
-            label: 'Thu nhập',
+            label: l.provGoalIncome,
             achievedText: achievedVnd != null ? formatVnd(achievedVnd!) : '—',
             targetText: targetVnd > 0 ? formatVnd(targetVnd) : '—',
             value: (achievedVnd ?? 0).toDouble(),
@@ -143,8 +141,7 @@ class _GoalCard extends ConsumerWidget {
             alignment: Alignment.centerRight,
             child: TextButton.icon(
               icon: const Icon(Icons.edit_outlined, size: 18),
-              // MISSING-ARB: 'Đặt mục tiêu' / 'Set goal'
-              label: Text(goal == null ? 'Đặt mục tiêu' : 'Sửa mục tiêu'),
+              label: Text(goal == null ? l.provGoalSet : l.provGoalEdit),
               onPressed: () => _openEditor(context, ref),
             ),
           ),
@@ -175,8 +172,7 @@ class _GoalCard extends ConsumerWidget {
     );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      // MISSING-ARB: 'Đã lưu mục tiêu' success text
-      SnackBar(content: Text(ok ? 'Đã lưu mục tiêu' : l.genericError)),
+      SnackBar(content: Text(ok ? l.provGoalSaved : l.genericError)),
     );
   }
 }
@@ -290,6 +286,7 @@ class _GoalEditorState extends State<_GoalEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 4, 20, 20 + bottom),
@@ -297,8 +294,7 @@ class _GoalEditorState extends State<_GoalEditor> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // MISSING-ARB: 'Mục tiêu {period}' header
-          Text('Mục tiêu · ${widget.periodKey}',
+          Text('${l.provGoalTitle} · ${widget.periodKey}',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700)),
           const SizedBox(height: 16),
@@ -306,10 +302,9 @@ class _GoalEditorState extends State<_GoalEditor> {
             controller: _jobs,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(
-              // MISSING-ARB: 'Mục tiêu số đơn'
-              labelText: 'Mục tiêu số đơn',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l.provGoalTargetJobs,
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 12),
@@ -317,23 +312,20 @@ class _GoalEditorState extends State<_GoalEditor> {
             controller: _vnd,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: const InputDecoration(
-              // MISSING-ARB: 'Mục tiêu thu nhập (₫)'
-              labelText: 'Mục tiêu thu nhập (₫)',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l.provGoalTargetIncome,
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 20),
           FilledButton(
             onPressed: _submit,
-            // MISSING-ARB: reuse a generic save label — none exists, inline
-            child: const Text('Lưu'),
+            child: Text(l.provGoalSave),
           ),
           const SizedBox(height: 8),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            // MISSING-ARB: 'Huỷ' / 'Cancel'
-            child: const Text('Huỷ'),
+            child: Text(l.provGoalCancel),
           ),
         ],
       ),

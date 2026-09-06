@@ -45,21 +45,14 @@ class _Perk {
   final String body;
 }
 
-// MISSING-ARB: all perk titles/bodies are inlined (no l10n keys exist yet).
-const _perks = <_Perk>[
-  _Perk('🎯', 'Ưu tiên nhận đơn',
-      'Được ưu tiên phân bổ các đơn giá trị cao trước các CTV khác.'),
-  _Perk('📍', 'Mở rộng khu vực',
-      'Nhận đơn ở nhiều quận/khu vực hơn để tối đa thu nhập.'),
-  _Perk('📞', 'Hỗ trợ VIP riêng',
-      'Đường dây hỗ trợ riêng 1900-VIP-XX, phản hồi nhanh 24/7.'),
-  _Perk('🏆', 'Huy hiệu VIP',
-      'Hiển thị huy hiệu Bạch kim với khách hàng để tăng độ tin cậy.'),
-  _Perk('🎁', 'Quà & ưu đãi',
-      'Nhận quà tri ân và các ưu đãi độc quyền dành cho CTV VIP.'),
-  _Perk('🚀', 'Thưởng cao hơn',
-      'Hệ số thưởng cao hơn cho cùng một mức thành tích.'),
-];
+List<_Perk> _perks(AppLocalizations l) => <_Perk>[
+      _Perk('🎯', l.provVipPerkPriorityTitle, l.provVipPerkPriorityBody),
+      _Perk('📍', l.provVipPerkAreaTitle, l.provVipPerkAreaBody),
+      _Perk('📞', l.provVipPerkSupportTitle, l.provVipPerkSupportBody),
+      _Perk('🏆', l.provVipPerkBadgeTitle, l.provVipPerkBadgeBody),
+      _Perk('🎁', l.provVipPerkGiftTitle, l.provVipPerkGiftBody),
+      _Perk('🚀', l.provVipPerkBonusTitle, l.provVipPerkBonusBody),
+    ];
 
 class _PerksView extends StatelessWidget {
   const _PerksView({required this.isPlatinum});
@@ -67,6 +60,7 @@ class _PerksView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     return CenteredMaxWidth(
@@ -88,16 +82,14 @@ class _PerksView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        // MISSING-ARB: 'Đặc quyền VIP' / 'VIP perks'
-                        isPlatinum ? 'Chào mừng CTV VIP 💎' : 'Đặc quyền VIP',
+                        isPlatinum ? l.provVipWelcome : l.provVipPerksTitle,
                         style: tt.titleLarge?.copyWith(
                             fontWeight: FontWeight.w800,
                             color: cs.onPrimaryContainer),
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        // MISSING-ARB: subtitle
-                        'Những quyền lợi dành cho CTV hạng Bạch kim.',
+                        l.provVipPerksSubtitle,
                         style: tt.bodyMedium?.copyWith(color: cs.onPrimaryContainer),
                       ),
                     ],
@@ -117,7 +109,7 @@ class _PerksView extends StatelessWidget {
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  for (final p in _perks)
+                  for (final p in _perks(l))
                     SizedBox(width: width, child: _PerkCard(p)),
                 ],
               );
@@ -166,14 +158,14 @@ class _UpsellView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    // MISSING-ARB: requirement lines
-    const reqs = <String>[
-      'Hoàn thành ≥ 800 đơn',
-      'Điểm đánh giá ≥ 4.85',
-      'Duy trì tỉ lệ hoàn thành cao',
-      'Không có khiếu nại nghiêm trọng',
+    final reqs = <String>[
+      l.provVipReqJobs,
+      l.provVipReqRating,
+      l.provVipReqCompletion,
+      l.provVipReqComplaints,
     ];
     return CenteredMaxWidth(
       maxWidth: 560,
@@ -183,15 +175,13 @@ class _UpsellView extends StatelessWidget {
           const Center(child: Text('💎', style: TextStyle(fontSize: 64))),
           const SizedBox(height: 12),
           Text(
-            // MISSING-ARB: 'Mở khoá đặc quyền VIP' / 'Unlock VIP'
-            'Mở khoá đặc quyền VIP',
+            l.provVipUnlockTitle,
             textAlign: TextAlign.center,
             style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Text(
-            // MISSING-ARB: upsell body referencing current tier
-            'Đạt hạng Bạch kim để nhận toàn bộ quyền lợi VIP. Hạng hiện tại: ${_tierLabel(tier)}.',
+            l.provVipUpsellBody(_tierLabel(l, tier)),
             textAlign: TextAlign.center,
             style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
           ),
@@ -207,8 +197,7 @@ class _UpsellView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  // MISSING-ARB: 'Điều kiện' / 'Requirements'
-                  'Điều kiện lên hạng',
+                  l.provVipReqTitle,
                   style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 10),
@@ -231,8 +220,7 @@ class _UpsellView extends StatelessWidget {
           const SizedBox(height: 20),
           FilledButton(
             onPressed: () => context.go('/p'),
-            // MISSING-ARB: 'Về trang chủ CTV' / 'Back to dashboard'
-            child: const Text('Về trang chủ CTV'),
+            child: Text(l.provVipBackDashboard),
           ),
         ],
       ),
@@ -240,17 +228,17 @@ class _UpsellView extends StatelessWidget {
   }
 }
 
-/// Vietnamese tier labels (mirrors the web `PROVIDER_TIER_LABELS`). MISSING-ARB.
-String _tierLabel(String tier) {
+/// Vietnamese tier labels (mirrors the web `PROVIDER_TIER_LABELS`).
+String _tierLabel(AppLocalizations l, String tier) {
   switch (tier) {
     case 'platinum':
-      return 'Bạch kim';
+      return l.provVipTierPlatinum;
     case 'gold':
-      return 'Vàng';
+      return l.provVipTierGold;
     case 'silver':
-      return 'Bạc';
+      return l.provVipTierSilver;
     case 'bronze':
-      return 'Đồng';
+      return l.provVipTierBronze;
     default:
       return tier;
   }

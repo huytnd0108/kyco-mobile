@@ -12,34 +12,6 @@ import '../../theme/app_semantics.dart';
 import '../auth/auth_controller.dart';
 import 'provider_jobs_providers.dart';
 
-// ── i18n gap (report) ────────────────────────────────────────────────────────
-// These provider-jobs strings have no ARB key yet (l10n is frozen for this
-// unit). They are inlined as Vietnamese literals — the app's default locale —
-// and reported so the l10n unit can lift them into app_{vi,en}.arb. Existing
-// keys reused: provJobsTitle, provJobsAssigned, provJobsAvailable,
-// provSignInRequired, retry.
-const _kJobStatusPending = 'Chờ xác nhận'; // provJobStatusPending
-const _kJobStatusActive = 'Đang làm'; // provJobStatusActive
-const _kJobStatusClosed = 'Đã đóng'; // provJobStatusClosed
-const _kNetHint = '≈ 80% về bạn'; // provJobNetHint (rate label, not an amount)
-const _kAssignedEmpty = 'Chưa có công việc nào'; // provJobsAssignedEmpty
-const _kPoolEmpty = 'Hiện chưa có đơn nào để nhận'; // provPoolEmpty
-const _kJobsLoadError = 'Không tải được công việc'; // provJobsLoadError
-const _kPoolSectionAvailable = 'Đơn có thể nhận'; // provPoolAvailable
-const _kPoolSectionAssigned = 'Đơn của bạn'; // provPoolAssigned
-const _kClaimAction = 'Nhận đơn'; // provClaimAction
-const _kClaimGateTitle = 'Bạn chưa thể nhận đơn'; // provClaimGateTitle
-const _kClaimGateBody = 'Tài khoản của bạn đang bị tạm hạn chế nhận đơn.'; // provClaimGateBody
-const _kClaimSuccess = 'Đã nhận đơn'; // provClaimSuccess
-const _kClaimError = 'Không nhận được đơn, vui lòng thử lại'; // provClaimError
-
-String _jobStatusLabel(String? status) => switch (status) {
-      'pending' => _kJobStatusPending,
-      'active' => _kJobStatusActive,
-      'closed' => _kJobStatusClosed,
-      _ => status ?? '',
-    };
-
 /// `/p/jobs` — the provider's jobs surface: two tabs, each API-backed with
 /// pull-to-refresh. "Assigned" is the provider's own pipeline (`providerJobs()`,
 /// cursor-paged); "Available" is the shared claimable pool (`poolJobs()`) with
@@ -150,14 +122,14 @@ class _AssignedTabState extends ConsumerState<_AssignedTab> {
         error: (e, _) => ListView(children: [
           const SizedBox(height: 120),
           ErrorRetry(
-            message: _kJobsLoadError,
+            message: AppLocalizations.of(context).provJobsLoadError,
             onRetry: () => ref.invalidate(assignedJobsControllerProvider),
           ),
         ]),
         data: (data) => data.items.isEmpty
-            ? ListView(children: const [
-                SizedBox(height: 80),
-                EmptyState(icon: '🧹', message: _kAssignedEmpty),
+            ? ListView(children: [
+                const SizedBox(height: 80),
+                EmptyState(icon: '🧹', message: AppLocalizations.of(context).provJobsAssignedEmpty),
               ])
             : ListView.separated(
                 controller: _scroll,
@@ -237,16 +209,23 @@ class _JobStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final sem = context.semantics;
+    final l = AppLocalizations.of(context);
     final (bg, fg) = switch (status) {
       'active' => (sem.successContainer, sem.onSuccessContainer),
       'pending' => (sem.warningContainer, sem.onWarningContainer),
       'closed' => (cs.surfaceContainerHighest, cs.onSurfaceVariant),
       _ => (cs.errorContainer, cs.onErrorContainer),
     };
+    final label = switch (status) {
+      'pending' => l.provJobStatusPending,
+      'active' => l.provJobStatusActive,
+      'closed' => l.provJobStatusClosed,
+      _ => status ?? '',
+    };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-      child: Text(_jobStatusLabel(status),
+      child: Text(label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(color: fg, fontWeight: FontWeight.w600)),
     );
   }
@@ -294,11 +273,12 @@ class _AvailableTab extends ConsumerWidget {
 
   Future<void> _claim(BuildContext context, WidgetRef ref, int jobId) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l = AppLocalizations.of(context);
     try {
       await ref.read(kycoApiProvider).claimJob(jobId);
-      messenger.showSnackBar(const SnackBar(content: Text(_kClaimSuccess)));
+      messenger.showSnackBar(SnackBar(content: Text(l.provClaimSuccess)));
     } catch (_) {
-      messenger.showSnackBar(const SnackBar(content: Text(_kClaimError)));
+      messenger.showSnackBar(SnackBar(content: Text(l.provClaimError)));
     }
     // Refresh both surfaces — the claimed job leaves the pool and enters the
     // assigned pipeline / list.
@@ -309,6 +289,7 @@ class _AvailableTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(poolProvider);
+    final l = AppLocalizations.of(context);
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(poolProvider);
@@ -318,14 +299,14 @@ class _AvailableTab extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ListView(children: [
           const SizedBox(height: 120),
-          ErrorRetry(message: _kJobsLoadError, onRetry: () => ref.invalidate(poolProvider)),
+          ErrorRetry(message: l.provJobsLoadError, onRetry: () => ref.invalidate(poolProvider)),
         ]),
         data: (view) {
           final empty = view.pool.isEmpty && view.assigned.isEmpty;
           if (empty && view.canClaim) {
-            return ListView(children: const [
-              SizedBox(height: 80),
-              EmptyState(icon: '🧺', message: _kPoolEmpty),
+            return ListView(children: [
+              const SizedBox(height: 80),
+              EmptyState(icon: '🧺', message: l.provPoolEmpty),
             ]);
           }
           return ListView(
@@ -333,7 +314,7 @@ class _AvailableTab extends ConsumerWidget {
             children: [
               if (!view.canClaim) _ClaimGateBanner(reason: view.banReason),
               if (view.assigned.isNotEmpty) ...[
-                SectionHeader('$_kPoolSectionAssigned (${view.assigned.length})'),
+                SectionHeader('${l.provPoolAssigned} (${view.assigned.length})'),
                 for (final job in view.assigned)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
@@ -343,11 +324,11 @@ class _AvailableTab extends ConsumerWidget {
                     ),
                   ),
               ],
-              SectionHeader('$_kPoolSectionAvailable (${view.pool.length})'),
+              SectionHeader('${l.provPoolAvailable} (${view.pool.length})'),
               if (view.pool.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: EmptyState(icon: '🧺', message: _kPoolEmpty),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: EmptyState(icon: '🧺', message: l.provPoolEmpty),
                 )
               else
                 for (final job in view.pool)
@@ -375,7 +356,8 @@ class _ClaimGateBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final body = (reason != null && reason!.isNotEmpty) ? reason! : _kClaimGateBody;
+    final l = AppLocalizations.of(context);
+    final body = (reason != null && reason!.isNotEmpty) ? reason! : l.provClaimGateBody;
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
       padding: const EdgeInsets.all(14),
@@ -393,7 +375,7 @@ class _ClaimGateBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_kClaimGateTitle,
+                Text(l.provClaimGateTitle,
                     style: Theme.of(context)
                         .textTheme
                         .titleSmall
@@ -476,6 +458,7 @@ class _ClaimCardState extends State<_ClaimCard> {
     final job = widget.job;
     final canClaim = widget.canClaim;
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     final title = job.serviceName ?? '#${job.bookingId ?? job.jobId}';
     final where = [job.addressLine, job.ward, job.district].whereType<String>().where((s) => s.isNotEmpty).join(', ');
     return Card(
@@ -502,7 +485,7 @@ class _ClaimCardState extends State<_ClaimCard> {
                           [
                             if (_fmtJobWhen(context, job.scheduledAt).isNotEmpty)
                               _fmtJobWhen(context, job.scheduledAt),
-                            if (job.durationMinutes != null) '${job.durationMinutes} phút',
+                            if (job.durationMinutes != null) l.minutesShort(job.durationMinutes!),
                           ].join(' · '),
                           style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                         ),
@@ -526,7 +509,7 @@ class _ClaimCardState extends State<_ClaimCard> {
                   children: [
                     _MoneyValue(job.totalVnd),
                     const SizedBox(height: 2),
-                    Text(_kNetHint, style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
+                    Text(l.provJobNetHint, style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
                   ],
                 ),
               ],
@@ -542,7 +525,7 @@ class _ClaimCardState extends State<_ClaimCard> {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2))
                     : const Icon(Icons.add_task, size: 18),
-                label: const Text(_kClaimAction),
+                label: Text(l.provClaimAction),
               ),
             ),
           ],

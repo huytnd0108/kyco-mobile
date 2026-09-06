@@ -277,5 +277,628 @@
   "provSupportTitle": "Hỗ trợ",
   "provVipTitle": "VIP",
   "provSwitchToCustomer": "Chuyển sang khách hàng",
-  "provSignInRequired": "Vui lòng đăng nhập để tiếp tục."
+  "provSignInRequired": "Vui lòng đăng nhập để tiếp tục.",
+  "provAvailLoadError": "Chưa tải được lịch làm việc. Máy chủ có thể đang bảo trì.",
+  "provAvailWeeklyHeading": "Lịch lặp hằng tuần",
+  "provAvailWeeklySub": "Khung giờ bạn nhận đơn mỗi tuần. Chạm một ngày để chỉnh.",
+  "provAvailOverridesHeading": "Điều chỉnh theo ngày",
+  "provAvailOverridesSub": "Thay lịch cho một ngày cụ thể (ngày lễ, nghỉ phép…).",
+  "provAvailAddOverride": "Thêm điều chỉnh",
+  "provAvailFreeHoursTitle": "Tổng giờ rảnh mỗi tuần",
+  "provAvailNoSlots": "Không nhận đơn",
+  "provAvailUnavailableFull": "Nghỉ cả ngày",
+  "provAvailEditDay": "Chỉnh lịch ngày",
+  "provAvailAddSlot": "Thêm khung giờ",
+  "provAvailStart": "Bắt đầu",
+  "provAvailEnd": "Kết thúc",
+  "provAvailSave": "Lưu",
+  "provAvailCancel": "Huỷ",
+  "provAvailSaved": "Đã lưu lịch làm việc.",
+  "provAvailSaveFailed": "Lưu thất bại. Vui lòng thử lại.",
+  "provAvailPickDate": "Chọn ngày",
+  "provAvailConflictTitle": "Trùng với đơn đã nhận",
+  "provAvailSaveAnyway": "Vẫn lưu",
+  "provAvailEmptyOverrides": "Chưa có điều chỉnh nào.",
+  "provAvailHoursUnit": "giờ",
+  "provAvailSlotOrderError": "Giờ kết thúc phải sau giờ bắt đầu.",
+  "provAvailConflictBody": "Các đơn đã nhận sẽ không còn nằm trong lịch rảnh: {ids}. Vẫn lưu?",
+  "@provAvailConflictBody": {
+    "placeholders": {
+      "ids": {
+        "type": "String"
+      }
+    }
+  },
+  "provAvailWeekdayShort0": "CN",
+  "provAvailWeekdayShort1": "T2",
+  "provAvailWeekdayShort2": "T3",
+  "provAvailWeekdayShort3": "T4",
+  "provAvailWeekdayShort4": "T5",
+  "provAvailWeekdayShort5": "T6",
+  "provAvailWeekdayShort6": "T7",
+  "provAvailWeekdayLong0": "Chủ nhật",
+  "provAvailWeekdayLong1": "Thứ hai",
+  "provAvailWeekdayLong2": "Thứ ba",
+  "provAvailWeekdayLong3": "Thứ tư",
+  "provAvailWeekdayLong4": "Thứ năm",
+  "provAvailWeekdayLong5": "Thứ sáu",
+  "provAvailWeekdayLong6": "Thứ bảy",
+  "provAvailHours": "{m, plural, =0{{h} giờ} other{{h} giờ {m}}}",
+  "@provAvailHours": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      },
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "provJobStatusPending": "Chờ xác nhận",
+  "provJobStatusActive": "Đang làm",
+  "provJobStatusClosed": "Đã đóng",
+  "provJobNetHint": "≈ 80% về bạn",
+  "provJobsAssignedEmpty": "Chưa có công việc nào",
+  "provPoolEmpty": "Hiện chưa có đơn nào để nhận",
+  "provJobsLoadError": "Không tải được công việc",
+  "provPoolAvailable": "Đơn có thể nhận",
+  "provPoolAssigned": "Đơn của bạn",
+  "provClaimAction": "Nhận đơn",
+  "provClaimGateTitle": "Bạn chưa thể nhận đơn",
+  "provClaimGateBody": "Tài khoản của bạn đang bị tạm hạn chế nhận đơn.",
+  "provClaimSuccess": "Đã nhận đơn",
+  "provClaimError": "Không nhận được đơn, vui lòng thử lại",
+  "provHomeGreeting": "Xin chào, {name}",
+  "@provHomeGreeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "provHomeGreetingPlain": "Xin chào",
+  "provHomeSubtitle": "Quản lý công việc, theo dõi thu nhập, và tận dụng giờ cao điểm.",
+  "provHomeKpi30d": "KPI 30 ngày qua",
+  "provKpiAcceptanceLabel": "Nhận job",
+  "provKpiCompletionLabel": "Hoàn thành",
+  "provKpiRatingLabel": "Đánh giá",
+  "provKpiPunctualityLabel": "Đúng giờ",
+  "provHomeEarningsMonth": "THU NHẬP THÁNG",
+  "provHomeBalance": "Số dư ví",
+  "provHomeLifetime": "Luỹ kế",
+  "provHomeStatActive": "Đang làm",
+  "provHomeStatTotal": "Tổng",
+  "provHomeToday": "Hôm nay",
+  "provHomeTodayEmpty": "Không có lịch hôm nay. Tận hưởng ngày nghỉ ☕.",
+  "provHomeUpcoming": "Sắp tới",
+  "provHomeUpcomingEmpty": "Chưa có lịch sắp tới.",
+  "provHomeSeeAll": "Xem tất cả →",
+  "provStatusPending": "đang chờ",
+  "provStatusActive": "đang làm",
+  "provStatusClosed": "đã đóng",
+  "provWalletExportTooltip": "Xuất CSV tháng này",
+  "provWalletTxns": "Giao dịch",
+  "provWalletWithdrawHistory": "Lịch sử rút tiền",
+  "provWalletPayoutHint": "Tiền được giữ và giải ngân theo lịch của Kyco.",
+  "provWalletAvailableBalance": "SỐ DƯ KHẢ DỤNG",
+  "provWalletBalanceSchedule": "Giải ngân sau khi khách xác nhận, chuyển về tài khoản ngân hàng đã đăng ký.",
+  "provWalletTileTotal": "Tổng thu nhập",
+  "provWalletTileMonth": "Tháng này",
+  "provWalletTileJobs": "Số công việc",
+  "provWalletTileFees": "Phí đã trừ",
+  "provWalletWithdrawTitle": "Rút tiền về ngân hàng",
+  "provWalletWithdrawBody": "Yêu cầu rút tiền cần xác minh bảo mật để bảo vệ tài khoản.",
+  "provWalletWithdrawMin": "Cần tối thiểu {min} để rút tiền.",
+  "@provWalletWithdrawMin": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      }
+    }
+  },
+  "provWalletWithdrawAction": "Rút tiền",
+  "provWalletBalanceAfter": "Số dư {amount}",
+  "@provWalletBalanceAfter": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "provWalletReasonEarning": "Thu nhập công việc",
+  "provWalletReasonTip": "Tiền tip",
+  "provWalletReasonBonus": "Thưởng",
+  "provWalletReasonPayout": "Rút tiền",
+  "provWalletReasonCommission": "Hoa hồng",
+  "provWalletReasonClawback": "Thu hồi",
+  "provWalletReasonAdjustment": "Điều chỉnh",
+  "provWalletReasonDefault": "Giao dịch",
+  "provWalletPayoutReleased": "Đã giải ngân",
+  "provWalletPayoutWithdrawn": "Đã rút",
+  "provWalletPayoutReversed": "Đã hoàn",
+  "provWalletPayoutHeld": "Đang giữ",
+  "provWalletWithdrawMinError": "Số tiền tối thiểu là {min}.",
+  "@provWalletWithdrawMinError": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      }
+    }
+  },
+  "provWalletWithdrawMaxError": "Số tiền tối đa mỗi lần là {max}.",
+  "@provWalletWithdrawMaxError": {
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "provWalletSheetBalance": "Số dư khả dụng: {amount}",
+  "@provWalletSheetBalance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "provWalletAmountLabel": "Số tiền (₫)",
+  "provWalletAmountHint": "Từ {min} đến {max} · số nguyên đồng. Kyco kiểm tra và trừ số dư trên máy chủ.",
+  "@provWalletAmountHint": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "provWalletContinue": "Tiếp tục",
+  "provWalletMaintenance": "Tính năng rút tiền sắp ra mắt.",
+  "provWalletWithdrawSubmitted": "Đã gửi yêu cầu rút {amount} về {bank} ••••{tail}. Kyco chuyển trong 1-2 ngày làm việc.",
+  "@provWalletWithdrawSubmitted": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "bank": {
+        "type": "String"
+      },
+      "tail": {
+        "type": "String"
+      }
+    }
+  },
+  "provWalletWithdrawSubmittedNoBank": "Đã ghi nhận yêu cầu rút {amount}. Kyco chuyển trong 1-2 ngày làm việc.",
+  "@provWalletWithdrawSubmittedNoBank": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "provWalletWithdrawPending": "Một yêu cầu rút tiền đang được xử lý. Vui lòng thử lại sau giây lát.",
+  "provWalletWithdrawStepUp": "Cần xác minh bảo mật để rút tiền. Vui lòng thử lại.",
+  "provWalletStepUpTitle": "Xác minh bảo mật",
+  "provWalletStepUpPassword": "Nhập mật khẩu để xác nhận yêu cầu rút tiền.",
+  "provWalletStepUpPhonePrompt": "Nhập số điện thoại đã đăng ký để nhận mã OTP xác nhận rút tiền.",
+  "provWalletStepUpOtpPrompt": "Nhập mã OTP vừa gửi tới điện thoại để xác nhận yêu cầu rút tiền.",
+  "provWalletConfirm": "Xác nhận",
+  "provWalletResendSending": "Đang gửi lại…",
+  "provWalletResend": "Gửi lại mã",
+  "provWalletExportMaintenance": "Tính năng xuất CSV sắp ra mắt.",
+  "provOtpInvalidPhone": "Số điện thoại không hợp lệ.",
+  "provOtpRateLimited": "Bạn đã yêu cầu quá nhiều lần. Vui lòng thử lại sau.",
+  "provOtpSendFailed": "Không gửi được mã OTP. Vui lòng thử lại.",
+  "provOtpSentTo": "Đã gửi mã OTP tới {phone}.",
+  "@provOtpSentTo": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "provPhoneLabel": "Số điện thoại",
+  "provSendOtp": "Gửi mã OTP",
+  "provOtpLabel": "Mã OTP",
+  "provJdNotFound": "Không tìm thấy công việc",
+  "provJdTitle": "Chi tiết công việc",
+  "provJdFeatureEnabling": "Tính năng đang được bật, vui lòng thử lại sau ít phút.",
+  "provJdGpsOff": "Vui lòng bật Dịch vụ vị trí (GPS) để check-in.",
+  "provJdGpsPermNeeded": "Ứng dụng cần quyền vị trí để check-in tại địa điểm khách.",
+  "provJdGpsPermOff": "Quyền vị trí đã bị tắt. Hãy cấp lại trong Cài đặt.",
+  "provJdGpsFailed": "Không lấy được vị trí, vui lòng thử lại.",
+  "provJdCamPermNeeded": "Ứng dụng cần quyền camera để chụp ảnh công việc.",
+  "provJdPhotoUploadFailed": "Không tải được ảnh lên, vui lòng thử lại.",
+  "provJdDeclineTitle": "Từ chối công việc",
+  "provJdDeclineWarning": "Từ chối sau khi đã nhận có thể bị tính phí phạt và ảnh hưởng điểm uy tín. Kyco sẽ hiển thị mức phí (nếu có) sau khi xác nhận.",
+  "provJdReasonOptional": "Lý do (không bắt buộc)",
+  "provJdDecline": "Từ chối",
+  "provJdDeclined": "Đã từ chối công việc",
+  "provJdCancelTitle": "Huỷ công việc",
+  "provJdCancelWarning": "Huỷ đơn đã nhận có thể phát sinh phí phạt theo chính sách. Mức phí do Kyco tính và hiển thị sau khi xác nhận.",
+  "provJdCancelReason": "Lý do huỷ",
+  "provJdCancelJob": "Huỷ đơn",
+  "provJdCancelled": "Đã huỷ công việc",
+  "provJdEnRouteSnack": "Đã bắt đầu di chuyển đến khách",
+  "provJdCheckedOutSnack": "Đã check-out. Đơn được chuyển sang chờ khách xác nhận & thanh toán.",
+  "provJdPhotoUploaded": "Đã tải ảnh lên",
+  "provJdFaceSubmitted": "Đã gửi xác minh khuôn mặt",
+  "provJdMarkedComplete": "Đã báo hoàn thành công việc",
+  "provJdCashConfirmTitle": "Xác nhận đã nhận tiền mặt",
+  "provJdCashConfirmBody": "Kyco sẽ thu hoa hồng 20% cho đơn tiền mặt này. Xác nhận bạn đã nhận đủ tiền từ khách?",
+  "provJdCashReceived": "Đã nhận tiền",
+  "provJdComplaintTitle": "Gửi khiếu nại",
+  "provJdComplaintBody": "Mô tả sự cố với đơn này. Đội hỗ trợ Kyco sẽ xem xét.",
+  "provJdComplaintHint": "Nội dung khiếu nại",
+  "provJdSend": "Gửi",
+  "provJdComplaintSent": "Đã gửi khiếu nại",
+  "provJdSosBody": "Gửi cảnh báo khẩn cấp tới Kyco cho công việc này? Đội an toàn sẽ liên hệ ngay.",
+  "provJdSosConfirm": "Gửi SOS",
+  "provJdSosSent": "Đã gửi SOS. Đội an toàn Kyco sẽ liên hệ ngay.",
+  "provJdCheckedIn": "Đã check-in",
+  "provJdWithinGeofence": "trong phạm vi địa điểm",
+  "provJdMetersAway": "cách ~{m}m",
+  "@provJdMetersAway": {
+    "placeholders": {
+      "m": {
+        "type": "Object"
+      }
+    }
+  },
+  "provJdMinLate": "trễ {n} phút",
+  "@provJdMinLate": {
+    "placeholders": {
+      "n": {
+        "type": "Object"
+      }
+    }
+  },
+  "provJdLateFineTitle": "Phí trễ giờ",
+  "provJdLateFineBody": "Kyco ghi nhận phí trễ giờ: {amount}. Số tiền do hệ thống tính.",
+  "@provJdLateFineBody": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "provJdFineTitle": "Phí phạt",
+  "provJdFineBody": "Kyco áp dụng phí phạt: {amount}. Số tiền do hệ thống tính, không thể thay đổi.",
+  "@provJdFineBody": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "provJdCashRecorded": "Đã ghi nhận tiền mặt",
+  "provJdCashRecordedBody": "Kyco đã tính hoa hồng 20% cho đơn này. Số liệu dưới đây do hệ thống tính:",
+  "provJdSeeWallet": "Xem ví để biết chi tiết.",
+  "provJdClose": "Đóng",
+  "provJdDialogCancel": "Đóng",
+  "provJdNeedMore": "còn thiếu {missing}",
+  "@provJdNeedMore": {
+    "placeholders": {
+      "missing": {
+        "type": "Object"
+      }
+    }
+  },
+  "provJdCompleteTitle": "Hoàn thành công việc",
+  "provJdCompleteGateBody": "Cần đủ ảnh trước/giữa/sau ca mới được báo hoàn thành:",
+  "provJdBefore": "Trước ca",
+  "provJdMid": "Giữa ca",
+  "provJdAfter": "Sau ca",
+  "provJdMarkComplete": "Báo hoàn thành",
+  "provJdReportProblem": "Gửi khiếu nại về đơn này",
+  "provJdPhasePending": "Chờ bạn xác nhận",
+  "provJdPhaseEnRoute": "Chuẩn bị di chuyển",
+  "provJdPhaseOnSite": "Đang làm việc tại địa điểm",
+  "provJdPhaseWrapUp": "Hoàn tất & báo xong",
+  "provJdPhaseAwaitingCustomer": "Chờ khách xác nhận (tự động sau 2h)",
+  "provJdPhaseAwaitingCash": "Chờ xác nhận tiền mặt",
+  "provJdPhaseAwaitingPayment": "Khách đang thanh toán",
+  "provJdPhaseSettled": "Đã tất toán",
+  "provJdPhaseClosed": "Đã đóng",
+  "provJdPhaseCancelled": "Đã huỷ",
+  "provJdPhaseUnknown": "Trạng thái công việc",
+  "provJdOrderInfo": "Thông tin đơn",
+  "provJdCustomer": "Khách hàng",
+  "provJdTime": "Thời gian",
+  "provJdDuration": "Thời lượng",
+  "provJdAddress": "Địa chỉ",
+  "provJdPayment": "Thanh toán",
+  "provJdYourEarnings": "Thu nhập của bạn",
+  "provJdAmountsComputed": "Số tiền do Kyco tính và hiển thị — ứng dụng không tự tính.",
+  "provJdPayCash": "Tiền mặt",
+  "provJdPayBankTransfer": "Chuyển khoản",
+  "provJdConfirmAccept": "Xác nhận & nhận việc",
+  "provJdStartTracking": "Bắt đầu di chuyển (dùng GPS)",
+  "provJdCheckIn": "Check-in tại địa điểm (GPS)",
+  "provJdBeforePhotoGate": "Cần ≥ {need} ảnh \"trước ca\" mới được check-out (hiện {have}/{need}). Chụp ở khung ảnh bên dưới.",
+  "@provJdBeforePhotoGate": {
+    "placeholders": {
+      "need": {
+        "type": "Object"
+      },
+      "have": {
+        "type": "Object"
+      }
+    }
+  },
+  "provJdFaceVerify": "Xác minh khuôn mặt",
+  "provJdCheckOut": "Check-out (GPS)",
+  "provJdCashReceivedAction": "✅ Đã nhận tiền mặt từ khách",
+  "provJdCashCommissionNote": "Kyco sẽ thu hoa hồng 20% cho đơn tiền mặt này (số tiền do hệ thống tính).",
+  "provJdAwaitingCustomerInfo": "⏳ Chờ khách xác nhận hoàn thành (tự động sau 2h).",
+  "provJdAwaitingPaymentInfo": "⏳ Khách đang thanh toán — Kyco sẽ chuyển 80% khi xác nhận.",
+  "provJdClosedInfo": "🔒 Công việc đã đóng. Không còn hành động nào.",
+  "provJdCancelledInfo": "Công việc đã huỷ.",
+  "provJdNoActions": "Không có hành động khả dụng.",
+  "provJdLifecycle": "Vòng đời công việc",
+  "provJdPhotosRequired": "Ảnh cần để hoàn thành ({total}/{req})",
+  "@provJdPhotosRequired": {
+    "placeholders": {
+      "total": {
+        "type": "Object"
+      },
+      "req": {
+        "type": "Object"
+      }
+    }
+  },
+  "provJdSettledThanks": "✅ Kyco đã thanh toán cho bạn 80% giá trị đơn hàng, cảm ơn bạn đã đồng hành!",
+  "provJdJobPhotos": "Ảnh công việc (camera)",
+  "provJdCapture": "Chụp",
+  "provJdSafety": "An toàn",
+  "provJdSendSos": "Gửi SOS khẩn cấp",
+  "provJdShareLocation": "📍 Chia sẻ vị trí với khách",
+  "provJdShareLiveTitle": "Chia sẻ vị trí trực tiếp — sắp ra mắt",
+  "provJdShareLiveBody": "Tính năng đang được phát triển. Khách chưa thể xem vị trí của bạn.",
+  "provJdChatTitle": "Trò chuyện với khách",
+  "provJdChatEmpty": "Chưa có tin nhắn nào.",
+  "provJdChatHint": "Nhập tin nhắn…",
+  "provJdCommission20": "Hoa hồng (20%)",
+  "provJdWalletBalance": "Số dư ví",
+  "provJdOrderTotal": "Tổng đơn",
+  "provJdFine": "Phí phạt",
+  "provBonusesWeekTitle": "Thưởng tuần này",
+  "provBonusesMonthTitle": "Thưởng tháng này",
+  "provBonusesHistoryTitle": "Lịch sử thưởng",
+  "provBonusesHistoryEmpty": "Chưa có khoản thưởng nào được chi.",
+  "provBonusesNone": "Không có thưởng khả dụng.",
+  "provBonusEarned": "Đã đạt",
+  "provBonusMax": "Tối đa",
+  "provBonusNotEarned": "Chưa đạt",
+  "provBonusKindWeeklyJobs": "🏆 Thưởng tuần (số đơn)",
+  "provBonusKindMonthlyRevenue": "🏅 Thưởng tháng (doanh thu)",
+  "provBonusKindPunctuality": "📅 Thưởng chuyên cần",
+  "provBonusKindRating": "⭐ Thưởng rating cao",
+  "provBonusKindReferral": "👥 Thưởng giới thiệu",
+  "provGoalsThisWeek": "Tuần này",
+  "provGoalsThisMonth": "Tháng này",
+  "provGoalJobs": "Số đơn",
+  "provGoalIncome": "Thu nhập",
+  "provGoalSet": "Đặt mục tiêu",
+  "provGoalEdit": "Sửa mục tiêu",
+  "provGoalSaved": "Đã lưu mục tiêu",
+  "provGoalTitle": "Mục tiêu",
+  "provGoalTargetJobs": "Mục tiêu số đơn",
+  "provGoalTargetIncome": "Mục tiêu thu nhập (₫)",
+  "provGoalSave": "Lưu",
+  "provGoalCancel": "Huỷ",
+  "provLbYourRank": "Hạng của bạn: #{n}",
+  "@provLbYourRank": {
+    "placeholders": {
+      "n": {
+        "type": "Object"
+      }
+    }
+  },
+  "provLbEmpty": "Chưa có dữ liệu xếp hạng.",
+  "provLbWeek": "Tuần",
+  "provLbMonth": "Tháng",
+  "provLbNationwide": "Toàn quốc",
+  "provLbYou": "Bạn",
+  "provLbJobs": "{n} đơn",
+  "@provLbJobs": {
+    "placeholders": {
+      "n": {
+        "type": "Object"
+      }
+    }
+  },
+  "provVipPerkPriorityTitle": "Ưu tiên nhận đơn",
+  "provVipPerkPriorityBody": "Được ưu tiên phân bổ các đơn giá trị cao trước các CTV khác.",
+  "provVipPerkAreaTitle": "Mở rộng khu vực",
+  "provVipPerkAreaBody": "Nhận đơn ở nhiều quận/khu vực hơn để tối đa thu nhập.",
+  "provVipPerkSupportTitle": "Hỗ trợ VIP riêng",
+  "provVipPerkSupportBody": "Đường dây hỗ trợ riêng 1900-VIP-XX, phản hồi nhanh 24/7.",
+  "provVipPerkBadgeTitle": "Huy hiệu VIP",
+  "provVipPerkBadgeBody": "Hiển thị huy hiệu Bạch kim với khách hàng để tăng độ tin cậy.",
+  "provVipPerkGiftTitle": "Quà & ưu đãi",
+  "provVipPerkGiftBody": "Nhận quà tri ân và các ưu đãi độc quyền dành cho CTV VIP.",
+  "provVipPerkBonusTitle": "Thưởng cao hơn",
+  "provVipPerkBonusBody": "Hệ số thưởng cao hơn cho cùng một mức thành tích.",
+  "provVipWelcome": "Chào mừng CTV VIP 💎",
+  "provVipPerksTitle": "Đặc quyền VIP",
+  "provVipPerksSubtitle": "Những quyền lợi dành cho CTV hạng Bạch kim.",
+  "provVipReqJobs": "Hoàn thành ≥ 800 đơn",
+  "provVipReqRating": "Điểm đánh giá ≥ 4.85",
+  "provVipReqCompletion": "Duy trì tỉ lệ hoàn thành cao",
+  "provVipReqComplaints": "Không có khiếu nại nghiêm trọng",
+  "provVipUnlockTitle": "Mở khoá đặc quyền VIP",
+  "provVipUpsellBody": "Đạt hạng Bạch kim để nhận toàn bộ quyền lợi VIP. Hạng hiện tại: {tier}.",
+  "@provVipUpsellBody": {
+    "placeholders": {
+      "tier": {
+        "type": "String"
+      }
+    }
+  },
+  "provVipReqTitle": "Điều kiện lên hạng",
+  "provVipBackDashboard": "Về trang chủ CTV",
+  "provVipTierPlatinum": "Bạch kim",
+  "provVipTierGold": "Vàng",
+  "provVipTierSilver": "Bạc",
+  "provVipTierBronze": "Đồng",
+  "provFinesPending": "Đang chờ",
+  "provFinesDeducted": "Đã trừ",
+  "provFinesRefunded": "Hoàn lại",
+  "provFinesHistory": "Lịch sử phạt",
+  "provFineAppealAction": "Khiếu nại",
+  "provAppealNotFound": "Không tìm thấy khoản phạt",
+  "provAppealYours": "Khiếu nại của bạn",
+  "provAppealStatusLabel": "Trạng thái: ",
+  "provAppealSent": "Đã gửi khiếu nại",
+  "provAppealAlready": "Khoản phạt này đã được khiếu nại.",
+  "provAppealMinChars": "Nội dung khiếu nại phải có ít nhất {n} ký tự.",
+  "@provAppealMinChars": {
+    "placeholders": {
+      "n": {
+        "type": "Object"
+      }
+    }
+  },
+  "provAppealReasonLabel": "Lý do khiếu nại",
+  "provAppealPlaceholder": "Mô tả vì sao bạn cho rằng khoản phạt này chưa hợp lý…",
+  "provAppealCounter": "{n}/{max} ký tự",
+  "@provAppealCounter": {
+    "placeholders": {
+      "n": {
+        "type": "Object"
+      },
+      "max": {
+        "type": "Object"
+      }
+    }
+  },
+  "provAppealSubmit": "Gửi khiếu nại",
+  "provAppealReviewNote": "Đội ngũ Kyco sẽ xem xét khiếu nại của bạn trong thời gian sớm nhất.",
+  "provCancels30d": "Huỷ trong 30 ngày",
+  "provCancelsPenaltyPoints": "Điểm phạt",
+  "provCancelsSuspend30Title": "Sắp bị tạm khoá 30 ngày",
+  "provCancelsSuspend30Body": "Bạn đã huỷ {count} lần trong 30 ngày. Đạt {limit} lần sẽ bị tạm khoá 30 ngày.",
+  "@provCancelsSuspend30Body": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      },
+      "limit": {
+        "type": "Object"
+      }
+    }
+  },
+  "provCancelsSuspend7Title": "Sắp bị tạm khoá 7 ngày",
+  "provCancelsSuspend7Body": "Bạn đã huỷ {count} lần trong 30 ngày. Đạt {limit} lần sẽ bị tạm khoá 7 ngày.",
+  "@provCancelsSuspend7Body": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      },
+      "limit": {
+        "type": "Object"
+      }
+    }
+  },
+  "provCancelsHistory": "Lịch sử huỷ",
+  "provOrderNoNumber": "Đơn #—",
+  "provCancelsPoints": "+{n} điểm",
+  "@provCancelsPoints": {
+    "placeholders": {
+      "n": {
+        "type": "Object"
+      }
+    }
+  },
+  "provReferralsNoCode": "Chưa có mã giới thiệu",
+  "provReferralsActive": "Đang hoạt động",
+  "provReferralsCompleted": "Hoàn thành",
+  "provReferralsEarned": "Đã nhận (≈)",
+  "provReferralsApproxNote": "* Số tiền đã nhận chỉ mang tính ước tính.",
+  "provReferralsList": "Danh sách giới thiệu",
+  "provReferralsShareSubject": "Tham gia Kyco với mã của tôi",
+  "provReferralsYourCode": "MÃ GIỚI THIỆU CỦA BẠN",
+  "provReferralsShare": "Chia sẻ",
+  "provReferralsColPartner": "Đối tác",
+  "provReferralsColArea": "Khu vực",
+  "provReferralsColTarget": "Chỉ tiêu",
+  "provSupportSubtitle": "Hỗ trợ 24/7 — nhắn Zalo, email, hoặc gửi yêu cầu bên dưới.",
+  "provSupportZaloHint": "Phản hồi trong vài phút",
+  "provSupportEmailHint": "Phản hồi trong 24 giờ",
+  "provSupportCatWallet": "Ví & thanh toán",
+  "provSupportCatTech": "Kỹ thuật / ứng dụng",
+  "provSupportCatTechShort": "Kỹ thuật",
+  "provSupportCatPolicy": "Chính sách",
+  "provSupportCatOther": "Khác",
+  "provSupportPrioNormal": "Bình thường",
+  "provSupportPrioHigh": "Cao",
+  "provSupportPrioUrgent": "Khẩn cấp",
+  "provSupportFormTitle": "Gửi yêu cầu hỗ trợ",
+  "provSupportCategoryField": "Nhóm",
+  "provSupportPriorityField": "Ưu tiên",
+  "provSupportSubjectLabel": "Tiêu đề",
+  "provSupportSubjectHint": "Tóm tắt ngắn gọn vấn đề",
+  "provSupportSubjectMin": "Tối thiểu 5 ký tự",
+  "provSupportBodyLabel": "Nội dung",
+  "provSupportBodyHint": "Mô tả chi tiết (tuỳ chọn)",
+  "provSupportSubmit": "Gửi yêu cầu",
+  "provSupportSent": "Đã gửi yêu cầu hỗ trợ.",
+  "provSupportSendError": "Không gửi được yêu cầu. Vui lòng thử lại.",
+  "provSupportMyTickets": "Yêu cầu của tôi",
+  "provSupportNoTickets": "Chưa có yêu cầu hỗ trợ nào.",
+  "provSupportTicketNumber": "Yêu cầu #{id}",
+  "@provSupportTicketNumber": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "provSupportStatusOpen": "Đang mở",
+  "provSupportStatusInProgress": "Đang xử lý",
+  "provSupportStatusResolved": "Đã xử lý",
+  "provTaskerCityHcm": "TP. Hồ Chí Minh",
+  "provTaskerCityHn": "Hà Nội (sắp khai trương)",
+  "provTaskerCityDn": "Đà Nẵng (sắp khai trương)",
+  "provTaskerKycFront": "CCCD mặt trước",
+  "provTaskerKycBack": "CCCD mặt sau",
+  "provTaskerKycSelfie": "Ảnh chân dung",
+  "provTaskerOtpFormat": "Mã OTP gồm 6–8 chữ số.",
+  "provTaskerCameraDenied": "Không mở được camera. Vui lòng cấp quyền camera trong Cài đặt.",
+  "provTaskerNameDistrictRequired": "Vui lòng nhập họ tên và quận/huyện.",
+  "provTaskerNeed3Photos": "Vui lòng chụp đủ 3 ảnh giấy tờ.",
+  "provTaskerPhotoReadFailed": "Không đọc được ảnh. Vui lòng chụp lại.",
+  "provTaskerVerifyPhoneTitle": "Xác minh số điện thoại",
+  "provTaskerSending": "Đang gửi…",
+  "provTaskerEnterOtpTitle": "Nhập mã OTP",
+  "provTaskerOtpSentTo": "Mã đã gửi tới {phone}",
+  "@provTaskerOtpSentTo": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "provTaskerChangePhone": "Đổi số điện thoại",
+  "provTaskerContinue": "Tiếp tục",
+  "provTaskerProfileTitle": "Thông tin & giấy tờ",
+  "provTaskerFullName": "Họ và tên",
+  "provTaskerCity": "Thành phố",
+  "provTaskerDistrict": "Quận / Huyện",
+  "provTaskerDistrictHint": "VD: Quận 1",
+  "provTaskerReferral": "Mã giới thiệu (tuỳ chọn)",
+  "provTaskerCaptureDocsTitle": "Chụp ảnh giấy tờ",
+  "provTaskerSubmit": "Gửi hồ sơ",
+  "provTaskerStepPhone": "Xác minh SĐT",
+  "provTaskerStepProfile": "Hồ sơ & KYC",
+  "provTaskerStepReview": "Duyệt hồ sơ",
+  "provTaskerDoneTitle": "Đã gửi hồ sơ",
+  "provTaskerDoneBody": "Kyco đã nhận giấy tờ của bạn và sẽ liên hệ để hoàn tất đăng ký.",
+  "provTaskerBackHome": "Về trang chủ",
+  "provTaskerNotLiveTitle": "Sắp ra mắt trên ứng dụng",
+  "provTaskerNotLiveBody": "Đăng ký cộng tác viên chưa mở trên ứng dụng, nên hồ sơ chưa được gửi đi. Vui lòng hoàn tất đăng ký tại kyco.vn hoặc email tasker@kyco.vn.",
+  "provTaskerRetake": "Chụp lại",
+  "provTaskerCapturePhoto": "Chụp ảnh"
 }

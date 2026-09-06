@@ -63,7 +63,7 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
     if (_sending) return;
     final phone = _phoneController.text.trim();
     if (!_phoneRe.hasMatch(phone)) {
-      setState(() => _error = 'Số điện thoại không hợp lệ.');
+      setState(() => _error = AppLocalizations.of(context).provOtpInvalidPhone);
       return;
     }
     setState(() {
@@ -81,20 +81,20 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
       if (!mounted) return;
       setState(() {
         _otpSent = true;
-        _info = 'Đã gửi mã OTP tới $phone.';
+        _info = AppLocalizations.of(context).provOtpSentTo(phone);
       });
     } on ApiException catch (e) {
       if (!mounted) return;
+      final l = AppLocalizations.of(context);
       final reason = e.fields?['phone'];
       setState(() => _error = switch (reason) {
-            'rate_limited' =>
-              'Bạn đã yêu cầu quá nhiều lần. Vui lòng thử lại sau.',
-            'invalid_phone' || 'invalid' => 'Số điện thoại không hợp lệ.',
-            _ => 'Không gửi được mã OTP. Vui lòng thử lại.',
+            'rate_limited' => l.provOtpRateLimited,
+            'invalid_phone' || 'invalid' => l.provOtpInvalidPhone,
+            _ => l.provOtpSendFailed,
           });
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Không gửi được mã OTP. Vui lòng thử lại.');
+        setState(() => _error = AppLocalizations.of(context).provOtpSendFailed);
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -159,7 +159,7 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
               Icon(Icons.lock_outline, color: cs.primary),
               const SizedBox(width: 10),
               Expanded(
-                child: Text('Xác minh bảo mật',
+                child: Text(l.provWalletStepUpTitle,
                     style: Theme.of(context)
                         .textTheme
                         .titleLarge
@@ -170,10 +170,10 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
           const SizedBox(height: 8),
           Text(
             usePassword
-                ? 'Nhập mật khẩu để xác nhận yêu cầu rút tiền.'
+                ? l.provWalletStepUpPassword
                 : collectPhone
-                    ? 'Nhập số điện thoại đã đăng ký để nhận mã OTP xác nhận rút tiền.'
-                    : 'Nhập mã OTP vừa gửi tới điện thoại để xác nhận yêu cầu rút tiền.',
+                    ? l.provWalletStepUpPhonePrompt
+                    : l.provWalletStepUpOtpPrompt,
             style: TextStyle(color: cs.onSurfaceVariant),
           ),
           const SizedBox(height: 16),
@@ -204,10 +204,10 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
           autofocus: true,
           enabled: !_sending,
           keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(
-            labelText: 'Số điện thoại',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.phone_outlined),
+          decoration: InputDecoration(
+            labelText: l.provPhoneLabel,
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.phone_outlined),
           ),
           onSubmitted: (_) => _requestOtp(),
         ),
@@ -219,7 +219,7 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
                   height: 20,
                   width: 20,
                   child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Gửi mã OTP'),
+              : Text(l.provSendOtp),
         ),
       ],
     );
@@ -241,7 +241,7 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
               ? null
               : [FilteringTextInputFormatter.digitsOnly],
           decoration: InputDecoration(
-            labelText: usePassword ? l.password : 'Mã OTP',
+            labelText: usePassword ? l.password : l.provOtpLabel,
             border: const OutlineInputBorder(),
             suffixIcon: usePassword
                 ? IconButton(
@@ -262,13 +262,13 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
                   height: 20,
                   width: 20,
                   child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Xác nhận'),
+              : Text(l.provWalletConfirm),
         ),
         if (!usePassword) ...[
           const SizedBox(height: 4),
           TextButton(
             onPressed: (_sending || _submitting) ? null : _requestOtp,
-            child: Text(_sending ? 'Đang gửi lại…' : 'Gửi lại mã'),
+            child: Text(_sending ? l.provWalletResendSending : l.provWalletResend),
           ),
         ],
       ],

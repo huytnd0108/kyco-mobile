@@ -51,22 +51,21 @@ class _BonusesBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // MISSING-ARB: 'Thưởng tuần này' / 'This week's bonuses'.
+    final l = AppLocalizations.of(context);
     return CenteredMaxWidth(
       maxWidth: 720,
       child: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
-          const SectionHeader('Thưởng tuần này'),
+          SectionHeader(l.provBonusesWeekTitle),
           _BonusGrid(b.weekly),
-          const SectionHeader('Thưởng tháng này'),
+          SectionHeader(l.provBonusesMonthTitle),
           _BonusGrid(b.monthly),
-          const SectionHeader('Lịch sử thưởng'),
+          SectionHeader(l.provBonusesHistoryTitle),
           if (b.history.isEmpty)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 4, 16, 12),
-              // MISSING-ARB: 'Chưa có khoản thưởng nào được chi.'
-              child: Text('Chưa có khoản thưởng nào được chi.'),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              child: Text(l.provBonusesHistoryEmpty),
             )
           else
             for (final h in b.history) _HistoryTile(h),
@@ -83,10 +82,9 @@ class _BonusGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (bonuses.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-        // MISSING-ARB: 'Không có thưởng khả dụng.'
-        child: Text('Không có thưởng khả dụng.'),
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Text(AppLocalizations.of(context).provBonusesNone),
       );
     }
     return Padding(
@@ -115,6 +113,7 @@ class _BonusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     // The server sends `earned`/`reason` inside the raw BonusOutput map.
@@ -134,7 +133,7 @@ class _BonusCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(_bonusLabel(bonus.kind),
+                child: Text(_bonusLabel(l, bonus.kind),
                     style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
               ),
               _EarnedBadge(earned: earned),
@@ -150,8 +149,7 @@ class _BonusCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                // MISSING-ARB: 'Đã đạt' / 'Tối đa'
-                earned ? 'Đã đạt' : 'Tối đa',
+                earned ? l.provBonusEarned : l.provBonusMax,
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               Text(
@@ -175,14 +173,14 @@ class _EarnedBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final bg = earned ? cs.primary : cs.surfaceContainerHigh;
     final fg = earned ? cs.onPrimary : cs.onSurfaceVariant;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-      // MISSING-ARB: 'Đã đạt' / 'Chưa đạt'
-      child: Text(earned ? 'Đã đạt' : 'Chưa đạt',
+      child: Text(earned ? l.provBonusEarned : l.provBonusNotEarned,
           style: Theme.of(context)
               .textTheme
               .labelSmall
@@ -197,6 +195,7 @@ class _HistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final period = [item.periodStart, item.periodEnd]
@@ -215,7 +214,7 @@ class _HistoryTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_bonusLabel(item.kind),
+                Text(_bonusLabel(l, item.kind),
                     style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
                 if (sub.isNotEmpty)
                   Text(sub, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
@@ -232,20 +231,19 @@ class _HistoryTile extends StatelessWidget {
   }
 }
 
-/// Vietnamese bonus labels — mirrors the web `BONUS_LABELS`. MISSING-ARB:
-/// no l10n keys exist for these yet, so they are inlined and reported.
-String _bonusLabel(String? kind) {
+/// Vietnamese bonus labels — mirrors the web `BONUS_LABELS`.
+String _bonusLabel(AppLocalizations l, String? kind) {
   switch (kind) {
     case 'weekly_jobs':
-      return '🏆 Thưởng tuần (số đơn)';
+      return l.provBonusKindWeeklyJobs;
     case 'monthly_revenue':
-      return '🏅 Thưởng tháng (doanh thu)';
+      return l.provBonusKindMonthlyRevenue;
     case 'punctuality':
-      return '📅 Thưởng chuyên cần';
+      return l.provBonusKindPunctuality;
     case 'rating':
-      return '⭐ Thưởng rating cao';
+      return l.provBonusKindRating;
     case 'referral':
-      return '👥 Thưởng giới thiệu';
+      return l.provBonusKindReferral;
     default:
       return kind ?? '—';
   }

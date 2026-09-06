@@ -63,6 +63,7 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final code = view.referralCode;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -70,8 +71,7 @@ class _Body extends StatelessWidget {
         if (code == null || code.isEmpty)
           Padding(
             padding: const EdgeInsets.all(8),
-            // TODO-i18n: "Chưa có mã giới thiệu" no-code copy (no ARB key).
-            child: EmptyState(message: 'Chưa có mã giới thiệu', icon: '🎁'),
+            child: EmptyState(message: l.provReferralsNoCode, icon: '🎁'),
           )
         else ...[
           _CodeCard(code: code, shareUrl: _shareUrl(code)),
@@ -80,24 +80,21 @@ class _Body extends StatelessWidget {
             children: [
               Expanded(
                 child: _StatTile(
-                  // TODO-i18n: "Đang hoạt động" active stat (no ARB key).
-                  label: 'Đang hoạt động',
+                  label: l.provReferralsActive,
                   value: '${_countByStatus('active')}',
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _StatTile(
-                  // TODO-i18n: "Hoàn thành" completed stat (no ARB key).
-                  label: 'Hoàn thành',
+                  label: l.provReferralsCompleted,
                   value: '${_countByStatus('completed')}',
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _StatTile(
-                  // TODO-i18n: "Đã nhận (≈)" earned-extra stat (no ARB key).
-                  label: 'Đã nhận (≈)',
+                  label: l.provReferralsEarned,
                   value: formatVnd(view.earnedExtraVnd),
                   emphasize: true,
                 ),
@@ -107,8 +104,7 @@ class _Body extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             // The web labels earnedExtra as approximate (sum of ALL payouts).
-            // TODO-i18n: earnedExtra approximation note (no ARB key).
-            '* Số tiền đã nhận chỉ mang tính ước tính.',
+            l.provReferralsApproxNote,
             style: TextStyle(
               fontSize: 11,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -116,12 +112,11 @@ class _Body extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 8),
-        // TODO-i18n: "Danh sách giới thiệu" list header (no ARB key).
-        SectionHeader('Danh sách giới thiệu'),
+        SectionHeader(l.provReferralsList),
         if (view.referrals.isEmpty)
           Padding(
             padding: const EdgeInsets.all(8),
-            child: EmptyState(message: AppLocalizations.of(context).noResults),
+            child: EmptyState(message: l.noResults),
           )
         else
           _ReferralsTable(view.referrals, program: view.program),
@@ -135,24 +130,23 @@ class _CodeCard extends StatelessWidget {
   final String code;
   final String shareUrl;
 
-  Future<void> _share() async {
-    // TODO-i18n: share subject/message (no ARB key).
+  Future<void> _share(String subject) async {
     await SharePlus.instance.share(
-      ShareParams(text: shareUrl, subject: 'Tham gia Kyco với mã của tôi'),
+      ShareParams(text: shareUrl, subject: subject),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // TODO-i18n: "MÃ GIỚI THIỆU CỦA BẠN" section label (no ARB key).
-            Text('MÃ GIỚI THIỆU CỦA BẠN',
+            Text(l.provReferralsYourCode,
                 style: TextStyle(
                   fontSize: 11,
                   letterSpacing: 0.5,
@@ -194,10 +188,9 @@ class _CodeCard extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: _share,
+                onPressed: () => _share(l.provReferralsShareSubject),
                 icon: const Icon(Icons.share_outlined),
-                // TODO-i18n: "Chia sẻ" share button (no ARB key).
-                label: const Text('Chia sẻ'),
+                label: Text(l.provReferralsShare),
               ),
             ),
           ],
@@ -262,6 +255,7 @@ class _ReferralsTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     // Horizontal scroll keeps the table from overflowing narrow phones.
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -269,12 +263,11 @@ class _ReferralsTable extends StatelessWidget {
         constraints: const BoxConstraints(minWidth: 560),
         child: DataTable(
           headingRowColor: WidgetStatePropertyAll(cs.surfaceContainerHighest),
-          columns: const [
-            // TODO-i18n: referrals table headers (no ARB key).
-            DataColumn(label: Text('Đối tác')),
-            DataColumn(label: Text('Khu vực')),
-            DataColumn(label: Text('Chỉ tiêu'), numeric: true),
-            DataColumn(label: Text('Trạng thái')),
+          columns: [
+            DataColumn(label: Text(l.provReferralsColPartner)),
+            DataColumn(label: Text(l.provReferralsColArea)),
+            DataColumn(label: Text(l.provReferralsColTarget), numeric: true),
+            DataColumn(label: Text(l.statusLabel)),
           ],
           rows: [
             for (final r in rows)

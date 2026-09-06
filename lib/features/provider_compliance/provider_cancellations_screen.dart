@@ -61,6 +61,7 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final count = view.countInWindow;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -69,16 +70,14 @@ class _Body extends StatelessWidget {
           children: [
             Expanded(
               child: _StatTile(
-                // TODO-i18n: "Huỷ trong 30 ngày" tile label (no ARB key).
-                label: 'Huỷ trong 30 ngày',
+                label: l.provCancels30d,
                 value: '$count',
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: _StatTile(
-                // TODO-i18n: "Điểm phạt" penalty-score tile label (no ARB key).
-                label: 'Điểm phạt',
+                label: l.provCancelsPenaltyPoints,
                 value: '${view.penaltyScore}',
               ),
             ),
@@ -89,25 +88,20 @@ class _Body extends StatelessWidget {
         if (count >= _kSoftSuspend30d - 1)
           _WarnBanner(
             severe: true,
-            // TODO-i18n: 30-day suspension warning (no ARB key).
-            title: 'Sắp bị tạm khoá 30 ngày',
-            body: 'Bạn đã huỷ $count lần trong 30 ngày. '
-                'Đạt $_kSoftSuspend30d lần sẽ bị tạm khoá 30 ngày.',
+            title: l.provCancelsSuspend30Title,
+            body: l.provCancelsSuspend30Body(count, _kSoftSuspend30d),
           )
         else if (count >= _kSoftSuspend7d - 1)
           _WarnBanner(
             severe: false,
-            // TODO-i18n: 7-day suspension warning (no ARB key).
-            title: 'Sắp bị tạm khoá 7 ngày',
-            body: 'Bạn đã huỷ $count lần trong 30 ngày. '
-                'Đạt $_kSoftSuspend7d lần sẽ bị tạm khoá 7 ngày.',
+            title: l.provCancelsSuspend7Title,
+            body: l.provCancelsSuspend7Body(count, _kSoftSuspend7d),
           ),
-        // TODO-i18n: "Lịch sử huỷ" history header (no ARB key).
-        SectionHeader('Lịch sử huỷ'),
+        SectionHeader(l.provCancelsHistory),
         if (view.rows.isEmpty)
           Padding(
             padding: const EdgeInsets.all(8),
-            child: EmptyState(message: AppLocalizations.of(context).noResults),
+            child: EmptyState(message: l.noResults),
           )
         else
           for (final c in view.rows) _CancellationRow(c),
@@ -198,6 +192,7 @@ class _CancellationRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
@@ -210,8 +205,9 @@ class _CancellationRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    // TODO-i18n: "Đơn #{id}" booking label (no ARB key).
-                    c.bookingId != null ? 'Đơn #${c.bookingId}' : 'Đơn #—',
+                    c.bookingId != null
+                        ? l.bookingNumber(c.bookingId!)
+                        : l.provOrderNoNumber,
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
@@ -244,8 +240,7 @@ class _CancellationRow extends StatelessWidget {
                 color: cs.error.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(999),
               ),
-              // TODO-i18n: "+{n} điểm" penalty-points pill (no ARB key).
-              child: Text('+${c.penaltyScore ?? 0} điểm',
+              child: Text(l.provCancelsPoints(c.penaltyScore ?? 0),
                   style: TextStyle(
                       color: cs.error, fontSize: 11, fontWeight: FontWeight.w700)),
             ),

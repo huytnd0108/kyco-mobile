@@ -10,6 +10,51 @@ import '../../core/widgets.dart';
 import '../../theme/app_semantics.dart';
 import 'provider_availability_providers.dart';
 
+/// Weekday short label (e.g. `CN`/`Sun`), indexed by `dow % 7` (0 = Sunday).
+String _weekdayShort(AppLocalizations l, int dow) {
+  switch (dow % 7) {
+    case 0:
+      return l.provAvailWeekdayShort0;
+    case 1:
+      return l.provAvailWeekdayShort1;
+    case 2:
+      return l.provAvailWeekdayShort2;
+    case 3:
+      return l.provAvailWeekdayShort3;
+    case 4:
+      return l.provAvailWeekdayShort4;
+    case 5:
+      return l.provAvailWeekdayShort5;
+    default:
+      return l.provAvailWeekdayShort6;
+  }
+}
+
+/// Weekday long label (e.g. `Chủ nhật`/`Sunday`), indexed by `dow % 7` (0 = Sunday).
+String _weekdayLong(AppLocalizations l, int dow) {
+  switch (dow % 7) {
+    case 0:
+      return l.provAvailWeekdayLong0;
+    case 1:
+      return l.provAvailWeekdayLong1;
+    case 2:
+      return l.provAvailWeekdayLong2;
+    case 3:
+      return l.provAvailWeekdayLong3;
+    case 4:
+      return l.provAvailWeekdayLong4;
+    case 5:
+      return l.provAvailWeekdayLong5;
+    default:
+      return l.provAvailWeekdayLong6;
+  }
+}
+
+/// `620` minutes → `10 giờ 20` / `10h 20m`; whole hours drop the minutes (ICU plural).
+String _hoursLabel(AppLocalizations l, int minutes) =>
+    l.provAvailHours(minutes ~/ 60, minutes % 60);
+
+
 /// Provider · Availability — a weekly recurring-slot grid editor plus per-date
 /// overrides, backed by [availabilityProvider] (GET, §A10 pending) and saved via
 /// [KycoApiProvider.setWeeklyAvailability] / [KycoApiProvider.setDateAvailability].
@@ -20,7 +65,7 @@ class ProviderAvailabilityScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final s = AvailL10n.of(context);
+    final s = AppLocalizations.of(context);
     final async = ref.watch(availabilityProvider);
 
     return Scaffold(
@@ -39,7 +84,7 @@ class ProviderAvailabilityScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           // §A10: GET pending → the API throws; show a friendly retryable state.
           error: (e, _) => ErrorRetry(
-            message: s.loadError,
+            message: s.provAvailLoadError,
             onRetry: () => ref.invalidate(availabilityProvider),
           ),
           data: (week) => _Editor(week: week),
@@ -86,7 +131,7 @@ class _EditorState extends ConsumerState<_Editor> {
 
   // ── weekly grid save ────────────────────────────────────────────────────
   Future<void> _saveWeekly({bool force = false}) async {
-    final s = AvailL10n.of(context);
+    final s = AppLocalizations.of(context);
     setState(() => _busy = true);
     try {
       final res = await ref.read(kycoApiProvider).setWeeklyAvailability(_weekly, force: force);
@@ -100,13 +145,13 @@ class _EditorState extends ConsumerState<_Editor> {
           if (ok == true) { await _saveWeekly(force: true); }
           return;
         }
-        _snack(s.saveFailed, error: true);
+        _snack(s.provAvailSaveFailed, error: true);
         return;
       }
-      _snack(s.saved);
+      _snack(s.provAvailSaved);
       ref.invalidate(availabilityProvider);
     } catch (_) {
-      if (mounted) _snack(s.saveFailed, error: true);
+      if (mounted) _snack(s.provAvailSaveFailed, error: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -114,7 +159,7 @@ class _EditorState extends ConsumerState<_Editor> {
 
   // ── per-date override save ──────────────────────────────────────────────
   Future<void> _saveDate(String date, List<AvailabilitySlot> slots, {bool force = false}) async {
-    final s = AvailL10n.of(context);
+    final s = AppLocalizations.of(context);
     setState(() => _busy = true);
     try {
       final res = await ref.read(kycoApiProvider).setDateAvailability(date, slots, force: force);
@@ -125,7 +170,7 @@ class _EditorState extends ConsumerState<_Editor> {
           if (ok == true) { await _saveDate(date, slots, force: true); }
           return;
         }
-        _snack(s.saveFailed, error: true);
+        _snack(s.provAvailSaveFailed, error: true);
         return;
       }
       setState(() {
@@ -133,26 +178,26 @@ class _EditorState extends ConsumerState<_Editor> {
         _dates.add(AvailabilityDateOverride(date: date, slots: slots));
         _dates.sort((a, b) => a.date.compareTo(b.date));
       });
-      _snack(s.saved);
+      _snack(s.provAvailSaved);
       ref.invalidate(availabilityProvider);
     } catch (_) {
-      if (mounted) _snack(s.saveFailed, error: true);
+      if (mounted) _snack(s.provAvailSaveFailed, error: true);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<bool?> _confirmConflict(List<int> jobIds) {
-    final s = AvailL10n.of(context);
+    final s = AppLocalizations.of(context);
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.warning_amber_rounded),
-        title: Text(s.conflictTitle),
-        content: Text(s.conflictBody(jobIds)),
+        title: Text(s.provAvailConflictTitle),
+        content: Text(s.provAvailConflictBody(jobIds.map((e) => '#$e').join(', '))),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(s.saveAnyway)),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.provAvailCancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(s.provAvailSaveAnyway)),
         ],
       ),
     );
@@ -172,7 +217,7 @@ class _EditorState extends ConsumerState<_Editor> {
       isScrollControlled: true,
       showDragHandle: true,
       builder: (_) => _SlotSheet(
-        title: AvailL10n.of(context).weekdayLong(dow),
+        title: _weekdayLong(AppLocalizations.of(context), dow),
         initial: _weekly[dow] ?? const [],
       ),
     );
@@ -221,7 +266,7 @@ class _EditorState extends ConsumerState<_Editor> {
 
   @override
   Widget build(BuildContext context) {
-    final s = AvailL10n.of(context);
+    final s = AppLocalizations.of(context);
     return RefreshIndicator(
       onRefresh: _refresh,
       child: Stack(
@@ -233,7 +278,7 @@ class _EditorState extends ConsumerState<_Editor> {
               children: [
                 _FreeHoursCard(minutes: weeklyFreeMinutes(_weekly)),
                 const SizedBox(height: 24),
-                _SectionHeader(title: s.weeklyHeading, subtitle: s.weeklySub),
+                _SectionHeader(title: s.provAvailWeeklyHeading, subtitle: s.provAvailWeeklySub),
                 const SizedBox(height: 8),
                 for (final dow in kAvailabilityDows)
                   _DayRow(
@@ -242,13 +287,13 @@ class _EditorState extends ConsumerState<_Editor> {
                     onTap: _busy ? null : () => _editDay(dow),
                   ),
                 const SizedBox(height: 24),
-                _SectionHeader(title: s.overridesHeading, subtitle: s.overridesSub),
+                _SectionHeader(title: s.provAvailOverridesHeading, subtitle: s.provAvailOverridesSub),
                 const SizedBox(height: 8),
                 if (_dates.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
-                      s.emptyOverrides,
+                      s.provAvailEmptyOverrides,
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   )
@@ -262,7 +307,7 @@ class _EditorState extends ConsumerState<_Editor> {
                 OutlinedButton.icon(
                   onPressed: _busy ? null : _addOverride,
                   icon: const Icon(Icons.add),
-                  label: Text(s.addOverride),
+                  label: Text(s.provAvailAddOverride),
                 ),
               ],
             ),
@@ -286,7 +331,7 @@ class _FreeHoursCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = AvailL10n.of(context);
+    final s = AppLocalizations.of(context);
     final sem = context.semantics;
     return Container(
       padding: const EdgeInsets.all(18),
@@ -302,10 +347,10 @@ class _FreeHoursCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(s.freeHoursTitle, style: TextStyle(color: sem.onInfoContainer)),
+                Text(s.provAvailFreeHoursTitle, style: TextStyle(color: sem.onInfoContainer)),
                 const SizedBox(height: 4),
                 Text(
-                  s.hoursLabel(minutes),
+                  _hoursLabel(s, minutes),
                   style: TextStyle(
                     color: sem.onInfoContainer,
                     fontSize: 24,
@@ -347,7 +392,7 @@ class _DayRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = AvailL10n.of(context);
+    final s = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final empty = slots.isEmpty;
     return Card(
@@ -363,14 +408,14 @@ class _DayRow extends StatelessWidget {
               SizedBox(
                 width: 44,
                 child: Text(
-                  s.weekdayShort(dow),
+                  _weekdayShort(s, dow),
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: empty
-                    ? Text(s.noSlots, style: TextStyle(color: cs.onSurfaceVariant))
+                    ? Text(s.provAvailNoSlots, style: TextStyle(color: cs.onSurfaceVariant))
                     : Wrap(
                         spacing: 6,
                         runSpacing: 6,
@@ -394,7 +439,7 @@ class _OverrideRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = AvailL10n.of(context);
+    final s = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final off = item.slots.isEmpty;
     return Card(
@@ -415,7 +460,7 @@ class _OverrideRow extends StatelessWidget {
                     Text(item.date, style: const TextStyle(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
                     if (off)
-                      Text(s.unavailableFull, style: TextStyle(color: cs.onSurfaceVariant))
+                      Text(s.provAvailUnavailableFull, style: TextStyle(color: cs.onSurfaceVariant))
                     else
                       Wrap(
                         spacing: 6,
@@ -476,7 +521,7 @@ class _SlotSheetState extends State<_SlotSheet> {
   }
 
   Future<void> _pick(int index, bool isStart) async {
-    final s = AvailL10n.of(context);
+    final s = AppLocalizations.of(context);
     final current = isStart ? _slots[index].start : _slots[index].end;
     final picked = await showTimePicker(
       context: context,
@@ -493,7 +538,7 @@ class _SlotSheetState extends State<_SlotSheet> {
     });
     final slot = _slots[index];
     if (slot.end <= slot.start && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.slotOrderError)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.provAvailSlotOrderError)));
     }
   }
 
@@ -506,7 +551,7 @@ class _SlotSheetState extends State<_SlotSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final s = AvailL10n.of(context);
+    final s = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final valid = _slots.every((sl) => sl.end > sl.start);
     return Padding(
@@ -527,7 +572,7 @@ class _SlotSheetState extends State<_SlotSheet> {
           if (_slots.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(s.unavailableFull, style: TextStyle(color: cs.onSurfaceVariant)),
+              child: Text(s.provAvailUnavailableFull, style: TextStyle(color: cs.onSurfaceVariant)),
             ),
           for (var i = 0; i < _slots.length; i++)
             Padding(
@@ -537,14 +582,14 @@ class _SlotSheetState extends State<_SlotSheet> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => _pick(i, true),
-                      child: Text('${s.start}: ${formatMinutes(_slots[i].start)}'),
+                      child: Text('${s.provAvailStart}: ${formatMinutes(_slots[i].start)}'),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => _pick(i, false),
-                      child: Text('${s.end}: ${formatMinutes(_slots[i].end)}'),
+                      child: Text('${s.provAvailEnd}: ${formatMinutes(_slots[i].end)}'),
                     ),
                   ),
                   IconButton(
@@ -560,7 +605,7 @@ class _SlotSheetState extends State<_SlotSheet> {
             child: TextButton.icon(
               onPressed: _add,
               icon: const Icon(Icons.add),
-              label: Text(s.addSlot),
+              label: Text(s.provAvailAddSlot),
             ),
           ),
           const SizedBox(height: 8),
@@ -569,14 +614,14 @@ class _SlotSheetState extends State<_SlotSheet> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(s.cancel),
+                  child: Text(s.provAvailCancel),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton(
                   onPressed: valid ? () => Navigator.pop(context, _slots) : null,
-                  child: Text(s.save),
+                  child: Text(s.provAvailSave),
                 ),
               ),
             ],

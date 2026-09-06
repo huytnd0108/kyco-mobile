@@ -1,5 +1,5 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/api/kyco_api.dart';
 import '../../core/di.dart';
@@ -159,24 +159,24 @@ Map<String, int> serverMoneyFields(Map<String, dynamic> resp) {
   return out;
 }
 
-/// A human label for a `*Vnd` money key (bilingual). Falls back to the raw key.
-String moneyFieldLabel(String key, {required bool en}) {
+/// A human label for a `*Vnd` money key (localized). Falls back to the raw key.
+String moneyFieldLabel(String key, AppLocalizations l) {
   switch (key) {
     case 'commissionVnd':
     case 'cashCommissionVnd':
-      return en ? 'Commission (20%)' : 'Hoa hồng (20%)';
+      return l.provJdCommission20;
     case 'payoutVnd':
     case 'netVnd':
     case 'earningsVnd':
-      return en ? 'Your earnings' : 'Thu nhập của bạn';
+      return l.provJdYourEarnings;
     case 'balanceVnd':
     case 'newBalanceVnd':
-      return en ? 'Wallet balance' : 'Số dư ví';
+      return l.provJdWalletBalance;
     case 'totalVnd':
-      return en ? 'Order total' : 'Tổng đơn';
+      return l.provJdOrderTotal;
     case 'fineVnd':
     case 'penaltyVnd':
-      return en ? 'Fine' : 'Phí phạt';
+      return l.provJdFine;
     default:
       return key;
   }
@@ -192,12 +192,3 @@ String fmtJobTime(String? raw) {
   String p2(int n) => n.toString().padLeft(2, '0');
   return '${p2(l.day)}/${p2(l.month)} · ${p2(l.hour)}:${p2(l.minute)}';
 }
-
-/// Tiny inline-i18n shim. The feature ships new copy the shared ARB does not yet
-/// carry (see the report's "missing ARB" list); until those keys land, strings
-/// pick vi/en off the active locale exactly like the web page's inline ternaries.
-bool isEnglish(BuildContext context) =>
-    Localizations.localeOf(context).languageCode == 'en';
-
-String tr(BuildContext context, {required String vi, required String en}) =>
-    isEnglish(context) ? en : vi;

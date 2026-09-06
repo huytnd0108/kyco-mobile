@@ -51,6 +51,7 @@ class _LeaderboardBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     return CenteredMaxWidth(
@@ -63,17 +64,15 @@ class _LeaderboardBody extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
               child: Text(
-                // MISSING-ARB: 'Hạng của bạn: #{n}' / 'Your rank: #{n}'
-                'Hạng của bạn: #${view.myRank}',
+                l.provLbYourRank(view.myRank),
                 style: tt.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700, color: cs.primary),
               ),
             ),
           if (view.rows.isEmpty)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 40, 16, 16),
-              // MISSING-ARB: 'Chưa có dữ liệu xếp hạng.'
-              child: Center(child: Text('Chưa có dữ liệu xếp hạng.')),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 40, 16, 16),
+              child: Center(child: Text(l.provLbEmpty)),
             )
           else
             for (var i = 0; i < view.rows.length; i++)
@@ -95,16 +94,16 @@ class _FilterBar extends ConsumerWidget {
     final district = ref.watch(leaderboardDistrictProvider);
     final async = ref.watch(leaderboardProvider);
     final districts = async.valueOrNull?.districts ?? const <String>[];
+    final l = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Row(
         children: [
           SegmentedButton<String>(
-            segments: const [
-              // MISSING-ARB: 'Tuần' / 'Week', 'Tháng' / 'Month'
-              ButtonSegment(value: 'week', label: Text('Tuần')),
-              ButtonSegment(value: 'month', label: Text('Tháng')),
+            segments: [
+              ButtonSegment(value: 'week', label: Text(l.provLbWeek)),
+              ButtonSegment(value: 'month', label: Text(l.provLbMonth)),
             ],
             selected: {scope},
             showSelectedIcon: false,
@@ -116,12 +115,11 @@ class _FilterBar extends ConsumerWidget {
             child: DropdownButton<String?>(
               value: district,
               isExpanded: true,
-              // MISSING-ARB: 'Toàn quốc' / 'Nationwide'
-              hint: const Text('Toàn quốc'),
+              hint: Text(l.provLbNationwide),
               underline: const SizedBox.shrink(),
               items: [
-                const DropdownMenuItem<String?>(
-                    value: null, child: Text('Toàn quốc')),
+                DropdownMenuItem<String?>(
+                    value: null, child: Text(l.provLbNationwide)),
                 for (final d in districts)
                   DropdownMenuItem<String?>(value: d, child: Text(d)),
               ],
@@ -143,6 +141,7 @@ class _RankRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final isSelf = myRank > 0 && row.rank == myRank;
@@ -188,8 +187,7 @@ class _RankRow extends StatelessWidget {
                           color: cs.primary,
                           borderRadius: BorderRadius.circular(999),
                         ),
-                        // MISSING-ARB: 'Bạn' / 'You'
-                        child: Text('Bạn',
+                        child: Text(l.provLbYou,
                             style: tt.labelSmall?.copyWith(
                                 color: cs.onPrimary, fontWeight: FontWeight.w700)),
                       ),
@@ -210,8 +208,7 @@ class _RankRow extends StatelessWidget {
               Text(formatVnd(row.revenueVnd),
                   style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w800)),
               Text(
-                // MISSING-ARB: '{n} đơn' / '{n} jobs'
-                '${row.jobs} đơn',
+                l.provLbJobs(row.jobs),
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
             ],

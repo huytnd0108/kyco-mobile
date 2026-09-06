@@ -67,7 +67,7 @@ class _WalletBody extends ConsumerWidget {
         title: Text(l.provWalletTitle),
         actions: [
           IconButton(
-            tooltip: 'Xuất CSV tháng này',
+            tooltip: l.provWalletExportTooltip,
             icon: const Icon(Icons.download_outlined),
             onPressed: () async {
               final messenger = ScaffoldMessenger.of(context);
@@ -104,7 +104,7 @@ class _WalletBody extends ConsumerWidget {
                   },
                 ),
                 const SizedBox(height: 24),
-                Text('Giao dịch',
+                Text(l.provWalletTxns,
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
@@ -112,13 +112,13 @@ class _WalletBody extends ConsumerWidget {
                 const SizedBox(height: 8),
                 const _TxnList(),
                 const SizedBox(height: 24),
-                Text('Lịch sử rút tiền',
+                Text(l.provWalletWithdrawHistory,
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
                         ?.copyWith(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
-                Text('Tiền được giữ và giải ngân theo lịch của Kyco.',
+                Text(l.provWalletPayoutHint,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 const SizedBox(height: 8),
@@ -139,6 +139,7 @@ class _BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final sem = context.semantics;
     return Container(
       width: double.infinity,
@@ -154,8 +155,8 @@ class _BalanceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('SỐ DƯ KHẢ DỤNG',
-              style: TextStyle(
+          Text(l.provWalletAvailableBalance,
+              style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -167,13 +168,13 @@ class _BalanceCard extends StatelessWidget {
                   fontSize: 32,
                   fontWeight: FontWeight.w800)),
           const SizedBox(height: 10),
-          const Row(
+          Row(
             children: [
-              Icon(Icons.schedule, color: Colors.white70, size: 16),
-              SizedBox(width: 6),
+              const Icon(Icons.schedule, color: Colors.white70, size: 16),
+              const SizedBox(width: 6),
               Expanded(
-                child: Text('Giải ngân sau khi khách xác nhận, chuyển về tài khoản ngân hàng đã đăng ký.',
-                    style: TextStyle(color: Colors.white70, fontSize: 12)),
+                child: Text(l.provWalletBalanceSchedule,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12)),
               ),
             ],
           ),
@@ -190,6 +191,7 @@ class _StatTiles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final sem = context.semantics;
     return Column(
       children: [
@@ -201,7 +203,7 @@ class _StatTiles extends StatelessWidget {
             children: [
               Expanded(
                 child: _StatTile(
-                  label: 'Tổng thu nhập',
+                  label: l.provWalletTileTotal,
                   value: formatVnd(summary.lifetimeEarningVnd),
                   valueColor: sem.onSuccessContainer,
                 ),
@@ -209,7 +211,7 @@ class _StatTiles extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: _StatTile(
-                  label: 'Tháng này',
+                  label: l.provWalletTileMonth,
                   value: formatVnd(summary.monthEarningVnd),
                 ),
               ),
@@ -223,14 +225,14 @@ class _StatTiles extends StatelessWidget {
             children: [
               Expanded(
                 child: _StatTile(
-                  label: 'Số công việc',
+                  label: l.provWalletTileJobs,
                   value: '${summary.jobCount}',
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _StatTile(
-                  label: 'Phí đã trừ',
+                  label: l.provWalletTileFees,
                   value: formatVnd(summary.lifetimeFeeVnd),
                   valueColor: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -285,6 +287,7 @@ class _WithdrawCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final canWithdraw = balanceVnd >= kPayoutMinVnd;
     return Container(
@@ -297,20 +300,20 @@ class _WithdrawCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Rút tiền về ngân hàng',
+          Text(l.provWalletWithdrawTitle,
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
                   ?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text('Yêu cầu rút tiền cần xác minh bảo mật để bảo vệ tài khoản.',
+          Text(l.provWalletWithdrawBody,
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
                   ?.copyWith(color: cs.onSurfaceVariant)),
           const SizedBox(height: 12),
           if (!canWithdraw)
-            Text('Cần tối thiểu ${formatVnd(kPayoutMinVnd)} để rút tiền.',
+            Text(l.provWalletWithdrawMin(formatVnd(kPayoutMinVnd)),
                 style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13))
           else
             SizedBox(
@@ -318,7 +321,7 @@ class _WithdrawCard extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: onWithdraw,
                 icon: const Icon(Icons.account_balance),
-                label: const Text('Rút tiền'),
+                label: Text(l.provWalletWithdrawAction),
               ),
             ),
         ],
@@ -369,6 +372,7 @@ class _TxnTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final sem = context.semantics;
     final isCredit = txn.type == 'credit';
@@ -383,7 +387,7 @@ class _TxnTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(walletReasonLabel(txn.reason),
+                Text(walletReasonLabel(l, txn.reason),
                     style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
                 Text(formatWalletDate(context, txn.createdAt),
@@ -399,7 +403,7 @@ class _TxnTile extends StatelessWidget {
                   style: TextStyle(
                       fontWeight: FontWeight.w700, color: amountColor)),
               const SizedBox(height: 2),
-              Text('Số dư ${formatVnd(txn.balanceAfterVnd)}',
+              Text(l.provWalletBalanceAfter(formatVnd(txn.balanceAfterVnd)),
                   style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
             ],
           ),
@@ -451,8 +455,9 @@ class _PayoutTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
-    final status = payoutStatusLabel(payout.status);
+    final status = payoutStatusLabel(l, payout.status);
     final when = payout.releasedAt ?? payout.createdAt;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -465,8 +470,8 @@ class _PayoutTile extends StatelessWidget {
               children: [
                 Text(
                     payout.bookingId != null
-                        ? 'Đơn #${payout.bookingId}'
-                        : 'Rút tiền',
+                        ? l.bookingNumber(payout.bookingId!)
+                        : l.provWalletReasonPayout,
                     style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
                 Text(formatWalletDate(context, when),
