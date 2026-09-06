@@ -22,6 +22,24 @@ import 'features/locations/locations_screen.dart';
 import 'features/messages/messages_screen.dart';
 import 'features/notifications/notifications_screen.dart';
 import 'features/providers/provider_screen.dart';
+// ── provider (/p) shell + stubs ──
+import 'features/become_tasker/become_tasker_screen.dart';
+import 'features/provider_availability/provider_availability_screen.dart';
+import 'features/provider_compliance/provider_cancellations_screen.dart';
+import 'features/provider_compliance/provider_fine_appeal_screen.dart';
+import 'features/provider_compliance/provider_fines_screen.dart';
+import 'features/provider_compliance/provider_referrals_screen.dart';
+import 'features/provider_growth/provider_bonuses_screen.dart';
+import 'features/provider_growth/provider_goals_screen.dart';
+import 'features/provider_growth/provider_leaderboard_screen.dart';
+import 'features/provider_growth/provider_vip_screen.dart';
+import 'features/provider_home/provider_home_screen.dart';
+import 'features/provider_job_detail/provider_job_detail_screen.dart';
+import 'features/provider_jobs/provider_jobs_screen.dart';
+import 'features/provider_shell/provider_more_screen.dart';
+import 'features/provider_shell/provider_scaffold.dart';
+import 'features/provider_support/provider_support_screen.dart';
+import 'features/provider_wallet/provider_wallet_screen.dart';
 import 'features/service_detail/service_detail_screen.dart';
 import 'features/services/services_providers.dart';
 import 'features/services/services_screen.dart';
@@ -60,6 +78,33 @@ String? guestFirstRedirect({required AuthStatus status, required String loc, Str
   return null;
 }
 
+/// True for the provider shell prefix ONLY — matches `/p` and `/p/*`, never the
+/// customer `/providers/:id` route (which begins with `/p` but not `/p/`).
+bool isProviderPath(String loc) => loc == '/p' || loc.startsWith('/p/');
+
+/// The composed router redirect. Provider role-gating applies ONLY to `/p*`;
+/// every other path is delegated to [guestFirstRedirect] byte-for-byte, so the
+/// customer guest-first semantics are preserved exactly. Pure + table-testable.
+String? appRedirect({
+  required AuthStatus status,
+  String? role,
+  required String loc,
+  String? from,
+}) {
+  if (isProviderPath(loc)) {
+    // Mid-bootstrap: never bounce to login (mirrors the guest-first unknown rule).
+    if (status == AuthStatus.unknown) return '/';
+    if (status != AuthStatus.signedIn) return '/login?from=$loc';
+    // A signed-in non-provider is sent to onboarding (pending_provider sees the
+    // "under review" status inside /become-tasker).
+    if (role != 'provider' && role != 'admin') return '/become-tasker';
+    return null;
+  }
+  // Public onboarding — reachable signed-out; guest-first would allow it anyway.
+  if (loc.startsWith('/become-tasker')) return null;
+  return guestFirstRedirect(status: status, loc: loc, from: from);
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootKey,
@@ -69,11 +114,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     // (home, services, book-now, checkout, locations, providers, subscriptions,
     // notifications, account) is public. The confirm-booking wall is IN-SCREEN,
     // never a route redirect — NEVER add /checkout (or anything else) here.
-    redirect: (context, state) => guestFirstRedirect(
-      status: ref.read(authControllerProvider).status,
-      loc: state.matchedLocation,
-      from: state.uri.queryParameters['from'],
-    ),
+    redirect: (context, state) {
+      final auth = ref.read(authControllerProvider);
+      return appRedirect(
+        status: auth.status,
+        role: auth.user?.role,
+        loc: state.matchedLocation,
+        from: state.uri.queryParameters['from'],
+      );
+    },
     routes: [
       // Auth OUTSIDE the shell (full-screen, no tabs).
       GoRoute(path: '/login', parentNavigatorKey: _rootKey, builder: (_, _) => const LoginScreen()),
@@ -183,6 +232,70 @@ final routerProvider = Provider<GoRouter>((ref) {
           ]),
         ],
       ),
+
+      // ── Provider onboarding (PUBLIC — a guest can start it) ──
+      GoRoute(
+        path: '/become-tasker',
+        parentNavigatorKey: _rootKey,
+        builder: (_, _) => const BecomeTaskerScreen(),
+      ),
+
+      // ── Provider (/p) shell — role-gated by appRedirect. Its own 5-tab
+      // ProviderScaffold; detail + More sub-screens ride the root navigator so
+      // they present full-screen over the provider tabs. ──
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, shell) => ProviderScaffold(navigationShell: shell),
+        branches: [
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/p',
+              builder: (_, _) => const ProviderHomeScreen(),
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/p/jobs',
+              builder: (_, _) => const ProviderJobsScreen(),
+              routes: [
+                GoRoute(
+                  path: ':id',
+                  parentNavigatorKey: _rootKey,
+                  builder: (_, _) => const ProviderJobDetailScreen(),
+                ),
+              ],
+            ),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/p/wallet', builder: (_, _) => const ProviderWalletScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/p/availability', builder: (_, _) => const ProviderAvailabilityScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/p/more', builder: (_, _) => const ProviderMoreScreen()),
+          ]),
+        ],
+      ),
+      // Provider secondary surfaces (reached from the More menu) — full-screen.
+      GoRoute(path: '/p/bonuses', parentNavigatorKey: _rootKey, builder: (_, _) => const ProviderBonusesScreen()),
+      GoRoute(path: '/p/goals', parentNavigatorKey: _rootKey, builder: (_, _) => const ProviderGoalsScreen()),
+      GoRoute(path: '/p/leaderboard', parentNavigatorKey: _rootKey, builder: (_, _) => const ProviderLeaderboardScreen()),
+      GoRoute(path: '/p/vip', parentNavigatorKey: _rootKey, builder: (_, _) => const ProviderVipScreen()),
+      GoRoute(
+        path: '/p/fines',
+        parentNavigatorKey: _rootKey,
+        builder: (_, _) => const ProviderFinesScreen(),
+        routes: [
+          GoRoute(
+            path: ':id/appeal',
+            parentNavigatorKey: _rootKey,
+            builder: (_, _) => const ProviderFineAppealScreen(),
+          ),
+        ],
+      ),
+      GoRoute(path: '/p/cancellations', parentNavigatorKey: _rootKey, builder: (_, _) => const ProviderCancellationsScreen()),
+      GoRoute(path: '/p/referrals', parentNavigatorKey: _rootKey, builder: (_, _) => const ProviderReferralsScreen()),
+      GoRoute(path: '/p/support', parentNavigatorKey: _rootKey, builder: (_, _) => const ProviderSupportScreen()),
     ],
     errorBuilder: (context, state) => Scaffold(
       appBar: AppBar(title: const Text('Kyco')),

@@ -64,11 +64,47 @@ class KycoApiClient {
   Future<dynamic> post(String path, {Object? body, bool auth = true}) =>
       _send('POST', path, body: body, auth: auth);
 
+  /// PUT → unwrapped `data`.
+  Future<dynamic> put(String path, {Object? body, bool auth = true}) =>
+      _send('PUT', path, body: body, auth: auth);
+
   /// GET → the full `{data, meta}` envelope (for cursor-paged reads). Shares
   /// the same single-flight 401 → refresh → retry behaviour as [get].
   Future<Envelope> getWithMeta(String path,
           {Map<String, String>? query, bool auth = true}) =>
       _sendMeta('GET', path, query: query, auth: auth);
+
+  /// GET a raw binary body (e.g. a `text/csv` export) — NOT the JSON envelope.
+  /// Bearer-attached with the same single-flight 401 → refresh → retry as [get].
+  /// Returns the response bytes; throws [ApiException] on a non-2xx status.
+  Future<List<int>> getBytes(String path,
+      {Map<String, dynamic>? query, bool auth = true, bool retried = false}) async {
+    final Response<List<int>> res;
+    try {
+      res = await _dio.request<List<int>>(
+        path,
+        queryParameters: query,
+        options: Options(
+          method: 'GET',
+          responseType: ResponseType.bytes,
+          extra: {'noAuth': !auth},
+        ),
+      );
+    } on DioException catch (e) {
+      throw ApiException('network', e.message ?? 'Network error');
+    }
+    final status = res.statusCode ?? 0;
+    if (status == 401 && auth) {
+      if (!retried && await _refreshOnce()) {
+        return getBytes(path, query: query, auth: auth, retried: true);
+      }
+      await tokens.clear();
+      onAuthLost?.call();
+    }
+    if (status >= 200 && status < 300) return res.data ?? const <int>[];
+    // Error bodies come back as bytes here; surface a generic typed failure.
+    throw ApiException('http_$status', 'Request failed', status: status);
+  }
 
   Future<Envelope> _sendMeta(String method, String path,
       {Map<String, dynamic>? query, Object? body, required bool auth, bool retried = false}) async {

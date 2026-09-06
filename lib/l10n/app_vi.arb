@@ -252,5 +252,30 @@
       }
     }
   },
-  "manageOnWeb": "Tạo hoặc đổi gói trên kyco.vn"
+  "manageOnWeb": "Tạo hoặc đổi gói trên kyco.vn",
+  "provWorkspace": "Khu vực đối tác",
+  "provComingSoon": "Sắp ra mắt",
+  "provTabHome": "Trang chủ",
+  "provTabJobs": "Công việc",
+  "provTabWallet": "Ví",
+  "provTabAvailability": "Lịch rảnh",
+  "provTabMore": "Thêm",
+  "provHomeTitle": "Bảng điều khiển",
+  "provJobsTitle": "Công việc",
+  "provJobsAssigned": "Được giao",
+  "provJobsAvailable": "Khả dụng",
+  "provWalletTitle": "Ví của tôi",
+  "provAvailabilityTitle": "Lịch rảnh",
+  "provMoreTitle": "Thêm",
+  "provBonusesTitle": "Thưởng",
+  "provGoalsTitle": "Mục tiêu",
+  "provLeaderboardTitle": "Bảng xếp hạng",
+  "provFinesTitle": "Phí phạt",
+  "provAppealTitle": "Khiếu nại",
+  "provCancellationsTitle": "Hủy đơn",
+  "provReferralsTitle": "Giới thiệu",
+  "provSupportTitle": "Hỗ trợ",
+  "provVipTitle": "VIP",
+  "provSwitchToCustomer": "Chuyển sang khách hàng",
+  "provSignInRequired": "Vui lòng đăng nhập để tiếp tục."
 }

@@ -841,6 +841,156 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Tạo hoặc đổi gói trên kyco.vn'**
   String get manageOnWeb;
+
+  /// No description provided for @provWorkspace.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khu vực đối tác'**
+  String get provWorkspace;
+
+  /// No description provided for @provComingSoon.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sắp ra mắt'**
+  String get provComingSoon;
+
+  /// No description provided for @provTabHome.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trang chủ'**
+  String get provTabHome;
+
+  /// No description provided for @provTabJobs.
+  ///
+  /// In vi, this message translates to:
+  /// **'Công việc'**
+  String get provTabJobs;
+
+  /// No description provided for @provTabWallet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ví'**
+  String get provTabWallet;
+
+  /// No description provided for @provTabAvailability.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch rảnh'**
+  String get provTabAvailability;
+
+  /// No description provided for @provTabMore.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm'**
+  String get provTabMore;
+
+  /// No description provided for @provHomeTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bảng điều khiển'**
+  String get provHomeTitle;
+
+  /// No description provided for @provJobsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Công việc'**
+  String get provJobsTitle;
+
+  /// No description provided for @provJobsAssigned.
+  ///
+  /// In vi, this message translates to:
+  /// **'Được giao'**
+  String get provJobsAssigned;
+
+  /// No description provided for @provJobsAvailable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khả dụng'**
+  String get provJobsAvailable;
+
+  /// No description provided for @provWalletTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ví của tôi'**
+  String get provWalletTitle;
+
+  /// No description provided for @provAvailabilityTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch rảnh'**
+  String get provAvailabilityTitle;
+
+  /// No description provided for @provMoreTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm'**
+  String get provMoreTitle;
+
+  /// No description provided for @provBonusesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thưởng'**
+  String get provBonusesTitle;
+
+  /// No description provided for @provGoalsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mục tiêu'**
+  String get provGoalsTitle;
+
+  /// No description provided for @provLeaderboardTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bảng xếp hạng'**
+  String get provLeaderboardTitle;
+
+  /// No description provided for @provFinesTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phí phạt'**
+  String get provFinesTitle;
+
+  /// No description provided for @provAppealTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khiếu nại'**
+  String get provAppealTitle;
+
+  /// No description provided for @provCancellationsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy đơn'**
+  String get provCancellationsTitle;
+
+  /// No description provided for @provReferralsTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Giới thiệu'**
+  String get provReferralsTitle;
+
+  /// No description provided for @provSupportTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hỗ trợ'**
+  String get provSupportTitle;
+
+  /// No description provided for @provVipTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'VIP'**
+  String get provVipTitle;
+
+  /// No description provided for @provSwitchToCustomer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chuyển sang khách hàng'**
+  String get provSwitchToCustomer;
+
+  /// No description provided for @provSignInRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng đăng nhập để tiếp tục.'**
+  String get provSignInRequired;
 }
 
 class _AppLocalizationsDelegate

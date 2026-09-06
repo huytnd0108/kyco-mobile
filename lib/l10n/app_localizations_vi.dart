@@ -417,4 +417,79 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get manageOnWeb => 'Tạo hoặc đổi gói trên kyco.vn';
+
+  @override
+  String get provWorkspace => 'Khu vực đối tác';
+
+  @override
+  String get provComingSoon => 'Sắp ra mắt';
+
+  @override
+  String get provTabHome => 'Trang chủ';
+
+  @override
+  String get provTabJobs => 'Công việc';
+
+  @override
+  String get provTabWallet => 'Ví';
+
+  @override
+  String get provTabAvailability => 'Lịch rảnh';
+
+  @override
+  String get provTabMore => 'Thêm';
+
+  @override
+  String get provHomeTitle => 'Bảng điều khiển';
+
+  @override
+  String get provJobsTitle => 'Công việc';
+
+  @override
+  String get provJobsAssigned => 'Được giao';
+
+  @override
+  String get provJobsAvailable => 'Khả dụng';
+
+  @override
+  String get provWalletTitle => 'Ví của tôi';
+
+  @override
+  String get provAvailabilityTitle => 'Lịch rảnh';
+
+  @override
+  String get provMoreTitle => 'Thêm';
+
+  @override
+  String get provBonusesTitle => 'Thưởng';
+
+  @override
+  String get provGoalsTitle => 'Mục tiêu';
+
+  @override
+  String get provLeaderboardTitle => 'Bảng xếp hạng';
+
+  @override
+  String get provFinesTitle => 'Phí phạt';
+
+  @override
+  String get provAppealTitle => 'Khiếu nại';
+
+  @override
+  String get provCancellationsTitle => 'Hủy đơn';
+
+  @override
+  String get provReferralsTitle => 'Giới thiệu';
+
+  @override
+  String get provSupportTitle => 'Hỗ trợ';
+
+  @override
+  String get provVipTitle => 'VIP';
+
+  @override
+  String get provSwitchToCustomer => 'Chuyển sang khách hàng';
+
+  @override
+  String get provSignInRequired => 'Vui lòng đăng nhập để tiếp tục.';
 }

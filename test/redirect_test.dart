@@ -81,4 +81,63 @@ void main() {
       });
     }
   });
+
+  // ── Provider (/p) gating — additive; the customer rule above is frozen. ──
+  group('appRedirect — customer delegation UNCHANGED', () {
+    // appRedirect must be byte-identical to guestFirstRedirect for every
+    // non-/p path (public + protected + auth screens).
+    final customerCases = <(AuthStatus, String, String?)>[
+      for (final p in publicPaths) (AuthStatus.signedOut, p, null),
+      for (final p in publicPaths) (AuthStatus.unknown, p, null),
+      for (final p in publicPaths) (AuthStatus.signedIn, p, null),
+      (AuthStatus.signedOut, '/bookings', null),
+      (AuthStatus.signedOut, '/messages', null),
+      (AuthStatus.unknown, '/bookings', null),
+      (AuthStatus.signedIn, '/bookings', null),
+      (AuthStatus.signedIn, '/login', null),
+    ];
+    for (final (status, loc, from) in customerCases) {
+      test('$status $loc delegates', () {
+        expect(
+          appRedirect(status: status, role: 'customer', loc: loc, from: from),
+          guestFirstRedirect(status: status, loc: loc, from: from),
+        );
+      });
+    }
+    // The customer /providers/:id route begins with "/p" but must NOT be gated.
+    test('/providers/7 is not a provider path', () {
+      expect(isProviderPath('/providers/7'), isFalse);
+      expect(appRedirect(status: AuthStatus.signedOut, role: null, loc: '/providers/7'), isNull);
+    });
+  });
+
+  group('appRedirect — /p role gate', () {
+    test('unknown → / (never a login bounce mid-bootstrap)', () {
+      expect(appRedirect(status: AuthStatus.unknown, loc: '/p'), '/');
+      expect(appRedirect(status: AuthStatus.unknown, loc: '/p/wallet'), '/');
+    });
+    test('signedOut → /login?from=', () {
+      expect(appRedirect(status: AuthStatus.signedOut, loc: '/p'), '/login?from=/p');
+      expect(appRedirect(status: AuthStatus.signedOut, loc: '/p/wallet'),
+          '/login?from=/p/wallet');
+    });
+    test('signed-in customer → /become-tasker', () {
+      expect(appRedirect(status: AuthStatus.signedIn, role: 'customer', loc: '/p'),
+          '/become-tasker');
+      expect(appRedirect(status: AuthStatus.signedIn, role: 'pending_provider', loc: '/p'),
+          '/become-tasker');
+    });
+    test('signed-in provider / admin → null (allowed)', () {
+      expect(appRedirect(status: AuthStatus.signedIn, role: 'provider', loc: '/p'), isNull);
+      expect(appRedirect(status: AuthStatus.signedIn, role: 'admin', loc: '/p'), isNull);
+      expect(
+          appRedirect(status: AuthStatus.signedIn, role: 'provider', loc: '/p/jobs/5'), isNull);
+    });
+    test('/become-tasker is public (any status → null)', () {
+      expect(appRedirect(status: AuthStatus.signedOut, loc: '/become-tasker'), isNull);
+      expect(appRedirect(status: AuthStatus.unknown, loc: '/become-tasker'), isNull);
+      expect(appRedirect(status: AuthStatus.signedIn, role: 'customer', loc: '/become-tasker'),
+          isNull);
+    });
+  });
 }

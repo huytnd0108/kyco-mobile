@@ -62,7 +62,16 @@ class AccountScreen extends ConsumerWidget {
               // v1 — the web links out; url_launcher is not a dependency, so
               // these read as informational rows). See report.
               _AccountRow(icon: Icons.card_giftcard, label: l.inviteFriends, external: true),
-              _AccountRow(icon: Icons.handshake_outlined, label: l.becomePartner, external: true),
+              // Role-aware entry: a provider gets an in-app link to the /p
+              // workspace; everyone else keeps the onboarding CTA unchanged.
+              if (auth.user?.role == 'provider')
+                _AccountRow(
+                  icon: Icons.handshake_outlined,
+                  label: l.provWorkspace,
+                  onTap: () => context.go('/p'),
+                )
+              else
+                _AccountRow(icon: Icons.handshake_outlined, label: l.becomePartner, external: true),
               _AccountRow(icon: Icons.chat_bubble_outline, label: l.contactUs, external: true),
               _AccountRow(icon: Icons.info_outline, label: l.aboutKyco, external: true),
               _AccountRow(icon: Icons.help_outline, label: l.faqs, external: true),

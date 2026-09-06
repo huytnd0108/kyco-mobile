@@ -3,6 +3,12 @@
          Flutter template only adds it to the debug/profile manifests, so a
          release APK/AAB would otherwise throw SocketException on every call. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- ── provider foundation: location for job check-in/out + tracking ──
+         Foreground-only (when-in-use) in v1; no background/foreground-service
+         permission. image_picker uses the system camera/gallery intents, so no
+         CAMERA / READ_MEDIA permission is required. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:label="Kyco"
         android:name="${applicationName}"

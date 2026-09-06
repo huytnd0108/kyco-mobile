@@ -416,4 +416,79 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get manageOnWeb => 'Create or change a plan on kyco.vn';
+
+  @override
+  String get provWorkspace => 'Provider workspace';
+
+  @override
+  String get provComingSoon => 'Coming soon';
+
+  @override
+  String get provTabHome => 'Home';
+
+  @override
+  String get provTabJobs => 'Jobs';
+
+  @override
+  String get provTabWallet => 'Wallet';
+
+  @override
+  String get provTabAvailability => 'Availability';
+
+  @override
+  String get provTabMore => 'More';
+
+  @override
+  String get provHomeTitle => 'Dashboard';
+
+  @override
+  String get provJobsTitle => 'Jobs';
+
+  @override
+  String get provJobsAssigned => 'Assigned';
+
+  @override
+  String get provJobsAvailable => 'Available';
+
+  @override
+  String get provWalletTitle => 'My wallet';
+
+  @override
+  String get provAvailabilityTitle => 'Availability';
+
+  @override
+  String get provMoreTitle => 'More';
+
+  @override
+  String get provBonusesTitle => 'Bonuses';
+
+  @override
+  String get provGoalsTitle => 'Goals';
+
+  @override
+  String get provLeaderboardTitle => 'Leaderboard';
+
+  @override
+  String get provFinesTitle => 'Fines';
+
+  @override
+  String get provAppealTitle => 'Appeal';
+
+  @override
+  String get provCancellationsTitle => 'Cancellations';
+
+  @override
+  String get provReferralsTitle => 'Referrals';
+
+  @override
+  String get provSupportTitle => 'Support';
+
+  @override
+  String get provVipTitle => 'VIP';
+
+  @override
+  String get provSwitchToCustomer => 'Switch to customer';
+
+  @override
+  String get provSignInRequired => 'Please sign in to continue.';
 }

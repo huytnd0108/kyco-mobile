@@ -1,6 +1,13 @@
+import 'package:dio/dio.dart' show FormData, MultipartFile;
+
 import '../models.dart';
 import 'api_client.dart';
 import 'token_store.dart';
+
+// Provider (/api/v1/provider) methods live in a same-library part so the
+// `extension KycoApiProvider on KycoApi` can reuse the private `_c` client and
+// the shared Paged/Envelope patterns. See kyco_api_provider.dart.
+part 'kyco_api_provider.dart';
 
 /// Typed facade over the kyco /api/v1 endpoints the app uses.
 class KycoApi {

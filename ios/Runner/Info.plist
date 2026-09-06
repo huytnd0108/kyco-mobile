@@ -68,5 +68,15 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<!-- ── provider foundation: native usage strings (Section C) ── -->
+		<!-- Foreground-only (when-in-use) location: check-in + live tracking. -->
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Kyco xác nhận bạn đã đến nơi làm việc và chia sẻ vị trí trong ca làm.</string>
+		<!-- Camera: job before/mid/after photos + KYC selfie/CCCD. -->
+		<key>NSCameraUsageDescription</key>
+		<string>Kyco dùng camera để chụp ảnh công việc và giấy tờ xác minh (CCCD, ảnh chân dung).</string>
+		<!-- Photo library: attach existing photos to a job or KYC. -->
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Kyco cần truy cập thư viện ảnh để bạn đính kèm ảnh công việc hoặc giấy tờ.</string>
 	</dict>
 </plist>

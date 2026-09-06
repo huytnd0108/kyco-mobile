@@ -18,6 +18,16 @@ dependencies:
   go_router: ^18.0.0
   intl: ^0.20.3
   shared_preferences: ^2.5.3
+  # ── provider foundation (native concerns, Section C) ──
+  # geolocator: GPS for job check-in/out + foreground live tracking.
+  # image_picker: job before/mid/after photos + KYC CCCD/selfie captures.
+  # share_plus: hand the wallet CSV export to the OS share sheet.
+  # NOTE: firebase_core/firebase_messaging (push) are DEFERRED — they require
+  # human-supplied google-services.json / GoogleService-Info.plist, whose
+  # absence breaks the native build. Push lands with unit W8.
+  geolocator: ^14.0.0
+  image_picker: ^1.2.0
+  share_plus: ^13.3.0
 
 dev_dependencies:
   flutter_test:
