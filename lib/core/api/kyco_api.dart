@@ -59,6 +59,15 @@ class KycoApi {
     return AuthUser.fromJson(data as Map<String, dynamic>);
   }
 
+  /// Verified phone-number change (dualAuth Bearer mutation).
+  /// `code` is the OTP the caller first requested to the NEW number via
+  /// `/auth/otp/request` with `purpose: 'phone_change'`. The server requires a
+  /// fresh step-up grant: a missing one comes back as 403 `STEP_UP_REQUIRED`.
+  /// Also surfaces 422 VALIDATION (`fields.phone` / `fields.code`) and 409
+  /// CONFLICT (phone already in use) as [ApiException] — handled by the caller.
+  Future<void> changePhone({required String phone, required String code}) =>
+      _c.post('/me/phone', body: {'phone': phone, 'code': code});
+
   Future<List<Booking>> bookings() async {
     final data = await _c.get('/bookings');
     // data may be a bare list OR a paginated envelope { items: [...], meta }.

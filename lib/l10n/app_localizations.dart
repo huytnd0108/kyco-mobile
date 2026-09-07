@@ -1754,6 +1754,60 @@ abstract class AppLocalizations {
   /// **'Mã OTP'**
   String get provOtpLabel;
 
+  /// No description provided for @changePhoneTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đổi số điện thoại'**
+  String get changePhoneTitle;
+
+  /// No description provided for @changePhonePrompt.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập số điện thoại mới. Chúng tôi sẽ gửi mã xác minh tới số đó.'**
+  String get changePhonePrompt;
+
+  /// No description provided for @changePhoneNewLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại mới'**
+  String get changePhoneNewLabel;
+
+  /// No description provided for @changePhoneCodePrompt.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập mã 6 số vừa gửi tới số điện thoại mới.'**
+  String get changePhoneCodePrompt;
+
+  /// No description provided for @changePhoneSubmit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận đổi số'**
+  String get changePhoneSubmit;
+
+  /// No description provided for @changePhoneSuccess.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã cập nhật số điện thoại.'**
+  String get changePhoneSuccess;
+
+  /// No description provided for @changePhoneConflict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại này đã được sử dụng.'**
+  String get changePhoneConflict;
+
+  /// No description provided for @changePhoneInvalidCode.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã xác minh không đúng.'**
+  String get changePhoneInvalidCode;
+
+  /// No description provided for @changePhoneCodeRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng nhập mã xác minh gồm 6 số.'**
+  String get changePhoneCodeRequired;
+
   /// No description provided for @provJdNotFound.
   ///
   /// In vi, this message translates to:

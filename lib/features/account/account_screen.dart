@@ -8,6 +8,7 @@ import '../../core/locale_controller.dart';
 import '../../theme/theme_mode_controller.dart';
 import '../auth/auth_controller.dart';
 import 'account_providers.dart';
+import 'change_phone_sheet.dart';
 
 /// Account tab — mirrors the web `mobile-account-sheet.tsx` drawer as a full
 /// scrollable page. GUEST-FIRST: the whole page is usable signed-out (browse
@@ -56,6 +57,12 @@ class AccountScreen extends ConsumerWidget {
                   icon: Icons.receipt_long,
                   label: l.myBookings,
                   onTap: () => context.go('/bookings'),
+                ),
+              if (signedIn)
+                _AccountRow(
+                  icon: Icons.phone_iphone,
+                  label: l.changePhoneTitle,
+                  onTap: () => _runChangePhone(context, ref),
                 ),
               const _RowDivider(),
               // Static / external-link affordances (no in-app destination in
@@ -140,6 +147,17 @@ class AccountScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Open the verified phone-change flow; on a confirmed change, refresh the
+/// account/me read so the new number shows and confirm with a snackbar.
+Future<void> _runChangePhone(BuildContext context, WidgetRef ref) async {
+  final l = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final changed = await showChangePhoneSheet(context);
+  if (!changed) return;
+  ref.invalidate(accountMeProvider);
+  messenger.showSnackBar(SnackBar(content: Text(l.changePhoneSuccess)));
 }
 
 /// Signed-in identity card — API-backed by `me()`, falling back to the cached

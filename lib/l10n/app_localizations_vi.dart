@@ -920,6 +920,35 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provOtpLabel => 'Mã OTP';
 
   @override
+  String get changePhoneTitle => 'Đổi số điện thoại';
+
+  @override
+  String get changePhonePrompt =>
+      'Nhập số điện thoại mới. Chúng tôi sẽ gửi mã xác minh tới số đó.';
+
+  @override
+  String get changePhoneNewLabel => 'Số điện thoại mới';
+
+  @override
+  String get changePhoneCodePrompt =>
+      'Nhập mã 6 số vừa gửi tới số điện thoại mới.';
+
+  @override
+  String get changePhoneSubmit => 'Xác nhận đổi số';
+
+  @override
+  String get changePhoneSuccess => 'Đã cập nhật số điện thoại.';
+
+  @override
+  String get changePhoneConflict => 'Số điện thoại này đã được sử dụng.';
+
+  @override
+  String get changePhoneInvalidCode => 'Mã xác minh không đúng.';
+
+  @override
+  String get changePhoneCodeRequired => 'Vui lòng nhập mã xác minh gồm 6 số.';
+
+  @override
   String get provJdNotFound => 'Không tìm thấy công việc';
 
   @override

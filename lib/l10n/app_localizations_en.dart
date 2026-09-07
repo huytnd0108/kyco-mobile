@@ -919,6 +919,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provOtpLabel => 'OTP code';
 
   @override
+  String get changePhoneTitle => 'Change phone number';
+
+  @override
+  String get changePhonePrompt =>
+      'Enter your new phone number. We\'ll send a verification code to it.';
+
+  @override
+  String get changePhoneNewLabel => 'New phone number';
+
+  @override
+  String get changePhoneCodePrompt =>
+      'Enter the 6-digit code sent to your new number.';
+
+  @override
+  String get changePhoneSubmit => 'Confirm change';
+
+  @override
+  String get changePhoneSuccess => 'Your phone number has been updated.';
+
+  @override
+  String get changePhoneConflict => 'This phone number is already in use.';
+
+  @override
+  String get changePhoneInvalidCode => 'The verification code is invalid.';
+
+  @override
+  String get changePhoneCodeRequired => 'Enter the 6-digit verification code.';
+
+  @override
   String get provJdNotFound => 'Job not found';
 
   @override
