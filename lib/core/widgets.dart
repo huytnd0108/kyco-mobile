@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
-import '../theme/app_semantics.dart';
 
 // Shared UI kit (core/ui) — screens import `core/widgets.dart` and get the full
 // set: ServiceCard, CategoryTile, StickyBottomCta, SearchField, SectionHeader,
@@ -21,15 +20,10 @@ class KycoBrand extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Column(
         children: [
-          Container(
-            height: 56,
-            width: 56,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: context.semantics.brandGradient),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(Icons.cleaning_services, color: Colors.white, size: 30),
-          ),
+          // The web logo (apps/kyco/public/icon.svg) rasterized byte-for-byte by
+          // tool/brand/render-brand.mjs — never redrawn in Flutter.
+          Image.asset('assets/brand/logo.png', height: 56, width: 56,
+              semanticLabel: 'Kyco', filterQuality: FilterQuality.medium),
           const SizedBox(height: 10),
           const Text('Kyco', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
         ],
