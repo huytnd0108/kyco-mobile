@@ -253,7 +253,8 @@ class _CancellationRow extends StatelessWidget {
 
 /// Best-effort ISO → `dd/MM/yyyy HH:mm`; falls back to the first 16 chars.
 String _shortDateTime(String iso) {
-  final dt = DateTime.tryParse(iso);
+  // Server timestamps are UTC ISO strings — render in the device's local zone.
+  final dt = DateTime.tryParse(iso)?.toLocal();
   if (dt == null) return iso.length >= 16 ? iso.substring(0, 16) : iso;
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(dt.day)}/${two(dt.month)}/${dt.year} ${two(dt.hour)}:${two(dt.minute)}';

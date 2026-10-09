@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/kyco_api.dart';
 import '../../core/di.dart';
 import '../../core/models.dart';
+import '../auth/auth_controller.dart';
 
 /// The signed-in customer's notifications feed: the accumulated list, the
 /// `meta.unread` count, and the opaque forward cursor. Fully API-backed
@@ -56,6 +57,8 @@ class NotificationsController
   @override
   Future<NotificationsData> build() async {
     ref.onDispose(() => _disposed = true);
+    // User-scoped: a sign-out / account switch rebuilds (drops the old feed).
+    ref.watch(authUserIdProvider);
     final (page, unread) = await _api.notifications();
     return NotificationsData(
       items: page.items,
@@ -123,6 +126,30 @@ class NotificationsController
     return true;
   }
 
+  /// Mark ONE notification read (`POST /notifications/{id}/read`) and reflect
+  /// it locally (tile + badge). Idempotent client-side: an already-read item is
+  /// a no-op. Returns false if the POST failed (state unchanged).
+  Future<bool> markRead(int id) async {
+    final cur = state.valueOrNull;
+    final idx = cur?.items.indexWhere((n) => n.id == id) ?? -1;
+    if (cur != null && idx >= 0 && cur.items[idx].read) return true;
+    try {
+      await _api.markNotificationRead(id);
+    } catch (_) {
+      return false;
+    }
+    if (_disposed) return true;
+    final now = state.valueOrNull;
+    if (now == null) return true;
+    final i = now.items.indexWhere((n) => n.id == id);
+    if (i < 0 || now.items[i].read) return true;
+    state = AsyncData(now.copyWith(
+      items: [for (final n in now.items) n.id == id ? _asRead(n) : n],
+      unread: now.unread > 0 ? now.unread - 1 : 0,
+    ));
+    return true;
+  }
+
   static NotificationItem _asRead(NotificationItem n) => NotificationItem(
         id: n.id,
         type: n.type,
@@ -132,4 +159,54 @@ class NotificationsController
         createdAt: n.createdAt,
         read: true,
       );
+}
+
+/// Map a notification `link` (a web path, optionally absolute on a kyco host,
+/// optionally locale-prefixed) onto an in-app route, or null when the app has
+/// no screen for it (admin pages, /sos, /settings, foreign hosts …). Pure.
+String? inAppRouteForLink(String? link) {
+  if (link == null || link.trim().isEmpty) return null;
+  final uri = Uri.tryParse(link.trim());
+  if (uri == null) return null;
+  if (uri.hasScheme) {
+    if (uri.scheme != 'https' && uri.scheme != 'http') return null;
+    final host = uri.host.toLowerCase();
+    if (host != 'kyco.vn' && !host.endsWith('.kyco.vn')) return null;
+  }
+  var segs = uri.pathSegments.where((s) => s.isNotEmpty).toList();
+  if (segs.isNotEmpty && (segs.first == 'vi' || segs.first == 'en')) segs = segs.sublist(1);
+  if (segs.isEmpty) return '/';
+  bool isId(String s) => int.tryParse(s) != null;
+  switch (segs.first) {
+    case 'bookings':
+      return segs.length >= 2 && isId(segs[1]) ? '/bookings/${segs[1]}' : '/bookings';
+    case 'services':
+      return segs.length >= 2 && isId(segs[1]) ? '/services/${segs[1]}' : '/services';
+    case 'subscriptions':
+      return '/subscriptions';
+    case 'notifications':
+    case 'messages':
+    case 'account':
+    case 'help':
+    case 'invite':
+    case 'addresses':
+    case 'become-tasker':
+      return '/${segs.first}';
+    case 'provider':
+      if (segs.length == 1) return '/p';
+      switch (segs[1]) {
+        case 'jobs':
+          return segs.length >= 3 && isId(segs[2]) ? '/p/jobs/${segs[2]}' : '/p/jobs';
+        case 'wallet':
+        case 'fines':
+        case 'bonuses':
+        case 'goals':
+        case 'availability':
+        case 'referrals':
+        case 'support':
+          return '/p/${segs[1]}';
+      }
+      return '/p';
+  }
+  return null;
 }

@@ -206,3 +206,55 @@ class NotificationItem {
         read: j['isRead'] == true || j['readAt'] != null || j['read'] == true,
       );
 }
+
+/// `GET /v1/invites/stats`.
+class InviteStats {
+  const InviteStats({this.pending = 0, this.signedUp = 0});
+  final int pending;
+  final int signedUp;
+  factory InviteStats.fromJson(Map<String, dynamic> j) => InviteStats(
+        pending: (j['pending'] as num?)?.toInt() ?? 0,
+        signedUp: (j['signedUp'] as num?)?.toInt() ?? 0,
+      );
+}
+
+/// A saved customer address (`/v1/addresses`).
+class SavedAddress {
+  const SavedAddress({
+    required this.id,
+    this.label = '',
+    this.line = '',
+    this.district = '',
+    this.ward = '',
+    this.city = '',
+    this.isDefault = false,
+  });
+  final int id;
+  final String label;
+  final String line;
+  final String district;
+  final String ward;
+  final String city;
+  final bool isDefault;
+
+  factory SavedAddress.fromJson(Map<String, dynamic> j) => SavedAddress(
+        id: (j['id'] as num?)?.toInt() ?? 0,
+        label: (j['label'] as String?) ?? '',
+        line: (j['line'] as String?) ?? '',
+        district: (j['district'] as String?) ?? '',
+        ward: (j['ward'] as String?) ?? '',
+        city: (j['city'] as String?) ?? '',
+        isDefault: j['isDefault'] == true,
+      );
+
+  /// The FULL write body. PATCH /v1/addresses/{id} replaces every column
+  /// (backend bug MQA-2), so create AND update always send all six fields.
+  Map<String, dynamic> toWriteBody() => {
+        'label': label,
+        'line': line,
+        'district': district,
+        'ward': ward,
+        'city': city,
+        'isDefault': isDefault,
+      };
+}

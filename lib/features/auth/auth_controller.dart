@@ -6,21 +6,60 @@ import '../../core/api/token_store.dart';
 import '../../core/di.dart';
 import '../../core/models.dart';
 
+/// Where to land after sign-in: the `from` flow the guest came from, except a
+/// provider-shell (`/p`, `/p/*`) target is dropped for a role that cannot
+/// enter it (customer / pending_provider / unknown) — they go home instead of
+/// bouncing through the role gate into onboarding.
+String resumeAfterLogin(String? from, String? role) {
+  if (from == null || from.isEmpty) return '/';
+  final isProvider = from == '/p' || from.startsWith('/p/') || from.startsWith('/p?');
+  if (isProvider && role != 'provider' && role != 'admin') return '/';
+  return from;
+}
+
+/// The signed-in user's id for user-scoped providers to `watch`: null when
+/// signed out / unknown, 0 for an optimistic session whose user hasn't loaded.
+/// Any account switch or sign-out changes it, so every watcher refetches or
+/// drops its data automatically (no stale data across users).
+final authUserIdProvider = Provider<int?>((ref) {
+  final s = ref.watch(authControllerProvider);
+  if (s.status != AuthStatus.signedIn) return null;
+  return s.user?.id ?? 0;
+});
+
 enum AuthStatus { unknown, signedIn, signedOut }
 
 class AuthState {
-  const AuthState({required this.status, this.user, this.busy = false, this.error});
+  const AuthState({
+    required this.status,
+    this.user,
+    this.busy = false,
+    this.error,
+    this.failure,
+    this.explicitLogout = false,
+  });
   final AuthStatus status;
   final AuthUser? user;
   final bool busy;
+
+  /// Legacy free-text error (goldens / [AuthController.genericError] sentinel).
   final String? error;
 
-  AuthState copyWith({AuthStatus? status, AuthUser? user, bool? busy, String? error}) =>
+  /// The typed failure of the last auth action. Screens map it to localized
+  /// copy via `apiErrorText` — never render `toString()`.
+  final ApiException? failure;
+
+  /// True only for the signed-out state produced by an explicit user logout
+  /// (not a refresh-lost sign-out) — the app routes home on it.
+  final bool explicitLogout;
+
+  AuthState copyWith({AuthStatus? status, AuthUser? user, bool? busy, String? error, ApiException? failure}) =>
       AuthState(
         status: status ?? this.status,
         user: user ?? this.user,
         busy: busy ?? this.busy,
         error: error,
+        failure: failure,
       );
 
   static const unknown = AuthState(status: AuthStatus.unknown);
@@ -89,8 +128,28 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
-  Future<bool> login({required String email, required String password}) =>
-      _run(() => _api.login(email: email, password: password));
+  Future<bool> login({required String email, required String password, String? totpCode}) =>
+      _run(() => _api.login(email: email, password: password, totpCode: totpCode));
+
+  /// Phone sign-in step 1: send a `purpose: 'login'` OTP. Returns null on
+  /// success, else the typed failure (the screen localizes it).
+  Future<Object?> requestLoginOtp(String phone) async {
+    try {
+      await _api.requestOtp(phone: phone, purpose: 'login');
+      return null;
+    } catch (e) {
+      return e;
+    }
+  }
+
+  /// Phone sign-in step 2: `/auth/login {phone, code[, totpCode]}`.
+  Future<bool> loginWithOtp({required String phone, required String code, String? totpCode}) =>
+      _run(() => _api.loginWithOtp(phone: phone, code: code, totpCode: totpCode));
+
+  /// Clear a stale error (e.g. when switching login mode).
+  void clearError() {
+    if (state.error != null || state.failure != null) state = state.copyWith();
+  }
 
   Future<bool> signup({required String email, required String password, String? name}) =>
       _run(() => _api.signup(email: email, password: password, name: name));
@@ -102,7 +161,7 @@ class AuthController extends Notifier<AuthState> {
       state = AuthState(status: AuthStatus.signedIn, user: res.user);
       return true;
     } on ApiException catch (e) {
-      state = state.copyWith(busy: false, error: e.message);
+      state = state.copyWith(busy: false, failure: e);
       return false;
     } catch (_) {
       state = state.copyWith(busy: false, error: genericError);
@@ -115,7 +174,7 @@ class AuthController extends Notifier<AuthState> {
     try {
       await _api.logout();
     } finally {
-      state = const AuthState(status: AuthStatus.signedOut);
+      state = const AuthState(status: AuthStatus.signedOut, explicitLogout: true);
     }
   }
 

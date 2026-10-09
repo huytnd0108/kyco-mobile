@@ -6,8 +6,11 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/di.dart';
 import '../../core/models.dart';
+import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import '../auth/auth_controller.dart';
+import '../home/home_providers.dart';
+import '../messages/messages_screen.dart' show conversationsProvider;
 import 'address_fields.dart';
 import 'checkout_providers.dart';
 import 'draft_store.dart';
@@ -100,6 +103,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     setState(() => _submitting = true);
     try {
       final result = await ref.read(kycoApiProvider).createBooking(draft);
+      // A booking now exists (new OR idempotent replay): every list that shows
+      // bookings must refetch — tab shells keep those screens mounted.
+      ref.invalidate(bookingsProvider);
+      ref.invalidate(conversationsProvider);
+      ref.invalidate(bookingDetailProvider(result.bookingId));
       if (!mounted) return;
       if (result.kind == 'dedup') {
         // Idempotent replay — the booking already exists; jump straight to it.
@@ -115,9 +123,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       // dismissal — tap or swipe — instead of stranding the user on it. (When the
       // in-sheet button navigated, this screen is already gone → mounted false.)
       if (mounted) context.go('/bookings/${result.bookingId}');
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.genericError)));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiErrorText(l, e))));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);

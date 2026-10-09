@@ -21,8 +21,14 @@ import '../../core/widgets.dart';
 /// the client must have issued first — its own comment: "The step-up OTP form …
 /// MUST request the OTP from /api/auth/otp/request with purpose:'phone_verification'
 /// so issue + verify match." So for phone-only accounts we issue that challenge
-/// here (same `/auth/otp/request` client path become_tasker uses) BEFORE showing
-/// the code field, with a resend affordance + rate-limit handling.
+/// here BEFORE showing the code field, with a resend affordance + rate-limit
+/// handling.
+///
+/// The server verifies against the ACCOUNT's verified phone
+/// (`getStepUpPhone(userId)`), never a typed one — so the user does not enter a
+/// number: the sheet reads `GET /me` {phone, phoneVerified}, shows the number
+/// masked, and issues the OTP to exactly that phone. An account with no verified
+/// phone cannot OTP step-up at all (server fails closed) — say so up front.
 class StepUpSheet extends ConsumerStatefulWidget {
   const StepUpSheet({super.key, required this.hasUsablePassword});
 
@@ -36,8 +42,10 @@ class StepUpSheet extends ConsumerStatefulWidget {
 class _StepUpSheetState extends ConsumerState<StepUpSheet> {
   // Holds the password (password path) or the OTP code (OTP path).
   final _controller = TextEditingController();
-  // OTP path only: the registered phone the code is sent to.
-  final _phoneController = TextEditingController();
+  // OTP path only: the account's verified phone (from GET /me) — never typed.
+  String? _accountPhone;
+  bool _phoneLoading = false;
+  bool _noVerifiedPhone = false;
 
   bool _submitting = false; // step-up verify in flight
   bool _sending = false; // OTP-request in flight
@@ -46,14 +54,41 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
   String? _error;
   String? _info; // e.g. "Đã gửi mã OTP tới …"
 
-  // Same acceptance the become-tasker signup uses.
-  static final _phoneRe = RegExp(r'^(0|\+84)\d{9}$');
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.hasUsablePassword) _loadAccountPhone();
+  }
 
   @override
   void dispose() {
     _controller.dispose();
-    _phoneController.dispose();
     super.dispose();
+  }
+
+  /// Read the account's own phone + verification flag (Bearer `GET /me`).
+  Future<void> _loadAccountPhone() async {
+    setState(() {
+      _phoneLoading = true;
+      _error = null;
+    });
+    try {
+      final me = await ref.read(apiClientProvider).get('/me');
+      if (!mounted) return;
+      final m = me is Map<String, dynamic> ? me : const <String, dynamic>{};
+      final phone = (m['phone'] as String?)?.trim();
+      final verified = m['phoneVerified'] == true;
+      setState(() {
+        _accountPhone = (phone != null && phone.isNotEmpty && verified) ? phone : null;
+        _noVerifiedPhone = _accountPhone == null;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = AppLocalizations.of(context).prov2StepUpPhoneLoadFailed);
+      }
+    } finally {
+      if (mounted) setState(() => _phoneLoading = false);
+    }
   }
 
   /// Issue the step-up OTP for a phone-only account. Purpose MUST be
@@ -61,18 +96,16 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
   /// verify (a login/register OTP is deliberately NOT replayable here).
   Future<void> _requestOtp() async {
     if (_sending) return;
-    final phone = _phoneController.text.trim();
-    if (!_phoneRe.hasMatch(phone)) {
-      setState(() => _error = AppLocalizations.of(context).provOtpInvalidPhone);
-      return;
-    }
+    final phone = _accountPhone;
+    if (phone == null) return;
     setState(() {
       _sending = true;
       _error = null;
       _info = null;
     });
     try {
-      // Bearer-free public OTP issue — same client path as become_tasker.
+      // The public OTP issue takes a phone; we send ONLY the account's own
+      // verified number, which is the one the server step-up verifies against.
       await ref.read(apiClientProvider).post(
         '/auth/otp/request',
         auth: false,
@@ -81,7 +114,7 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
       if (!mounted) return;
       setState(() {
         _otpSent = true;
-        _info = AppLocalizations.of(context).provOtpSentTo(phone);
+        _info = AppLocalizations.of(context).provOtpSentTo(maskPhone(phone));
       });
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -140,7 +173,7 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
     final usePassword = widget.hasUsablePassword;
     final insets = MediaQuery.of(context).viewInsets;
 
-    // OTP path, phase 1: collect the registered phone and issue the challenge.
+    // OTP path, phase 1: show the (masked) account phone and issue the challenge.
     final collectPhone = !usePassword && !_otpSent;
 
     return Padding(
@@ -172,7 +205,11 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
             usePassword
                 ? l.provWalletStepUpPassword
                 : collectPhone
-                    ? l.provWalletStepUpPhonePrompt
+                    ? (_accountPhone != null
+                        ? l.prov2StepUpOtpTo(maskPhone(_accountPhone!))
+                        : _noVerifiedPhone
+                            ? l.prov2StepUpNoVerifiedPhone
+                            : '')
                     : l.provWalletStepUpOtpPrompt,
             style: TextStyle(color: cs.onSurfaceVariant),
           ),
@@ -195,33 +232,26 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
   }
 
   Widget _buildPhoneStep(AppLocalizations l, ColorScheme cs) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextField(
-          controller: _phoneController,
-          autofocus: true,
-          enabled: !_sending,
-          keyboardType: TextInputType.phone,
-          decoration: InputDecoration(
-            labelText: l.provPhoneLabel,
-            border: const OutlineInputBorder(),
-            prefixIcon: const Icon(Icons.phone_outlined),
-          ),
-          onSubmitted: (_) => _requestOtp(),
-        ),
-        const SizedBox(height: 16),
-        FilledButton(
-          onPressed: _sending ? null : _requestOtp,
-          child: _sending
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : Text(l.provSendOtp),
-        ),
-      ],
+    if (_phoneLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_accountPhone == null) {
+      // No verified phone (server would refuse) or /me failed → retry only.
+      return _noVerifiedPhone
+          ? const SizedBox.shrink()
+          : OutlinedButton(onPressed: _loadAccountPhone, child: Text(l.retry));
+    }
+    return FilledButton(
+      onPressed: _sending ? null : _requestOtp,
+      child: _sending
+          ? const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(strokeWidth: 2))
+          : Text(l.provSendOtp),
     );
   }
 
@@ -314,4 +344,12 @@ Future<bool> showStepUpSheet(BuildContext context,
     builder: (_) => StepUpSheet(hasUsablePassword: hasUsablePassword),
   );
   return ok ?? false;
+}
+
+/// Mask a phone for display: keep the last 3 digits (`0912345678` →
+/// `•••••••678`). Never shows the full number on a money-gating screen.
+String maskPhone(String phone) {
+  final p = phone.trim();
+  if (p.length <= 3) return p;
+  return '${'•' * (p.length - 3)}${p.substring(p.length - 3)}';
 }

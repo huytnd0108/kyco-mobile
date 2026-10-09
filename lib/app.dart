@@ -5,7 +5,11 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import 'core/adaptive.dart';
 import 'core/locale_controller.dart';
+import 'features/account/account_providers.dart';
 import 'features/account/account_screen.dart';
+import 'features/account/addresses_screen.dart';
+import 'features/account/content_screens.dart';
+import 'features/account/invite_screen.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/signup_screen.dart';
@@ -14,12 +18,14 @@ import 'features/bookings/bookings_providers.dart';
 import 'features/bookings/bookings_screen.dart';
 import 'features/checkout/book_now_screen.dart';
 import 'features/checkout/checkout_screen.dart';
+import 'features/checkout/draft_store.dart';
 import 'features/home/home_providers.dart';
 import 'features/home/home_screen.dart';
 import 'features/locations/city_screen.dart';
 import 'features/locations/city_service_screen.dart';
 import 'features/locations/locations_screen.dart';
 import 'features/messages/messages_screen.dart';
+import 'features/notifications/notifications_providers.dart';
 import 'features/notifications/notifications_screen.dart';
 import 'features/providers/provider_screen.dart';
 // ── provider (/p) shell + stubs ──
@@ -43,6 +49,7 @@ import 'features/provider_wallet/provider_wallet_screen.dart';
 import 'features/service_detail/service_detail_screen.dart';
 import 'features/services/services_providers.dart';
 import 'features/services/services_screen.dart';
+import 'features/subscriptions/subscriptions_providers.dart';
 import 'features/subscriptions/subscriptions_screen.dart';
 import 'theme/color_schemes.dart';
 import 'theme/theme_mode_controller.dart';
@@ -109,6 +116,11 @@ String? appRedirect({
   }
   // Public onboarding — reachable signed-out; guest-first would allow it anyway.
   if (loc.startsWith('/become-tasker')) return null;
+  // Signed in on an auth screen: resume `from`, but never into the provider
+  // shell for a role that can't enter it (drop a `/p*` from → home).
+  if (status == AuthStatus.signedIn && (loc == '/login' || loc == '/signup')) {
+    return resumeAfterLogin(from, role);
+  }
   return guestFirstRedirect(status: status, loc: loc, from: from);
 }
 
@@ -183,6 +195,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/notifications',
         parentNavigatorKey: _rootKey,
         builder: (_, _) => const NotificationsScreen(),
+      ),
+      // Account sub-screens (full-screen over the tabs). /help + /legal are
+      // public reads; /invite + /addresses gate in-screen (guest-first).
+      GoRoute(path: '/help', parentNavigatorKey: _rootKey, builder: (_, _) => const HelpScreen()),
+      GoRoute(
+        path: '/legal/:doc',
+        parentNavigatorKey: _rootKey,
+        builder: (_, s) => LegalDocScreen(doc: s.pathParameters['doc'] ?? ''),
+      ),
+      GoRoute(path: '/invite', parentNavigatorKey: _rootKey, builder: (_, _) => const InviteScreen()),
+      GoRoute(
+        path: '/addresses',
+        parentNavigatorKey: _rootKey,
+        builder: (_, _) => const AddressesScreen(),
       ),
 
       // The 5-tab shell (mirrors web bottom-nav order).
@@ -311,6 +337,22 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
+/// Invalidate every user-scoped provider + clear persisted checkout drafts.
+/// Called on any transition into signed-out.
+void clearUserScopedState(WidgetRef ref) {
+  ref.read(selectedBookingIdProvider.notifier).state = null;
+  ref.invalidate(bookingsProvider);
+  ref.invalidate(bookingsPagerProvider);
+  ref.invalidate(bookingDetailProvider);
+  ref.invalidate(conversationsProvider);
+  ref.invalidate(notificationsControllerProvider);
+  ref.invalidate(accountMeProvider);
+  ref.invalidate(inviteStatsProvider);
+  ref.invalidate(addressesProvider);
+  ref.invalidate(mySubscriptionsProvider);
+  clearCheckoutDrafts(ref);
+}
+
 class KycoApp extends ConsumerStatefulWidget {
   const KycoApp({super.key});
   @override
@@ -335,10 +377,17 @@ class _KycoAppState extends ConsumerState<KycoApp> {
       // Kept-alive shell branches (Services) must re-fetch in the new language.
       ref.invalidate(catalogTreeProvider);
     });
-    // Clear a stale two-pane selection across sign-out (user A → user B).
-    ref.listen(authControllerProvider, (_, next) {
-      if (next.status == AuthStatus.signedOut) {
-        ref.read(selectedBookingIdProvider.notifier).state = null;
+    // Sign-out (explicit or refresh-lost): drop EVERY user-scoped cache so the
+    // next account never sees the previous one's data. (User-scoped providers
+    // also watch authUserIdProvider; this is the belt-and-braces reset for the
+    // kept-alive ones + local drafts.)
+    ref.listen(authControllerProvider, (prev, next) {
+      if (next.status == AuthStatus.signedOut && prev?.status != AuthStatus.signedOut) {
+        clearUserScopedState(ref);
+      }
+      // Explicit logout lands on home, whatever screen it was triggered from.
+      if (next.explicitLogout && !(prev?.explicitLogout ?? false)) {
+        ref.read(routerProvider).go('/');
       }
       // Role-unknown optimistic session (bootstrap's non-401 /me failure): try
       // once to backfill the user so a real provider can reach /p this session.

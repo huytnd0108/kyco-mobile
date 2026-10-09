@@ -14,13 +14,159 @@ part of 'kyco_api.dart';
 
 /// One CCCD / selfie capture for the multipart KYC upload.
 class KycUploadFile {
-  const KycUploadFile({required this.kind, required this.filename, required this.bytes});
+  const KycUploadFile({
+    required this.kind,
+    required this.filename,
+    required this.bytes,
+    this.mimeType,
+  });
 
-  /// One of ALLOWED_DOC_KINDS (e.g. 'cccd_front', 'cccd_back', 'selfie') —
-  /// confirm the exact strings from @kyco/core/onboarding/kyc-validate.
+  /// One of ALLOWED_DOC_KINDS (`cccd_front`, `cccd_back`, `selfie`, `passport`,
+  /// `driver_license` — @kyco/core/onboarding/kyc-validate).
   final String kind;
   final String filename;
   final List<int> bytes;
+
+  /// Explicit part content type; when null it is inferred from [filename].
+  final String? mimeType;
+
+  /// The part's content type — always one of the KYC allowlist values the
+  /// server accepts (jpeg/png/heic/heif/webp/pdf), never octet-stream.
+  String get contentType => mimeType ?? mimeForFileName(filename);
+
+  /// [filename] normalized so its extension agrees with [contentType] (the
+  /// public signup derives the storage-key extension from the name).
+  String get partFilename {
+    final ext = extForMime(contentType);
+    final dot = filename.lastIndexOf('.');
+    final stem = dot > 0 ? filename.substring(0, dot) : (filename.isEmpty ? kind : filename);
+    return '$stem.$ext';
+  }
+
+  // The part's content type is set explicitly (via Dio's own mime lookup on a
+  // canonical extension, since this part file only sees FormData/MultipartFile)
+  // — MultipartFile.fromBytes otherwise defaults an unknown name to text/plain,
+  // which the server's KYC allowlist rejects per file.
+  MultipartFile toMultipart() => MultipartFile.fromBytes(
+        bytes,
+        filename: partFilename,
+        contentType: MultipartFile.lookupMediaType('file.${extForMime(contentType)}'),
+      );
+}
+
+/// Best-effort mime for a captured file name. image_picker camera shots are
+/// JPEG unless the name says otherwise.
+String mimeForFileName(String name) {
+  final n = name.toLowerCase();
+  if (n.endsWith('.png')) return 'image/png';
+  if (n.endsWith('.webp')) return 'image/webp';
+  if (n.endsWith('.heic')) return 'image/heic';
+  if (n.endsWith('.heif')) return 'image/heif';
+  if (n.endsWith('.pdf')) return 'application/pdf';
+  return 'image/jpeg';
+}
+
+/// Canonical file extension for an allowlisted KYC/media mime type.
+String extForMime(String mime) => switch (mime.toLowerCase()) {
+      'image/png' => 'png',
+      'image/webp' => 'webp',
+      'image/heic' => 'heic',
+      'image/heif' => 'heif',
+      'application/pdf' => 'pdf',
+      _ => 'jpg',
+    };
+
+/// `/kyc/upload` result: `{ok, uploadedCount, attemptedCount, results:[{ok,
+/// docKind, reason?}], verdict?}`. The envelope is ok even when a file failed.
+class KycUploadOutcome {
+  const KycUploadOutcome({
+    this.ok = false,
+    this.results = const [],
+    this.verdict,
+  });
+
+  final bool ok;
+  final List<Map<String, dynamic>> results;
+  final String? verdict;
+
+  /// Doc kinds the server stored.
+  Set<String> get uploadedKinds => {
+        for (final r in results)
+          if (r['ok'] == true && r['docKind'] is String) r['docKind'] as String,
+      };
+
+  /// Doc kinds the server refused (validation / storage / db), with reasons.
+  Map<String, String> get failed => {
+        for (final r in results)
+          if (r['ok'] != true && r['docKind'] is String)
+            r['docKind'] as String: (r['reason'] ?? '').toString(),
+      };
+
+  /// True only when every one of [required] kinds landed.
+  bool allOk(Iterable<String> required) => ok && required.every(uploadedKinds.contains);
+
+  factory KycUploadOutcome.fromJson(Map<String, dynamic> j) => KycUploadOutcome(
+        ok: j['ok'] == true,
+        results: [
+          for (final r in (j['results'] is List ? j['results'] as List : const []))
+            if (r is Map<String, dynamic>) r,
+        ],
+        verdict: j['verdict'] as String?,
+      );
+}
+
+/// The exact `/media/request-upload` JSON body (UploadIntentSchema). Pure so the
+/// contract is unit-testable without a client.
+Map<String, dynamic> mediaUploadIntentBody({
+  required String category,
+  required String entityType,
+  required int entityId,
+  required String fileName,
+  required String mimeType,
+  required int sizeBytes,
+  String? documentKind,
+}) =>
+    {
+      'category': category,
+      'entityType': entityType,
+      'entityId': entityId,
+      'fileName': fileName,
+      'mimeType': mimeType,
+      'sizeBytes': sizeBytes,
+      'documentKind': ?documentKind,
+    };
+
+/// `/media/request-upload` 201 data: `{assetId, uploadUrl, objectPath,
+/// requiredContentType, expiresInSeconds}`. The PUT to [uploadUrl] MUST carry
+/// exactly [requiredContentType] (it is part of the V4 signature).
+class MediaUploadTicket {
+  const MediaUploadTicket({
+    this.assetId,
+    this.uploadUrl,
+    this.objectPath,
+    this.requiredContentType,
+    this.expiresInSeconds,
+  });
+
+  final int? assetId;
+  final String? uploadUrl;
+  final String? objectPath;
+  final String? requiredContentType;
+  final int? expiresInSeconds;
+
+  bool get isUsable => assetId != null && (uploadUrl ?? '').isNotEmpty;
+
+  factory MediaUploadTicket.fromJson(Map<String, dynamic> j) {
+    final id = j['assetId'] ?? j['mediaId'];
+    final ttl = j['expiresInSeconds'];
+    return MediaUploadTicket(
+      assetId: id is num ? id.toInt() : null,
+      uploadUrl: j['uploadUrl'] as String?,
+      objectPath: j['objectPath'] as String?,
+      requiredContentType: j['requiredContentType'] as String?,
+      expiresInSeconds: ttl is num ? ttl.toInt() : null,
+    );
+  }
 }
 
 extension KycoApiProvider on KycoApi {
@@ -138,6 +284,20 @@ extension KycoApiProvider on KycoApi {
     final data = await _c.get('/jobs/$id/location');
     return data is Map<String, dynamic> ? data : <String, dynamic>{};
   }
+
+  /// POST /jobs/{id}/location — one live-location ping from the ASSIGNED
+  /// provider while en route (Bearer accepted; dualAuth+csrf only gates the
+  /// cookie path). Server requires job `active` + an open tracking session
+  /// (409 TRACKING_SESSION_NOT_FOUND until start-tracking). GPS only — no money.
+  Future<Map<String, dynamic>> pingJobLocation(int id,
+          {required double lat, required double lng, double? accuracy, double? heading, double? speed}) =>
+      _postMap('/jobs/$id/location', body: {
+        'lat': lat,
+        'lng': lng,
+        'accuracy': ?accuracy,
+        'heading': ?heading,
+        'speed': ?speed,
+      });
 
   // ── wallet (existing) ──────────────────────────────────────────────────────
   Future<WalletSummary> providerWallet() async {
@@ -261,33 +421,82 @@ extension KycoApiProvider on KycoApi {
     return list.whereType<Map<String, dynamic>>().map(SupportTicket.fromJson).toList(growable: false);
   }
 
-  /// Multipart KYC upload (owner = Bearer subject; 8MB/file cap server-side).
-  Future<Map<String, dynamic>> kycUpload(List<KycUploadFile> files) async {
+  /// POST /kyc/upload — multipart KYC upload for a SIGNED-IN account (owner =
+  /// Bearer subject; 8 MB/file cap server-side). One part per doc kind, each
+  /// with an explicit contentType (the server validates `File.type` against the
+  /// KYC mime allowlist — an octet-stream part is rejected per file). The route
+  /// answers 200 even when individual files fail: check [KycUploadOutcome.allOk].
+  Future<KycUploadOutcome> kycUpload(List<KycUploadFile> files, {String? nationalId}) async {
     final form = FormData();
+    final id = nationalId?.trim();
+    if (id != null && id.isNotEmpty) form.fields.add(MapEntry('national_id', id));
     for (final f in files) {
-      form.files.add(MapEntry(
-        f.kind,
-        MultipartFile.fromBytes(f.bytes, filename: f.filename),
-      ));
+      form.files.add(MapEntry(f.kind, f.toMultipart()));
     }
     final data = await _c.post('/kyc/upload', body: form);
-    return data is Map<String, dynamic> ? data : <String, dynamic>{};
+    return KycUploadOutcome.fromJson(data is Map<String, dynamic> ? data : const {});
   }
 
-  /// POST /media/request-upload — presigned-upload ticket for a job photo.
-  Future<Map<String, dynamic>> requestMediaUpload(
-          {required String contentType, int? sizeBytes, String? purpose}) =>
-      _postMap('/media/request-upload', body: {
-        'contentType': contentType,
-        'sizeBytes': ?sizeBytes,
-        'purpose': ?purpose,
-      });
+  /// POST /become-tasker — PUBLIC (no Bearer) tasker self-signup: OTP verify
+  /// (purpose `register`) → pending_provider account → KYC docs, in one
+  /// multipart call. Field names mirror the web form. Returns the new user id.
+  Future<int?> becomeTasker({
+    required String phone,
+    required String otpCode,
+    required String name,
+    required String city,
+    required String district,
+    String? referralCode,
+    required List<KycUploadFile> files,
+  }) async {
+    final ref = referralCode?.trim();
+    final form = FormData.fromMap({
+      'phone': phone,
+      'otp_code': otpCode,
+      'name': name,
+      'city': city,
+      'district': district,
+      if (ref != null && ref.isNotEmpty) 'referral_code': ref,
+    });
+    for (final f in files) {
+      form.files.add(MapEntry(f.kind, f.toMultipart()));
+    }
+    final data = await _c.post('/become-tasker', body: form, auth: false);
+    final id = data is Map<String, dynamic> ? data['userId'] : null;
+    return id is num ? id.toInt() : null;
+  }
 
-  /// POST /media/finalize — commit an uploaded object.
-  Future<Map<String, dynamic>> finalizeMedia({required String key, int? mediaId}) =>
+  /// POST /media/request-upload — signed-URL upload ticket (lib/media/
+  /// access-write.ts::UploadIntentSchema). The server builds the object path and
+  /// runs canUpload: for job photos `category` is `checkin` (slot before) or
+  /// `checkout` (mid/after), `entityType` `booking`, `entityId` the BOOKING id.
+  Future<MediaUploadTicket> requestMediaUpload({
+    required String category,
+    required String entityType,
+    required int entityId,
+    required String fileName,
+    required String mimeType,
+    required int sizeBytes,
+    String? documentKind,
+  }) async {
+    final data = await _c.post('/media/request-upload', body: mediaUploadIntentBody(
+      category: category,
+      entityType: entityType,
+      entityId: entityId,
+      fileName: fileName,
+      mimeType: mimeType,
+      sizeBytes: sizeBytes,
+      documentKind: documentKind,
+    ));
+    return MediaUploadTicket.fromJson(data is Map<String, dynamic> ? data : const {});
+  }
+
+  /// POST /media/finalize — flip the pending asset to ready once the bytes are
+  /// in storage (server HEADs the object). Body `{mediaId, contentSha256?}`.
+  Future<Map<String, dynamic>> finalizeMedia({required int mediaId, String? contentSha256}) =>
       _postMap('/media/finalize', body: {
-        'key': key,
-        'mediaId': ?mediaId,
+        'mediaId': mediaId,
+        'contentSha256': ?contentSha256,
       });
 
   // ── new routes (Section A — defined now, live when A deploys) ──────────────

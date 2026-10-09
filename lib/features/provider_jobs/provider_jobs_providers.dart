@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/kyco_api.dart';
+import '../../core/api/problem.dart';
 import '../../core/di.dart';
 import '../../core/models.dart';
 
@@ -101,3 +102,16 @@ class AssignedJobsController extends AutoDisposeAsyncNotifier<AssignedJobsData> 
 final poolProvider = FutureProvider.autoDispose<PoolView>((ref) {
   return ref.watch(kycoApiProvider).poolJobs();
 });
+
+/// The snackbar text for a failed claim. The claim route refuses with a
+/// localized, user-facing reason (time conflict with another job, wallet below
+/// the floor, rank window not open yet, already claimed, suspended …) — show
+/// THAT instead of a generic "try again". Transport failures / maintenance /
+/// an empty message fall back to [fallback].
+String claimErrorMessage(Object error, String fallback) {
+  if (error is ApiException && !error.isMaintenance && error.code != 'network') {
+    final msg = error.message.trim();
+    if (msg.isNotEmpty && msg != 'Request failed') return msg;
+  }
+  return fallback;
+}

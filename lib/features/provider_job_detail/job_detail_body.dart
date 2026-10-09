@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
@@ -26,6 +28,8 @@ class JobDetailBody extends StatelessWidget {
     required this.onComplaint,
     required this.onSos,
     required this.onSendMessage,
+    this.onResubmit,
+    this.onLivePing,
   });
 
   final ProviderJobDetail detail;
@@ -34,6 +38,15 @@ class JobDetailBody extends StatelessWidget {
       onCheckOut, onFaceVerify, onComplete, onCashReceived, onComplaint, onSos;
   final void Function(PhotoSlot slot) onCapture;
   final void Function(String body) onSendMessage;
+
+  /// Re-assert completion after a customer pushback (shown only when
+  /// [awaitingResubmit]). Null hides the action.
+  final VoidCallback? onResubmit;
+
+  /// One live-location ping (GPS fix + POST). Resolves `true` when the server
+  /// accepted it; `false` stops sharing (the screen surfaces the reason). Null
+  /// keeps the switch disabled.
+  final Future<bool> Function()? onLivePing;
 
   bool get _anyBusy => busy != null;
 
@@ -48,6 +61,10 @@ class JobDetailBody extends StatelessWidget {
       children: [
         _PhaseBanner(phase: phase, detail: d),
         const SizedBox(height: 16),
+        if (awaitingResubmit(d) && onResubmit != null) ...[
+          _ResubmitCard(detail: d, busy: busy, anyBusy: _anyBusy, onResubmit: onResubmit!),
+          const SizedBox(height: 16),
+        ],
         _OrderInfoCard(detail: d),
         const SizedBox(height: 16),
         _PaymentCard(detail: d),
@@ -83,7 +100,11 @@ class JobDetailBody extends StatelessWidget {
         ],
         if (_s(d.job['status']).toLowerCase() == 'active') ...[
           const SizedBox(height: 16),
-          _LiveShareCard(detail: d),
+          _LiveShareCard(
+            detail: d,
+            enRoute: phase == JobPhase.enRoute,
+            onPing: onLivePing,
+          ),
         ],
         const SizedBox(height: 16),
         _ChatCard(detail: d, anyBusy: _anyBusy, busy: busy, onSend: onSendMessage),
@@ -498,8 +519,10 @@ class _SosCard extends StatelessWidget {
 // ── live-location share ──────────────────────────────────────────────────────
 
 class _LiveShareCard extends StatelessWidget {
-  const _LiveShareCard({required this.detail});
+  const _LiveShareCard({required this.detail, required this.enRoute, this.onPing});
   final ProviderJobDetail detail;
+  final bool enRoute;
+  final Future<bool> Function()? onPing;
 
   @override
   Widget build(BuildContext context) {
@@ -513,29 +536,163 @@ class _LiveShareCard extends StatelessWidget {
           if (where.isNotEmpty)
             Text(where, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
           const SizedBox(height: 8),
-          const _LiveShareToggle(),
+          LiveShareToggle(enRoute: enRoute, onPing: onPing),
         ],
       ),
     );
   }
 }
 
-/// Live-location sharing has no backend endpoint wired yet, so this is an honest
-/// "coming soon" stub: the control is disabled and it never claims to be sharing.
-class _LiveShareToggle extends StatelessWidget {
-  const _LiveShareToggle();
+/// Opt-in live-location sharing while EN ROUTE (job active, not yet checked
+/// in). OFF by default; while ON it sends one ping immediately and then every
+/// [interval] — only while this screen is mounted (no background tracking).
+/// It stops itself when the job leaves en-route or a ping is refused.
+class LiveShareToggle extends StatefulWidget {
+  const LiveShareToggle({
+    super.key,
+    required this.enRoute,
+    this.onPing,
+    this.interval = const Duration(seconds: 30),
+  });
+
+  final bool enRoute;
+  final Future<bool> Function()? onPing;
+  final Duration interval;
+
+  @override
+  State<LiveShareToggle> createState() => _LiveShareToggleState();
+}
+
+class _LiveShareToggleState extends State<LiveShareToggle> {
+  bool _on = false;
+  bool _inFlight = false;
+  DateTime? _lastOk;
+  Timer? _timer;
+
+  bool get _available => widget.enRoute && widget.onPing != null;
+
+  @override
+  void didUpdateWidget(covariant LiveShareToggle old) {
+    super.didUpdateWidget(old);
+    if (_on && !_available) _stop();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _stop() {
+    _timer?.cancel();
+    _timer = null;
+    _on = false;
+  }
+
+  Future<void> _ping() async {
+    final ping = widget.onPing;
+    if (_inFlight || !_on || ping == null) return;
+    setState(() => _inFlight = true);
+    bool ok;
+    try {
+      ok = await ping();
+    } catch (_) {
+      ok = false;
+    }
+    if (!mounted) return;
+    setState(() {
+      _inFlight = false;
+      if (ok) {
+        _lastOk = DateTime.now();
+      } else {
+        _stop();
+      }
+    });
+  }
+
+  void _toggle(bool v) {
+    if (v) {
+      setState(() => _on = true);
+      _timer = Timer.periodic(widget.interval, (_) => _ping());
+      _ping();
+    } else {
+      setState(_stop);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    String two(int n) => n.toString().padLeft(2, '0');
+    final subtitle = !widget.enRoute
+        ? l.prov2LiveShareNotEnRoute
+        : !_on
+            ? l.prov2LiveShareOff
+            : _lastOk == null
+                ? l.prov2LiveShareStarting
+                : l.prov2LiveShareOn('${two(_lastOk!.hour)}:${two(_lastOk!.minute)}');
     return SwitchListTile(
       contentPadding: EdgeInsets.zero,
-      value: false,
-      onChanged: null,
-      title: Text(l.provJdShareLiveTitle),
-      subtitle: Text(
-        l.provJdShareLiveBody,
-        style: const TextStyle(fontSize: 12),
+      value: _on,
+      onChanged: _available ? _toggle : null,
+      title: Text(l.prov2LiveShareTitle),
+      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+    );
+  }
+}
+
+// ── customer pushback → resubmit completion ─────────────────────────────────
+
+class _ResubmitCard extends StatelessWidget {
+  const _ResubmitCard({
+    required this.detail,
+    required this.busy,
+    required this.anyBusy,
+    required this.onResubmit,
+  });
+  final ProviderJobDetail detail;
+  final String? busy;
+  final bool anyBusy;
+  final VoidCallback onResubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final note = _s(detail.booking?['customerDisputeNote']).trim();
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.feedback_outlined, color: Colors.orange, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(l.prov2ResubmitTitle, style: const TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(l.prov2ResubmitBody, style: const TextStyle(fontSize: 13)),
+          if (note.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(l.prov2ResubmitNote(note), style: const TextStyle(fontSize: 13, fontStyle: FontStyle.italic)),
+          ],
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            onPressed: anyBusy ? null : onResubmit,
+            icon: busy == 'resubmit'
+                ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.replay, size: 18),
+            label: Text(l.prov2ResubmitAction),
+          ),
+        ],
       ),
     );
   }

@@ -9,6 +9,9 @@ import '../../core/di.dart';
 import '../../core/format.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
+import '../provider_home/provider_home_providers.dart';
+import '../provider_jobs/provider_jobs_providers.dart';
+import '../provider_wallet/provider_wallet_providers.dart';
 import 'job_detail_body.dart';
 import 'native_capture.dart';
 import 'provider_job_detail_data.dart';
@@ -88,13 +91,15 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
               onStartTracking: () => _startTracking(id),
               onCheckIn: () => _checkIn(id),
               onCheckOut: () => _checkOut(id),
-              onCapture: (slot) => _capturePhoto(id, slot),
+              onCapture: (slot) => _capturePhoto(id, slot, d.bookingId),
               onFaceVerify: () => _faceVerify(id),
               onComplete: () => _complete(id, d),
               onCashReceived: () => _cashReceived(id, d),
               onComplaint: () => _complaint(id),
               onSos: () => _sos(id),
               onSendMessage: (body) => _sendMessage(id, body),
+              onResubmit: () => _resubmit(id, d),
+              onLivePing: () => _livePing(id),
             ),
           ),
         ),
@@ -116,19 +121,37 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
+  /// Every job mutation changes what the tab shells show (they stay mounted):
+  /// the assigned list, the home workspace pipeline and the claimable pool all
+  /// carry this job, so refresh them alongside the detail. [wallet] is set ONLY
+  /// after cash-received — it re-reads the server ledger (a refresh, no money is
+  /// computed or moved client-side).
+  void _refreshAfterMutation(int id, {bool wallet = false}) {
+    if (!mounted) return;
+    ref.invalidate(providerJobDetailProvider(id));
+    ref.invalidate(assignedJobsControllerProvider);
+    ref.invalidate(providerWorkspaceProvider);
+    ref.invalidate(poolProvider);
+    if (wallet) {
+      ref.invalidate(walletSummaryProvider);
+      ref.invalidate(walletTxnsControllerProvider);
+    }
+  }
+
   /// Runs a `Map`-returning mutation with busy-state + refetch + error surfacing.
   Future<Map<String, dynamic>?> _runMap(
     String action,
     int id,
-    Future<Map<String, dynamic>> Function(KycoApi api) call,
-  ) async {
+    Future<Map<String, dynamic>> Function(KycoApi api) call, {
+    bool refreshWallet = false,
+  }) async {
     if (_busy != null) return null;
     setState(() => _busy = action);
     final api = ref.read(kycoApiProvider);
     final generic = AppLocalizations.of(context).genericError;
     try {
       final resp = await call(api);
-      if (mounted) ref.invalidate(providerJobDetailProvider(id));
+      _refreshAfterMutation(id, wallet: refreshWallet);
       return resp;
     } on ApiException catch (e) {
       _snack(e.message);
@@ -201,7 +224,7 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
     final api = ref.read(kycoApiProvider);
     try {
       await api.startTracking(id);
-      if (mounted) ref.invalidate(providerJobDetailProvider(id));
+      _refreshAfterMutation(id);
       _snack(l.provJdEnRouteSnack);
     } on ApiException catch (e) {
       _snack(e.message);
@@ -225,7 +248,7 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
     final api = ref.read(kycoApiProvider);
     try {
       final r = await api.checkIn(id, lat: gps.fix!.lat, lon: gps.fix!.lon, accuracyM: gps.fix!.accuracyM);
-      if (mounted) ref.invalidate(providerJobDetailProvider(id));
+      _refreshAfterMutation(id);
       _showCheckInOutcome(l, r);
     } on ApiException catch (e) {
       _snack(e.message);
@@ -250,7 +273,7 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
     try {
       // NOTE: check-out's body key is `lng` (asymmetric with check-in's `lon`).
       await api.checkOut(id, lat: gps.fix!.lat, lng: gps.fix!.lon, accuracyM: gps.fix!.accuracyM);
-      if (mounted) ref.invalidate(providerJobDetailProvider(id));
+      _refreshAfterMutation(id);
       _snack(l.provJdCheckedOutSnack);
     } on ApiException catch (e) {
       _snack(e.message);
@@ -261,20 +284,27 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
     }
   }
 
-  Future<void> _capturePhoto(int id, PhotoSlot slot) async {
+  Future<void> _capturePhoto(int id, PhotoSlot slot, int? bookingId) async {
     if (_busy != null) return;
     final l = AppLocalizations.of(context);
+    // Job photos are stored against the BOOKING (canUpload checks the caller
+    // is its assigned provider) — without it the upload can't be addressed.
+    if (bookingId == null) {
+      _snack(l.provJdPhotoUploadFailed);
+      return;
+    }
     setState(() => _busy = 'photo_${slot.wire}');
     final api = ref.read(kycoApiProvider);
     try {
-      final up = await PhotoCaptureService(api).captureAndUpload(purpose: 'job_photo');
+      final up = await PhotoCaptureService(api)
+          .captureAndUpload(bookingId: bookingId, slotWire: slot.wire);
       if (!up.isOk) {
         final msg = _cameraFailureMessage(l, up.failure!);
         if (msg.isNotEmpty) _snack(msg);
         return;
       }
       await api.uploadJobPhotos(id, slot: slot.wire, mediaIds: [up.mediaId!]);
-      if (mounted) ref.invalidate(providerJobDetailProvider(id));
+      _refreshAfterMutation(id);
       _snack(l.provJdPhotoUploaded);
     } on ApiException catch (e) {
       _snack(e.message);
@@ -318,8 +348,41 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
     // returns the computed figures — we DISPLAY them, never compute.
     // Invalidate the SAME family key the screen watches (the route id) so the
     // post-cash refresh hits this instance, not a stale jobId-keyed one.
-    final resp = await _runMap('cash', id, (api) => api.cashReceived(bookingId));
+    final resp = await _runMap('cash', id, (api) => api.cashReceived(bookingId),
+        refreshWallet: true);
     if (resp != null && mounted) _showCashOutcome(resp);
+  }
+
+  Future<void> _resubmit(int id, ProviderJobDetail d) async {
+    final bookingId = d.bookingId;
+    if (bookingId == null) return;
+    final l = AppLocalizations.of(context);
+    final resp = await _runMap('resubmit', id, (api) => api.resubmitCompletion(bookingId));
+    if (resp != null) _snack(l.prov2ResubmitDone);
+  }
+
+  /// One opt-in live-location ping (job_detail_body's LiveShareToggle drives the
+  /// cadence). Real GPS only — a failed fix or a refused POST returns false so
+  /// the toggle switches itself off, with the reason surfaced once.
+  Future<bool> _livePing(int id) async {
+    final l = AppLocalizations.of(context);
+    final gps = await const LocationService().currentPosition();
+    if (!mounted) return false;
+    if (!gps.isOk) {
+      _snack(_gpsFailureMessage(l, gps.failure!));
+      return false;
+    }
+    try {
+      await ref.read(kycoApiProvider).pingJobLocation(id,
+          lat: gps.fix!.lat, lng: gps.fix!.lon, accuracy: gps.fix!.accuracyM);
+      return true;
+    } on ApiException catch (e) {
+      _snack(e.message.isEmpty ? l.prov2LiveShareStopped : e.message);
+      return false;
+    } catch (_) {
+      _snack(l.prov2LiveShareStopped);
+      return false;
+    }
   }
 
   Future<void> _complaint(int id) async {
@@ -331,8 +394,13 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
       confirmLabel: l.provJdSend,
     );
     if (reason == null) return;
+    // The server requires a description (422 `description:required`).
+    if (reason.trim().isEmpty) {
+      _snack(l.prov2ComplaintNeedsText);
+      return;
+    }
     final resp = await _runMap('complaint', id,
-        (api) => api.fileJobComplaint(id, category: 'other', description: reason.isEmpty ? null : reason));
+        (api) => api.fileJobComplaint(id, category: 'other', description: reason.trim()));
     if (resp != null) _snack(l.provJdComplaintSent);
   }
 
@@ -346,7 +414,9 @@ class _ProviderJobDetailScreenState extends ConsumerState<ProviderJobDetailScree
     );
     if (ok != true) return;
     final resp = await _runMap('sos', id,
-        (api) => api.fileJobComplaint(id, category: 'sos', description: 'SOS from provider app'));
+        // 'sos' is not a complaint category (422). Until a Bearer SOS endpoint
+        // exists (MQA-26), raise it as the closest real category so ops sees it.
+        (api) => api.fileJobComplaint(id, category: 'unsafe_environment', description: 'SOS — tasker pressed the emergency button in the app'));
     if (resp != null) {
       _snack(l.provJdSosSent);
     }

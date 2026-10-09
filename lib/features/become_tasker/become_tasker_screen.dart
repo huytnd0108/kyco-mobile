@@ -8,6 +8,7 @@ import '../../core/api/kyco_api.dart';
 import '../../core/api/problem.dart';
 import '../../core/di.dart';
 import '../../core/widgets.dart';
+import '../auth/auth_controller.dart';
 
 /// `/become-tasker` — PUBLIC (guest-first) partner onboarding, mirroring the web
 /// `become-tasker/tasker-signup-form.tsx` 3-step wizard:
@@ -15,16 +16,16 @@ import '../../core/widgets.dart';
 ///   2. verify OTP + profile fields (name / city / district / optional referral)
 ///   3. 3 KYC captures (CCCD front/back + selfie) via the device camera.
 ///
-/// SUBMIT: the web signup is a Next.js server action (`submitTaskerSignup`) — it
-/// is NOT exposed as an `/api/v1` route, so there is no mobile submit endpoint to
-/// call, and the frozen [KycoApiProvider.kycUpload] is Bearer-only (a guest has
-/// no token). For a guest (the primary audience of this PUBLIC route) NOTHING is
-/// persisted — the upload 401s — so the terminal state must NOT claim receipt.
-/// The wizard captures the fields, attempts the upload, and branches on the REAL
-/// result: an honest "documents submitted" only when the upload actually
-/// succeeded (a signed-in re-applicant with a real token), otherwise an honest
-/// "coming soon — finish on the web" state. See the unit report's "missing
-/// onboarding submit route".
+/// SUBMIT — two real backend paths:
+///  * guest (the primary audience): `POST /api/v1/become-tasker` (PUBLIC
+///    multipart: phone, otp_code, name, city, district, referral_code?,
+///    cccd_front, cccd_back, selfie) — verifies the `register` OTP, creates the
+///    pending_provider account and stores the 3 docs in one call;
+///  * a signed-in `pending_provider` re-uploading (rejected / incomplete KYC):
+///    Bearer `POST /api/v1/kyc/upload` (+ optional national_id). That route
+///    answers 200 even when single files fail, so success is shown ONLY when
+///    every required doc kind came back `ok`.
+/// Every part carries an explicit allowlisted content type.
 class BecomeTaskerScreen extends ConsumerStatefulWidget {
   const BecomeTaskerScreen({super.key});
   @override
@@ -41,17 +42,17 @@ const _kycKindValues = <String>['cccd_front', 'cccd_back', 'selfie'];
 
 /// Localized label for a city value.
 String _cityLabel(AppLocalizations l, String v) => switch (v) {
-      'hn' => l.provTaskerCityHn,
-      'dn' => l.provTaskerCityDn,
-      _ => l.provTaskerCityHcm,
-    };
+  'hn' => l.provTaskerCityHn,
+  'dn' => l.provTaskerCityDn,
+  _ => l.provTaskerCityHcm,
+};
 
 /// Localized label for a KYC doc kind.
 String _kycKindLabel(AppLocalizations l, String v) => switch (v) {
-      'cccd_back' => l.provTaskerKycBack,
-      'selfie' => l.provTaskerKycSelfie,
-      _ => l.provTaskerKycFront,
-    };
+  'cccd_back' => l.provTaskerKycBack,
+  'selfie' => l.provTaskerKycSelfie,
+  _ => l.provTaskerKycFront,
+};
 
 class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
   _Step _step = _Step.phone;
@@ -60,6 +61,7 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
   final _name = TextEditingController();
   final _district = TextEditingController();
   final _referral = TextEditingController();
+  final _nationalId = TextEditingController();
   String _city = 'hcm';
   final Map<String, XFile> _files = {};
 
@@ -67,10 +69,22 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
   bool _submitting = false;
   String? _error;
   bool _done = false;
-  // True ONLY when kycUpload actually persisted the docs (a signed-in
-  // re-applicant with a real token). A guest upload 401s → stays false, and the
-  // terminal state then honestly says registration isn't live yet.
-  bool _uploaded = false;
+
+  /// A signed-in pending_provider re-uploading KYC: no phone/OTP/profile steps
+  /// (the account exists) — straight to the captures, sent via /kyc/upload.
+  bool get _reapply {
+    final auth = ref.read(authControllerProvider);
+    return auth.status == AuthStatus.signedIn &&
+        auth.user?.role == 'pending_provider';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _reapply) setState(() => _step = _Step.profile);
+    });
+  }
 
   @override
   void dispose() {
@@ -79,6 +93,7 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
     _name.dispose();
     _district.dispose();
     _referral.dispose();
+    _nationalId.dispose();
     super.dispose();
   }
 
@@ -98,21 +113,25 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
     setState(() => _otpSending = true);
     try {
       // Bearer-free public OTP issue — same path the web signup form uses.
-      await ref.read(apiClientProvider).post(
-        '/auth/otp/request',
-        auth: false,
-        body: {'phone': phone, 'purpose': 'register'},
-      );
+      await ref
+          .read(apiClientProvider)
+          .post(
+            '/auth/otp/request',
+            auth: false,
+            body: {'phone': phone, 'purpose': 'register'},
+          );
       if (!mounted) return;
       setState(() => _step = _Step.verify);
     } on ApiException catch (e) {
       if (!mounted) return;
       final reason = e.fields?['phone'];
-      setState(() => _error = switch (reason) {
-            'rate_limited' => l.provOtpRateLimited,
-            'invalid_phone' || 'invalid' => l.provOtpInvalidPhone,
-            _ => l.provOtpSendFailed,
-          });
+      setState(
+        () => _error = switch (reason) {
+          'rate_limited' => l.provOtpRateLimited,
+          'invalid_phone' || 'invalid' => l.provOtpInvalidPhone,
+          _ => l.provOtpSendFailed,
+        },
+      );
     } catch (_) {
       if (mounted) {
         setState(() => _error = l.provOtpSendFailed);
@@ -125,8 +144,7 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
   // ── step 2: verify (client format only; server binds OTP at signup) ─────────
   void _continueToProfile() {
     if (!_codeRe.hasMatch(_code.text.trim())) {
-      setState(() =>
-          _error = AppLocalizations.of(context).provTaskerOtpFormat);
+      setState(() => _error = AppLocalizations.of(context).provTaskerOtpFormat);
       return;
     }
     setState(() {
@@ -150,17 +168,19 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
     } catch (_) {
       // Permission denied / no camera / channel error — all surface here.
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l.provTaskerCameraDenied)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l.provTaskerCameraDenied)));
     }
   }
 
   // ── submit ─────────────────────────────────────────────────────────────────
   Future<void> _submit() async {
     final l = AppLocalizations.of(context);
+    final reapply = _reapply;
     setState(() => _error = null);
-    if (_name.text.trim().isEmpty || _district.text.trim().isEmpty) {
+    if (!reapply &&
+        (_name.text.trim().isEmpty || _district.text.trim().isEmpty)) {
       setState(() => _error = l.provTaskerNameDistrictRequired);
       return;
     }
@@ -172,40 +192,82 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
     }
     setState(() => _submitting = true);
     try {
-      // Build the multipart payload from the captures.
-      final uploads = <KycUploadFile>[
-        for (final kind in _kycKindValues)
-          KycUploadFile(
-            kind: kind,
-            filename: _files[kind]!.name,
-            bytes: await _files[kind]!.readAsBytes(),
-          ),
-      ];
-      // kycUpload is Bearer-only and there is no public /api/v1 tasker-signup
-      // route yet, so a guest upload cannot persist a signup (it 401s). Attempt
-      // it and branch on the ACTUAL result: a signed-in re-applicant with a real
-      // token persists their docs (honest "submitted"); a guest does not, so the
-      // terminal state must NOT claim receipt — see [_DoneView].
-      var uploaded = false;
+      final List<KycUploadFile> uploads;
       try {
-        await ref.read(kycoApiProvider).kycUpload(uploads);
-        uploaded = true;
+        uploads = <KycUploadFile>[
+          for (final kind in _kycKindValues)
+            KycUploadFile(
+              kind: kind,
+              filename: _files[kind]!.name,
+              bytes: await _files[kind]!.readAsBytes(),
+              mimeType: _files[kind]!.mimeType,
+            ),
+        ];
       } catch (_) {
-        // Guest/401 or a transient failure — nothing was stored.
-        uploaded = false;
+        if (mounted) setState(() => _error = l.provTaskerPhotoReadFailed);
+        return;
       }
+      final api = ref.read(kycoApiProvider);
+      if (reapply) {
+        final out = await api.kycUpload(uploads, nationalId: _nationalId.text);
+        if (!mounted) return;
+        if (!out.allOk(_kycKindValues)) {
+          final missing = _kycKindValues.where(
+            (k) => !out.uploadedKinds.contains(k),
+          );
+          setState(
+            () => _error = l.prov2TaskerPartialUpload(
+              missing.map((k) => _kycKindLabel(l, k)).join(', '),
+            ),
+          );
+          return;
+        }
+      } else {
+        await api.becomeTasker(
+          phone: _phone.text.trim(),
+          otpCode: _code.text.trim(),
+          name: _name.text.trim(),
+          city: _city,
+          district: _district.text.trim(),
+          referralCode: _referral.text,
+          files: uploads,
+        );
+        if (!mounted) return;
+      }
+      // Only reached after the server confirmed every doc was stored.
+      setState(() => _done = true);
+    } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() {
-        _uploaded = uploaded;
-        _done = true;
-      });
+      setState(() => _error = _submitErrorText(l, e));
     } catch (_) {
-      if (mounted) {
-        setState(() => _error = l.provTaskerPhotoReadFailed);
-      }
+      if (mounted) setState(() => _error = l.prov2TaskerSubmitFailed);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  /// Map a signup/KYC refusal to text: a bad OTP sends the user back to the code
+  /// step; a missing/oversized doc names that doc; otherwise the server's own
+  /// localized message (phone already registered, rate limit, …).
+  String _submitErrorText(AppLocalizations l, ApiException e) {
+    final f = e.fields ?? const <String, String>{};
+    if (f.containsKey('otp_code')) {
+      _step = _Step.verify;
+      return l.prov2TaskerOtpInvalid;
+    }
+    final badDocs = _kycKindValues.where(f.containsKey).toList();
+    if (badDocs.isNotEmpty) {
+      return l.prov2TaskerPartialUpload(
+        badDocs.map((k) => _kycKindLabel(l, k)).join(', '),
+      );
+    }
+    if (e.isMaintenance || e.code == 'network') {
+      return l.prov2TaskerSubmitFailed;
+    }
+    final msg = e.message.trim();
+    return msg.isEmpty || msg == 'Request failed'
+        ? l.prov2TaskerSubmitFailed
+        : msg;
   }
 
   @override
@@ -214,7 +276,7 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l.becomePartner)),
       body: _done
-          ? _DoneView(uploaded: _uploaded)
+          ? const _DoneView()
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
               children: [
@@ -230,124 +292,124 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
 
   // ── step views ─────────────────────────────────────────────────────────────
   Widget _phoneStep(AppLocalizations l) => _Card(
-        title: l.provTaskerVerifyPhoneTitle,
-        children: [
-          TextField(
-            controller: _phone,
-            keyboardType: TextInputType.phone,
-            decoration: InputDecoration(
-              labelText: l.provPhoneLabel,
-              hintText: '09xxxxxxxx',
-            ),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: 12),
-            ErrorBanner(_error!),
-          ],
-          const SizedBox(height: 16),
-          _PrimaryButton(
-            label: _otpSending ? l.provTaskerSending : l.provSendOtp,
-            busy: _otpSending,
-            onPressed: _otpSending ? null : _requestOtp,
-          ),
-        ],
-      );
+    title: l.provTaskerVerifyPhoneTitle,
+    children: [
+      TextField(
+        controller: _phone,
+        keyboardType: TextInputType.phone,
+        decoration: InputDecoration(
+          labelText: l.provPhoneLabel,
+          hintText: '09xxxxxxxx',
+        ),
+      ),
+      if (_error != null) ...[const SizedBox(height: 12), ErrorBanner(_error!)],
+      const SizedBox(height: 16),
+      _PrimaryButton(
+        label: _otpSending ? l.provTaskerSending : l.provSendOtp,
+        busy: _otpSending,
+        onPressed: _otpSending ? null : _requestOtp,
+      ),
+    ],
+  );
 
   Widget _verifyStep(AppLocalizations l) => _Card(
-        title: l.provTaskerEnterOtpTitle,
-        children: [
-          Text(l.provTaskerOtpSentTo(_phone.text.trim()),
-              style: Theme.of(context).textTheme.bodySmall),
-          TextButton(
-            onPressed: () => setState(() => _step = _Step.phone),
-            child: Text(l.provTaskerChangePhone),
-          ),
-          TextField(
-            controller: _code,
-            keyboardType: TextInputType.number,
-            maxLength: 8,
-            textAlign: TextAlign.center,
-            decoration: InputDecoration(labelText: l.provOtpLabel),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: 4),
-            ErrorBanner(_error!),
-          ],
-          const SizedBox(height: 16),
-          _PrimaryButton(
-              label: l.provTaskerContinue, onPressed: _continueToProfile),
-        ],
-      );
+    title: l.provTaskerEnterOtpTitle,
+    children: [
+      Text(
+        l.provTaskerOtpSentTo(_phone.text.trim()),
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+      TextButton(
+        onPressed: () => setState(() => _step = _Step.phone),
+        child: Text(l.provTaskerChangePhone),
+      ),
+      TextField(
+        controller: _code,
+        keyboardType: TextInputType.number,
+        maxLength: 8,
+        textAlign: TextAlign.center,
+        decoration: InputDecoration(labelText: l.provOtpLabel),
+      ),
+      if (_error != null) ...[const SizedBox(height: 4), ErrorBanner(_error!)],
+      const SizedBox(height: 16),
+      _PrimaryButton(
+        label: l.provTaskerContinue,
+        onPressed: _continueToProfile,
+      ),
+    ],
+  );
 
   Widget _profileStep(AppLocalizations l) => _Card(
-        title: l.provTaskerProfileTitle,
-        children: [
-          TextField(
-            controller: _name,
-            decoration: InputDecoration(labelText: l.provTaskerFullName),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: _city,
-            isExpanded: true,
-            decoration: InputDecoration(labelText: l.provTaskerCity),
-            items: [
-              for (final v in _cityValues)
-                DropdownMenuItem(value: v, child: Text(_cityLabel(l, v))),
-            ],
-            onChanged: (v) => setState(() => _city = v ?? 'hcm'),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _district,
-            decoration: InputDecoration(
-              labelText: l.provTaskerDistrict,
-              hintText: l.provTaskerDistrictHint,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _referral,
-            textCapitalization: TextCapitalization.characters,
-            maxLength: 8,
-            decoration: InputDecoration(
-              labelText: l.provTaskerReferral,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(l.provTaskerCaptureDocsTitle,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          for (final kind in _kycKindValues)
-            _KycTile(
-              label: _kycKindLabel(l, kind),
-              captured: _files.containsKey(kind),
-              fileName: _files[kind]?.name,
-              onTap: () => _capture(kind),
-            ),
-          if (_error != null) ...[
-            const SizedBox(height: 12),
-            ErrorBanner(_error!),
+    title: l.provTaskerProfileTitle,
+    children: [
+      if (_reapply) ...[
+        TextField(
+          controller: _nationalId,
+          keyboardType: TextInputType.number,
+          maxLength: 12,
+          decoration: InputDecoration(labelText: l.prov2TaskerNationalId),
+        ),
+        const SizedBox(height: 8),
+      ] else ...[
+        TextField(
+          controller: _name,
+          decoration: InputDecoration(labelText: l.provTaskerFullName),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          initialValue: _city,
+          isExpanded: true,
+          decoration: InputDecoration(labelText: l.provTaskerCity),
+          items: [
+            for (final v in _cityValues)
+              DropdownMenuItem(value: v, child: Text(_cityLabel(l, v))),
           ],
-          const SizedBox(height: 16),
-          _PrimaryButton(
-            label: _submitting ? l.provTaskerSending : l.provTaskerSubmit,
-            busy: _submitting,
-            onPressed: _submitting ? null : _submit,
+          onChanged: (v) => setState(() => _city = v ?? 'hcm'),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _district,
+          decoration: InputDecoration(
+            labelText: l.provTaskerDistrict,
+            hintText: l.provTaskerDistrictHint,
           ),
-        ],
-      );
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _referral,
+          textCapitalization: TextCapitalization.characters,
+          maxLength: 8,
+          decoration: InputDecoration(labelText: l.provTaskerReferral),
+        ),
+        const SizedBox(height: 8),
+      ],
+      Text(
+        l.provTaskerCaptureDocsTitle,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      const SizedBox(height: 8),
+      for (final kind in _kycKindValues)
+        _KycTile(
+          label: _kycKindLabel(l, kind),
+          captured: _files.containsKey(kind),
+          fileName: _files[kind]?.name,
+          onTap: () => _capture(kind),
+        ),
+      if (_error != null) ...[const SizedBox(height: 12), ErrorBanner(_error!)],
+      const SizedBox(height: 16),
+      _PrimaryButton(
+        label: _submitting ? l.provTaskerSending : l.provTaskerSubmit,
+        busy: _submitting,
+        onPressed: _submitting ? null : _submit,
+      ),
+    ],
+  );
 }
 
 // ── completion ─────────────────────────────────────────────────────────────
 
 class _DoneView extends StatelessWidget {
-  const _DoneView({required this.uploaded});
-
-  /// Whether the KYC upload actually persisted (a signed-in re-applicant with a
-  /// real Bearer token). For a guest the upload 401s and NOTHING is stored, so
-  /// we must not claim receipt — see [_BecomeTaskerScreenState._submit].
-  final bool uploaded;
+  const _DoneView();
 
   @override
   Widget build(BuildContext context) {
@@ -357,13 +419,13 @@ class _DoneView extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: uploaded ? _submitted(context, cs) : _notLive(context, cs),
+          children: _submitted(context, cs),
         ),
       ),
     );
   }
 
-  // Honest success — reached ONLY when kycUpload actually succeeded (real token).
+  // Reached ONLY after the server confirmed the application was stored.
   List<Widget> _submitted(BuildContext context, ColorScheme cs) {
     final l = AppLocalizations.of(context);
     return [
@@ -374,41 +436,14 @@ class _DoneView extends StatelessWidget {
         child: const Icon(Icons.check, size: 34),
       ),
       const SizedBox(height: 16),
-      Text(l.provTaskerDoneTitle,
-          style: Theme.of(context).textTheme.titleLarge,
-          textAlign: TextAlign.center),
+      Text(
+        l.provTaskerDoneTitle,
+        style: Theme.of(context).textTheme.titleLarge,
+        textAlign: TextAlign.center,
+      ),
       const SizedBox(height: 8),
       Text(
         l.provTaskerDoneBody,
-        textAlign: TextAlign.center,
-        style: TextStyle(color: cs.onSurfaceVariant),
-      ),
-      const SizedBox(height: 24),
-      FilledButton(
-        onPressed: () => context.go('/'),
-        child: Text(l.provTaskerBackHome),
-      ),
-    ];
-  }
-
-  // Honest not-live state — the guest path, where nothing was persisted. It must
-  // NOT promise receipt or a 24h callback the backend cannot deliver.
-  List<Widget> _notLive(BuildContext context, ColorScheme cs) {
-    final l = AppLocalizations.of(context);
-    return [
-      CircleAvatar(
-        radius: 32,
-        backgroundColor: cs.secondaryContainer,
-        foregroundColor: cs.onSecondaryContainer,
-        child: const Icon(Icons.hourglass_top, size: 34),
-      ),
-      const SizedBox(height: 16),
-      Text(l.provTaskerNotLiveTitle,
-          style: Theme.of(context).textTheme.titleLarge,
-          textAlign: TextAlign.center),
-      const SizedBox(height: 8),
-      Text(
-        l.provTaskerNotLiveBody,
         textAlign: TextAlign.center,
         style: TextStyle(color: cs.onSurfaceVariant),
       ),
@@ -448,8 +483,8 @@ class _Stepper extends StatelessWidget {
                 color: i == idx
                     ? cs.primary
                     : i < idx
-                        ? cs.secondaryContainer
-                        : cs.surfaceContainerHighest,
+                    ? cs.secondaryContainer
+                    : cs.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -461,8 +496,8 @@ class _Stepper extends StatelessWidget {
                   color: i == idx
                       ? cs.onPrimary
                       : i < idx
-                          ? cs.onSecondaryContainer
-                          : cs.onSurfaceVariant,
+                      ? cs.onSecondaryContainer
+                      : cs.onSurfaceVariant,
                 ),
               ),
             ),
@@ -490,8 +525,10 @@ class _Card extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 12),
           ...children,
         ],
@@ -501,24 +538,28 @@ class _Card extends StatelessWidget {
 }
 
 class _PrimaryButton extends StatelessWidget {
-  const _PrimaryButton({required this.label, this.onPressed, this.busy = false});
+  const _PrimaryButton({
+    required this.label,
+    this.onPressed,
+    this.busy = false,
+  });
   final String label;
   final VoidCallback? onPressed;
   final bool busy;
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: double.infinity,
-        child: FilledButton(
-          onPressed: onPressed,
-          child: busy
-              ? const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(label),
-        ),
-      );
+    width: double.infinity,
+    child: FilledButton(
+      onPressed: onPressed,
+      child: busy
+          ? const SizedBox(
+              height: 18,
+              width: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Text(label),
+    ),
+  );
 }
 
 class _KycTile extends StatelessWidget {
@@ -561,22 +602,29 @@ class _KycTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(label,
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text(
+                      label,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     if (captured && fileName != null)
-                      Text(fileName!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              fontSize: 12, color: cs.onSurfaceVariant)),
+                      Text(
+                        fileName!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
                   ],
                 ),
               ),
               Text(
-                  captured
-                      ? AppLocalizations.of(context).provTaskerRetake
-                      : AppLocalizations.of(context).provTaskerCapturePhoto,
-                  style: TextStyle(color: cs.primary)),
+                captured
+                    ? AppLocalizations.of(context).provTaskerRetake
+                    : AppLocalizations.of(context).provTaskerCapturePhoto,
+                style: TextStyle(color: cs.primary),
+              ),
             ],
           ),
         ),

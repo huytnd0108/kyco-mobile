@@ -5,7 +5,7 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/widgets.dart';
 import 'auth_controller.dart';
-import 'login_screen.dart' show authFromParam;
+import 'login_screen.dart' show authErrorText, authFromParam;
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -37,7 +37,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         );
     if (ok && mounted) {
       // Resume the flow the guest came from (?from=, the web's callbackUrl).
-      context.go(authFromParam(context) ?? '/');
+      context.go(resumeAfterLogin(authFromParam(context), ref.read(authControllerProvider).user?.role));
     }
   }
 
@@ -47,8 +47,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final from = authFromParam(context);
     final loginPath = from == null ? '/login' : '/login?from=${Uri.encodeQueryComponent(from)}';
     final auth = ref.watch(authControllerProvider);
-    final errorText =
-        auth.error == null ? null : (auth.error == AuthController.genericError ? l.genericError : auth.error!);
+    final errorText = authErrorText(l, auth);
     return Scaffold(
       appBar: AppBar(title: Text(l.signup)),
       body: SafeArea(

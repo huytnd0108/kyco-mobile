@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  App privacy manifest (ITMS-91053). Declares the required-reason APIs the app
+  target reaches through its own code and Flutter plugins:
+    * UserDefaults  CA92.1 - shared_preferences (locale/theme/onboarding prefs),
+                             read/written only by this app.
+    * FileTimestamp C617.1 - image_picker / path handling reads timestamps of
+                             files inside the app container (camera captures).
+  Plugins that ship their own PrivacyInfo.xcprivacy (Flutter engine,
+  shared_preferences_foundation, image_picker_ios, geolocator_apple,
+  share_plus, flutter_secure_storage) are merged by Xcode into the app report.
+  No tracking, no tracking domains.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>C617.1</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+</dict>
+</plist>

@@ -187,12 +187,28 @@ class _UnreadBadge extends StatelessWidget {
   }
 }
 
-class _NotificationTile extends StatelessWidget {
+class _NotificationTile extends ConsumerWidget {
   const _NotificationTile(this.n);
   final NotificationItem n;
 
+  /// Tap: mark read (POST /notifications/{id}/read), then open the in-app
+  /// screen its `link` maps to (if any).
+  Future<void> _open(BuildContext context, WidgetRef ref) async {
+    final target = inAppRouteForLink(n.link);
+    final ctrl = ref.read(notificationsControllerProvider.notifier);
+    if (!n.read) {
+      // Fire the mark-read before navigating; a failure never blocks the link.
+      final ok = await ctrl.markRead(n.id);
+      if (!ok && target == null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context).genericError)));
+      }
+    }
+    if (target != null && context.mounted) context.push(target);
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final when = _formatWhen(context, n.createdAt);
     final body = (n.body?.isNotEmpty ?? false) ? n.body : null;
@@ -214,6 +230,10 @@ class _NotificationTile extends StatelessWidget {
         subtitle:
             subtitleParts.isEmpty ? null : Text(subtitleParts.join('\n')),
         isThreeLine: subtitleParts.length > 1,
+        onTap: () => _open(context, ref),
+        trailing: inAppRouteForLink(n.link) != null
+            ? Icon(Icons.chevron_right, color: cs.onSurfaceVariant)
+            : null,
       ),
     );
   }

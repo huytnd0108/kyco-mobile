@@ -3,6 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/api/kyco_api.dart';
+import '../../core/config.dart';
 
 /// Why a native capture could not produce a value. Every failure mode is a
 /// user-facing branch — nothing here throws past the call site, so the screen
@@ -84,9 +85,30 @@ class PhotoUploadResult {
   bool get isOk => mediaId != null;
 }
 
-/// Camera capture → presigned upload → finalize. Wraps image_picker (which
+/// The media category the backend expects for a job-photo slot — mirrors
+/// lib/provider/job-photos-write.ts (`before` → `checkin`, `mid`/`after` →
+/// `checkout`). The photos route silently DROPS an asset whose category does not
+/// match its slot, so this mapping must stay in lockstep with the server.
+String mediaCategoryForSlot(String slotWire) => slotWire == 'before' ? 'checkin' : 'checkout';
+
+/// Resolve the upload URL the server returned. Production mints an absolute V4
+/// GCS URL; a same-origin relative path (a local/dev storage adapter) is
+/// resolved against the API origin so the PUT reaches the backend host.
+Uri resolveUploadUrl(String uploadUrl, {String apiBase = AppConfig.apiBase}) {
+  final u = Uri.parse(uploadUrl);
+  return u.hasScheme ? u : Uri.parse(apiBase).resolveUri(u);
+}
+
+/// Camera capture → signed-URL upload → finalize. Wraps image_picker (which
 /// throws a PlatformException `camera_access_denied` on a permission refusal)
-/// and the three-step media flow (request-upload → PUT bytes to GCS → finalize).
+/// and the three-step media flow:
+///   1. POST /media/request-upload {category, entityType:'booking', entityId:
+///      bookingId, fileName, mimeType, sizeBytes} → {assetId, uploadUrl,
+///      requiredContentType}
+///   2. PUT the raw bytes to uploadUrl with Content-Type == requiredContentType
+///      (signed header) — no app auth, own Dio
+///   3. POST /media/finalize {mediaId} (server HEADs the object → ready)
+/// The caller then attaches the asset via POST /provider/jobs/{id}/photos.
 class PhotoCaptureService {
   const PhotoCaptureService(this._api, {ImagePicker? picker, Dio? uploader})
       : _picker = picker,
@@ -96,7 +118,10 @@ class PhotoCaptureService {
   final ImagePicker? _picker;
   final Dio? _uploader;
 
-  Future<PhotoUploadResult> captureAndUpload({required String purpose}) async {
+  Future<PhotoUploadResult> captureAndUpload({
+    required int bookingId,
+    required String slotWire,
+  }) async {
     final XFile? shot;
     try {
       shot = await (_picker ?? ImagePicker()).pickImage(
@@ -114,47 +139,68 @@ class PhotoCaptureService {
 
     try {
       final bytes = await shot.readAsBytes();
-      final contentType = shot.mimeType ?? _mimeForName(shot.name);
-
-      // 1. request-upload → { mediaId/assetId, uploadUrl, requiredContentType }.
-      final signed = await _api.requestMediaUpload(
-        contentType: contentType,
-        sizeBytes: bytes.length,
-        purpose: purpose,
+      return await uploadBytes(
+        bookingId: bookingId,
+        slotWire: slotWire,
+        bytes: bytes,
+        fileName: shot.name,
+        mimeType: shot.mimeType,
       );
-      final uploadUrl = signed['uploadUrl'] as String?;
-      final mediaId = (signed['mediaId'] ?? signed['assetId']);
-      final requiredCt = (signed['requiredContentType'] as String?) ?? contentType;
-      final key = (signed['key'] ?? signed['objectKey'] ?? '') as String;
-      if (uploadUrl == null || mediaId is! num) {
-        return const PhotoUploadResult.fail(CaptureFailure.error);
-      }
-
-      // 2. PUT the bytes straight to the signed (GCS) URL — no app auth, own Dio.
-      await (_uploader ?? Dio()).put<void>(
-        uploadUrl,
-        data: Stream<List<int>>.fromIterable([bytes]),
-        options: Options(
-          headers: {
-            'Content-Type': requiredCt,
-            Headers.contentLengthHeader: bytes.length,
-          },
-        ),
-      );
-
-      // 3. finalize → commit the object (pending → ready).
-      await _api.finalizeMedia(key: key, mediaId: mediaId.toInt());
-      return PhotoUploadResult.ok(mediaId.toInt());
     } catch (_) {
       return const PhotoUploadResult.fail(CaptureFailure.error);
     }
   }
 
-  static String _mimeForName(String name) {
-    final n = name.toLowerCase();
-    if (n.endsWith('.png')) return 'image/png';
-    if (n.endsWith('.webp')) return 'image/webp';
-    if (n.endsWith('.heic')) return 'image/heic';
-    return 'image/jpeg';
+  /// Steps 1–3 for already-captured bytes (split out so the wire contract is
+  /// testable without a camera). Never throws.
+  Future<PhotoUploadResult> uploadBytes({
+    required int bookingId,
+    required String slotWire,
+    required List<int> bytes,
+    required String fileName,
+    String? mimeType,
+  }) async {
+    try {
+      if (bytes.isEmpty) return const PhotoUploadResult.fail(CaptureFailure.error);
+      final contentType = (mimeType == null || mimeType.isEmpty)
+          ? mimeForFileName(fileName)
+          : mimeType.toLowerCase();
+      final name = fileName.isEmpty ? 'photo.${extForMime(contentType)}' : fileName;
+
+      // 1. request-upload.
+      final ticket = await _api.requestMediaUpload(
+        category: mediaCategoryForSlot(slotWire),
+        entityType: 'booking',
+        entityId: bookingId,
+        fileName: name,
+        mimeType: contentType,
+        sizeBytes: bytes.length,
+      );
+      if (!ticket.isUsable) return const PhotoUploadResult.fail(CaptureFailure.error);
+
+      // 2. PUT the bytes to the signed URL. The Content-Type is part of the V4
+      //    signature, so send EXACTLY requiredContentType.
+      final res = await (_uploader ?? Dio()).putUri<void>(
+        resolveUploadUrl(ticket.uploadUrl!),
+        data: Stream<List<int>>.fromIterable([bytes]),
+        options: Options(
+          headers: {
+            Headers.contentTypeHeader: ticket.requiredContentType ?? contentType,
+            Headers.contentLengthHeader: bytes.length,
+          },
+          validateStatus: (_) => true,
+        ),
+      );
+      final status = res.statusCode ?? 0;
+      if (status < 200 || status >= 300) {
+        return const PhotoUploadResult.fail(CaptureFailure.error);
+      }
+
+      // 3. finalize → pending → ready.
+      await _api.finalizeMedia(mediaId: ticket.assetId!);
+      return PhotoUploadResult.ok(ticket.assetId!);
+    } catch (_) {
+      return const PhotoUploadResult.fail(CaptureFailure.error);
+    }
   }
 }

@@ -1812,4 +1812,344 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get provTaskerCapturePhoto => 'Take photo';
+
+  @override
+  String get cust2ErrNetwork =>
+      'No network connection. Please check your connection and try again.';
+
+  @override
+  String get cust2ErrRateLimit =>
+      'Too many requests. Please wait a moment and try again.';
+
+  @override
+  String get cust2ErrMaintenance =>
+      'The service is under maintenance. Please try again later.';
+
+  @override
+  String get cust2ErrSessionExpired =>
+      'Your session has expired. Please sign in again.';
+
+  @override
+  String get cust2ErrForbidden => 'You don\'t have permission to do this.';
+
+  @override
+  String get cust2ErrNotFound => 'We couldn\'t find what you were looking for.';
+
+  @override
+  String get cust2ErrValidation =>
+      'Some information is invalid. Please check and try again.';
+
+  @override
+  String get cust2ErrServer =>
+      'The server ran into a problem. Please try again later.';
+
+  @override
+  String get cust2ErrConflict => 'This action isn\'t possible right now.';
+
+  @override
+  String get cust2ErrTotpRequired =>
+      'Two-factor authentication is on. Enter the code from your authenticator app.';
+
+  @override
+  String get cust2ErrTotpInvalid =>
+      'The two-factor code is incorrect or expired.';
+
+  @override
+  String get cust2ErrLoginInvalid => 'Incorrect email or password.';
+
+  @override
+  String get cust2ErrOtpLoginInvalid =>
+      'The code is wrong or expired, or the phone number isn\'t verified.';
+
+  @override
+  String cust2BookingsLoadFailed(String reason) {
+    return 'Couldn\'t load bookings.\n$reason';
+  }
+
+  @override
+  String get cust2LoginModeEmail => 'Email';
+
+  @override
+  String get cust2LoginModePhone => 'Phone';
+
+  @override
+  String get cust2PhoneLabel => 'Phone number';
+
+  @override
+  String get cust2PhoneInvalid => 'Invalid phone number.';
+
+  @override
+  String get cust2SendCode => 'Send code';
+
+  @override
+  String get cust2ResendCode => 'Resend code';
+
+  @override
+  String get cust2OtpLabel => 'Verification code';
+
+  @override
+  String get cust2OtpFormat => 'The code has 4–8 digits.';
+
+  @override
+  String cust2OtpSent(String phone) {
+    return 'Code sent to $phone.';
+  }
+
+  @override
+  String get cust2TotpLabel => 'Two-factor code';
+
+  @override
+  String get cust2StatusEnRoute => 'On the way';
+
+  @override
+  String get cust2StatusArrived => 'Arrived';
+
+  @override
+  String get cust2StatusCheckedIn => 'Checked in';
+
+  @override
+  String get cust2StatusActive => 'In progress';
+
+  @override
+  String get cust2StatusAwaitingConfirmation => 'Awaiting your confirmation';
+
+  @override
+  String get cust2StatusAwaitingPayment => 'Awaiting payment';
+
+  @override
+  String get cust2StatusAwaitingCashConfirm => 'Awaiting cash confirmation';
+
+  @override
+  String get cust2StatusClosed => 'Closed';
+
+  @override
+  String get cust2StatusInDispute => 'In dispute';
+
+  @override
+  String get cust2DetailScheduled => 'Scheduled';
+
+  @override
+  String get cust2DetailAddress => 'Address';
+
+  @override
+  String get cust2DetailNotes => 'Notes';
+
+  @override
+  String get cust2DetailPayment => 'Payment';
+
+  @override
+  String get cust2DetailCode => 'Confirmation code';
+
+  @override
+  String get cust2DetailProvider => 'Tasker';
+
+  @override
+  String get cust2DetailTimeline => 'Timeline';
+
+  @override
+  String get cust2PayCash => 'Cash';
+
+  @override
+  String get cust2TlCreated => 'Booked';
+
+  @override
+  String get cust2TlScheduled => 'Scheduled for';
+
+  @override
+  String get cust2TlClaimed => 'Tasker accepted';
+
+  @override
+  String get cust2TlStarted => 'Work started';
+
+  @override
+  String get cust2TlFinished => 'Tasker finished';
+
+  @override
+  String get cust2TlCompleted => 'Completed';
+
+  @override
+  String get cust2TlCustomerConfirmed => 'You confirmed';
+
+  @override
+  String get cust2TlCashReceived => 'Cash received';
+
+  @override
+  String get cust2TlSettled => 'Settled';
+
+  @override
+  String get cust2ReviewCta => 'Rate this service';
+
+  @override
+  String get cust2ReviewComment => 'Comment (optional)';
+
+  @override
+  String get cust2ReviewSubmit => 'Submit review';
+
+  @override
+  String get cust2ReviewThanks => 'Thanks for your review!';
+
+  @override
+  String get cust2ReviewDone => 'You\'ve reviewed this booking.';
+
+  @override
+  String get cust2RatingRequired => 'Please pick a rating.';
+
+  @override
+  String cust2RatingStar(String n) {
+    return '$n stars';
+  }
+
+  @override
+  String get cust2InviteYourCode => 'Your invite code';
+
+  @override
+  String get cust2InviteBody => 'Share this code so friends can join Kyco.';
+
+  @override
+  String get cust2InviteCopy => 'Copy';
+
+  @override
+  String get cust2InviteCopied => 'Invite code copied';
+
+  @override
+  String get cust2InvitePending => 'Pending';
+
+  @override
+  String get cust2InviteSignedUp => 'Signed up';
+
+  @override
+  String get cust2HelpEmpty => 'No FAQs yet.';
+
+  @override
+  String get cust2DocUnavailable =>
+      'This content isn\'t available in the app yet.';
+
+  @override
+  String get cust2Addresses => 'Saved addresses';
+
+  @override
+  String get cust2AddressAdd => 'Add address';
+
+  @override
+  String get cust2AddressEdit => 'Edit address';
+
+  @override
+  String get cust2AddressLabel => 'Label (e.g. Home, Work)';
+
+  @override
+  String get cust2AddressLine => 'Street address';
+
+  @override
+  String get cust2AddressWard => 'Ward';
+
+  @override
+  String get cust2AddressDistrict => 'District';
+
+  @override
+  String get cust2AddressCity => 'City / Province';
+
+  @override
+  String get cust2AddressDefault => 'Set as default address';
+
+  @override
+  String get cust2AddressDefaultBadge => 'Default';
+
+  @override
+  String get cust2AddressDelete => 'Delete';
+
+  @override
+  String get cust2AddressDeleteConfirm => 'Delete this address?';
+
+  @override
+  String get cust2AddressEmpty => 'You have no saved addresses.';
+
+  @override
+  String get cust2Save => 'Save';
+
+  @override
+  String get cust2Cancel => 'Cancel';
+
+  @override
+  String get cust2Required => 'Required';
+
+  @override
+  String get cust2Saved => 'Saved';
+
+  @override
+  String cust2LoadFailed(String reason) {
+    return 'Couldn\'t load this page.\n$reason';
+  }
+
+  @override
+  String prov2StepUpOtpTo(String phone) {
+    return 'The OTP will be sent to your account\'s verified phone: $phone';
+  }
+
+  @override
+  String get prov2StepUpNoVerifiedPhone =>
+      'Your account has no verified phone number. Verify it under Account, then try again.';
+
+  @override
+  String get prov2StepUpPhoneLoadFailed =>
+      'Couldn\'t load your account details, please try again.';
+
+  @override
+  String get prov2TaskerNationalId => 'National ID number (optional)';
+
+  @override
+  String prov2TaskerPartialUpload(String kinds) {
+    return 'Not uploaded: $kinds. Please retake and submit again.';
+  }
+
+  @override
+  String get prov2TaskerSubmitFailed =>
+      'Couldn\'t submit your application, please try again.';
+
+  @override
+  String get prov2TaskerOtpInvalid =>
+      'The OTP is wrong or has expired. Please check it.';
+
+  @override
+  String get prov2LiveShareTitle => 'Share live location';
+
+  @override
+  String get prov2LiveShareOff =>
+      'Turn on so the customer can see you on the way. Only sent while this screen is open.';
+
+  @override
+  String prov2LiveShareOn(String time) {
+    return 'Sharing location · updated $time';
+  }
+
+  @override
+  String get prov2LiveShareStarting => 'Getting your location…';
+
+  @override
+  String get prov2LiveShareNotEnRoute =>
+      'You can only share while heading to the customer (before check-in).';
+
+  @override
+  String get prov2LiveShareStopped => 'Location sharing stopped.';
+
+  @override
+  String get prov2ResubmitTitle => 'Customer hasn\'t accepted completion';
+
+  @override
+  String get prov2ResubmitBody =>
+      'The customer pushed back on the job. Review it (add photos if needed), then resubmit completion.';
+
+  @override
+  String prov2ResubmitNote(String note) {
+    return 'Customer\'s note: $note';
+  }
+
+  @override
+  String get prov2ResubmitAction => 'Resubmit completion';
+
+  @override
+  String get prov2ResubmitDone =>
+      'Resubmitted — the customer will be reminded to confirm.';
+
+  @override
+  String get prov2ComplaintNeedsText => 'Please describe the complaint.';
 }

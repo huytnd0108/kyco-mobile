@@ -1817,4 +1817,342 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get provTaskerCapturePhoto => 'Chụp ảnh';
+
+  @override
+  String get cust2ErrNetwork =>
+      'Không có kết nối mạng. Vui lòng kiểm tra kết nối và thử lại.';
+
+  @override
+  String get cust2ErrRateLimit =>
+      'Bạn thao tác quá nhanh. Vui lòng đợi một chút rồi thử lại.';
+
+  @override
+  String get cust2ErrMaintenance =>
+      'Hệ thống đang bảo trì. Vui lòng thử lại sau.';
+
+  @override
+  String get cust2ErrSessionExpired =>
+      'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+
+  @override
+  String get cust2ErrForbidden => 'Bạn không có quyền thực hiện thao tác này.';
+
+  @override
+  String get cust2ErrNotFound => 'Không tìm thấy nội dung bạn yêu cầu.';
+
+  @override
+  String get cust2ErrValidation =>
+      'Thông tin chưa hợp lệ. Vui lòng kiểm tra lại.';
+
+  @override
+  String get cust2ErrServer => 'Máy chủ đang gặp sự cố. Vui lòng thử lại sau.';
+
+  @override
+  String get cust2ErrConflict =>
+      'Không thể thực hiện thao tác ở trạng thái hiện tại.';
+
+  @override
+  String get cust2ErrTotpRequired =>
+      'Tài khoản bật xác thực 2 lớp. Vui lòng nhập mã từ ứng dụng Authenticator.';
+
+  @override
+  String get cust2ErrTotpInvalid =>
+      'Mã xác thực 2 lớp không đúng hoặc đã hết hạn.';
+
+  @override
+  String get cust2ErrLoginInvalid => 'Email hoặc mật khẩu không đúng.';
+
+  @override
+  String get cust2ErrOtpLoginInvalid =>
+      'Mã OTP không đúng/đã hết hạn, hoặc số điện thoại chưa được xác minh.';
+
+  @override
+  String cust2BookingsLoadFailed(String reason) {
+    return 'Không tải được đơn.\n$reason';
+  }
+
+  @override
+  String get cust2LoginModeEmail => 'Email';
+
+  @override
+  String get cust2LoginModePhone => 'Số điện thoại';
+
+  @override
+  String get cust2PhoneLabel => 'Số điện thoại';
+
+  @override
+  String get cust2PhoneInvalid => 'Số điện thoại không hợp lệ.';
+
+  @override
+  String get cust2SendCode => 'Gửi mã OTP';
+
+  @override
+  String get cust2ResendCode => 'Gửi lại mã';
+
+  @override
+  String get cust2OtpLabel => 'Mã OTP';
+
+  @override
+  String get cust2OtpFormat => 'Mã OTP gồm 4–8 chữ số.';
+
+  @override
+  String cust2OtpSent(String phone) {
+    return 'Đã gửi mã tới $phone.';
+  }
+
+  @override
+  String get cust2TotpLabel => 'Mã xác thực 2 lớp';
+
+  @override
+  String get cust2StatusEnRoute => 'Đang di chuyển';
+
+  @override
+  String get cust2StatusArrived => 'Đã đến nơi';
+
+  @override
+  String get cust2StatusCheckedIn => 'Đã check-in';
+
+  @override
+  String get cust2StatusActive => 'Đang thực hiện';
+
+  @override
+  String get cust2StatusAwaitingConfirmation => 'Chờ bạn xác nhận';
+
+  @override
+  String get cust2StatusAwaitingPayment => 'Chờ thanh toán';
+
+  @override
+  String get cust2StatusAwaitingCashConfirm => 'Chờ xác nhận tiền mặt';
+
+  @override
+  String get cust2StatusClosed => 'Đã đóng';
+
+  @override
+  String get cust2StatusInDispute => 'Đang khiếu nại';
+
+  @override
+  String get cust2DetailScheduled => 'Lịch hẹn';
+
+  @override
+  String get cust2DetailAddress => 'Địa chỉ';
+
+  @override
+  String get cust2DetailNotes => 'Ghi chú';
+
+  @override
+  String get cust2DetailPayment => 'Thanh toán';
+
+  @override
+  String get cust2DetailCode => 'Mã xác nhận';
+
+  @override
+  String get cust2DetailProvider => 'Cộng tác viên';
+
+  @override
+  String get cust2DetailTimeline => 'Tiến trình';
+
+  @override
+  String get cust2PayCash => 'Tiền mặt';
+
+  @override
+  String get cust2TlCreated => 'Đặt đơn';
+
+  @override
+  String get cust2TlScheduled => 'Lịch hẹn';
+
+  @override
+  String get cust2TlClaimed => 'CTV nhận việc';
+
+  @override
+  String get cust2TlStarted => 'Bắt đầu làm';
+
+  @override
+  String get cust2TlFinished => 'CTV báo hoàn tất';
+
+  @override
+  String get cust2TlCompleted => 'Hoàn thành';
+
+  @override
+  String get cust2TlCustomerConfirmed => 'Bạn đã xác nhận';
+
+  @override
+  String get cust2TlCashReceived => 'Đã nhận tiền mặt';
+
+  @override
+  String get cust2TlSettled => 'Đã quyết toán';
+
+  @override
+  String get cust2ReviewCta => 'Đánh giá dịch vụ';
+
+  @override
+  String get cust2ReviewComment => 'Nhận xét (không bắt buộc)';
+
+  @override
+  String get cust2ReviewSubmit => 'Gửi đánh giá';
+
+  @override
+  String get cust2ReviewThanks => 'Cảm ơn bạn đã đánh giá!';
+
+  @override
+  String get cust2ReviewDone => 'Bạn đã đánh giá đơn này.';
+
+  @override
+  String get cust2RatingRequired => 'Vui lòng chọn số sao.';
+
+  @override
+  String cust2RatingStar(String n) {
+    return '$n sao';
+  }
+
+  @override
+  String get cust2InviteYourCode => 'Mã mời của bạn';
+
+  @override
+  String get cust2InviteBody => 'Chia sẻ mã này để bạn bè đăng ký Kyco.';
+
+  @override
+  String get cust2InviteCopy => 'Sao chép';
+
+  @override
+  String get cust2InviteCopied => 'Đã sao chép mã mời';
+
+  @override
+  String get cust2InvitePending => 'Đang chờ';
+
+  @override
+  String get cust2InviteSignedUp => 'Đã đăng ký';
+
+  @override
+  String get cust2HelpEmpty => 'Chưa có câu hỏi thường gặp.';
+
+  @override
+  String get cust2DocUnavailable => 'Nội dung này chưa có trên ứng dụng.';
+
+  @override
+  String get cust2Addresses => 'Địa chỉ đã lưu';
+
+  @override
+  String get cust2AddressAdd => 'Thêm địa chỉ';
+
+  @override
+  String get cust2AddressEdit => 'Sửa địa chỉ';
+
+  @override
+  String get cust2AddressLabel => 'Tên gợi nhớ (VD: Nhà, Công ty)';
+
+  @override
+  String get cust2AddressLine => 'Số nhà, tên đường';
+
+  @override
+  String get cust2AddressWard => 'Phường / Xã';
+
+  @override
+  String get cust2AddressDistrict => 'Quận / Huyện';
+
+  @override
+  String get cust2AddressCity => 'Tỉnh / Thành phố';
+
+  @override
+  String get cust2AddressDefault => 'Đặt làm địa chỉ mặc định';
+
+  @override
+  String get cust2AddressDefaultBadge => 'Mặc định';
+
+  @override
+  String get cust2AddressDelete => 'Xoá';
+
+  @override
+  String get cust2AddressDeleteConfirm => 'Xoá địa chỉ này?';
+
+  @override
+  String get cust2AddressEmpty => 'Bạn chưa lưu địa chỉ nào.';
+
+  @override
+  String get cust2Save => 'Lưu';
+
+  @override
+  String get cust2Cancel => 'Huỷ';
+
+  @override
+  String get cust2Required => 'Bắt buộc';
+
+  @override
+  String get cust2Saved => 'Đã lưu';
+
+  @override
+  String cust2LoadFailed(String reason) {
+    return 'Không tải được dữ liệu.\n$reason';
+  }
+
+  @override
+  String prov2StepUpOtpTo(String phone) {
+    return 'Mã OTP sẽ được gửi tới số điện thoại đã xác minh của tài khoản: $phone';
+  }
+
+  @override
+  String get prov2StepUpNoVerifiedPhone =>
+      'Tài khoản chưa có số điện thoại đã xác minh. Vui lòng xác minh số điện thoại trong mục Tài khoản rồi thử lại.';
+
+  @override
+  String get prov2StepUpPhoneLoadFailed =>
+      'Không tải được thông tin tài khoản, vui lòng thử lại.';
+
+  @override
+  String get prov2TaskerNationalId => 'Số CCCD (không bắt buộc)';
+
+  @override
+  String prov2TaskerPartialUpload(String kinds) {
+    return 'Chưa tải lên được: $kinds. Vui lòng chụp lại và gửi lại.';
+  }
+
+  @override
+  String get prov2TaskerSubmitFailed =>
+      'Không gửi được hồ sơ, vui lòng thử lại.';
+
+  @override
+  String get prov2TaskerOtpInvalid =>
+      'Mã OTP không đúng hoặc đã hết hạn. Vui lòng kiểm tra lại.';
+
+  @override
+  String get prov2LiveShareTitle => 'Chia sẻ vị trí trực tiếp';
+
+  @override
+  String get prov2LiveShareOff =>
+      'Bật để khách thấy vị trí của bạn trên đường tới. Chỉ gửi khi màn hình này đang mở.';
+
+  @override
+  String prov2LiveShareOn(String time) {
+    return 'Đang chia sẻ vị trí · cập nhật lúc $time';
+  }
+
+  @override
+  String get prov2LiveShareStarting => 'Đang lấy vị trí…';
+
+  @override
+  String get prov2LiveShareNotEnRoute =>
+      'Chỉ chia sẻ được khi đang di chuyển tới nhà khách (trước khi check-in).';
+
+  @override
+  String get prov2LiveShareStopped => 'Đã dừng chia sẻ vị trí.';
+
+  @override
+  String get prov2ResubmitTitle => 'Khách chưa đồng ý hoàn thành';
+
+  @override
+  String get prov2ResubmitBody =>
+      'Khách đã phản hồi về công việc. Kiểm tra lại (bổ sung ảnh nếu cần) rồi gửi lại xác nhận hoàn thành.';
+
+  @override
+  String prov2ResubmitNote(String note) {
+    return 'Phản hồi của khách: $note';
+  }
+
+  @override
+  String get prov2ResubmitAction => 'Gửi lại xác nhận hoàn thành';
+
+  @override
+  String get prov2ResubmitDone => 'Đã gửi lại — khách sẽ được nhắc xác nhận.';
+
+  @override
+  String get prov2ComplaintNeedsText => 'Vui lòng nhập nội dung khiếu nại.';
 }

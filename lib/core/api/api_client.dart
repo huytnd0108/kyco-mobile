@@ -68,6 +68,14 @@ class KycoApiClient {
   Future<dynamic> put(String path, {Object? body, bool auth = true}) =>
       _send('PUT', path, body: body, auth: auth);
 
+  /// PATCH → unwrapped `data`. Note: several kyco PATCH routes REPLACE every
+  /// column (MQA-2) — callers must send the full object, never a partial.
+  Future<dynamic> patch(String path, {Object? body, bool auth = true}) =>
+      _send('PATCH', path, body: body, auth: auth);
+
+  /// DELETE → unwrapped `data`.
+  Future<dynamic> delete(String path, {bool auth = true}) => _send('DELETE', path, auth: auth);
+
   /// GET → the full `{data, meta}` envelope (for cursor-paged reads). Shares
   /// the same single-flight 401 → refresh → retry behaviour as [get].
   Future<Envelope> getWithMeta(String path,

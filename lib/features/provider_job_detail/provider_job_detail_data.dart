@@ -192,3 +192,18 @@ String fmtJobTime(String? raw) {
   String p2(int n) => n.toString().padLeft(2, '0');
   return '${p2(l.day)}/${p2(l.month)} · ${p2(l.hour)}:${p2(l.minute)}';
 }
+
+/// The customer pushed back on completion ("dispute" on the confirm screen only
+/// stamps `bookings.customerDisputedAt`) and the provider has not re-asserted
+/// since — mirrors lib/provider/resubmit-write.ts's own gate: booking
+/// AWAITING_CUSTOMER_CONFIRMATION, customerDisputedAt set, and
+/// providerResubmittedAt absent or older. The server re-checks on the POST.
+bool awaitingResubmit(ProviderJobDetail d) {
+  final b = d.booking;
+  if (b == null) return false;
+  if (_s(b['status']).toUpperCase() != 'AWAITING_CUSTOMER_CONFIRMATION') return false;
+  final disputed = DateTime.tryParse(_s(b['customerDisputedAt']));
+  if (disputed == null) return false;
+  final resubmitted = DateTime.tryParse(_s(b['providerResubmittedAt']));
+  return resubmitted == null || resubmitted.isBefore(disputed);
+}

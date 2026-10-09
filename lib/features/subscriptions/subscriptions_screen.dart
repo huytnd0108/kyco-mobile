@@ -5,6 +5,7 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 import '../../core/adaptive.dart';
 import '../../core/format.dart';
 import '../../core/models.dart';
+import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import '../auth/auth_controller.dart';
 import 'subscriptions_providers.dart';
@@ -40,7 +41,7 @@ class SubscriptionsScreen extends ConsumerWidget {
               error: (e, _) => ListView(children: [
                 const SizedBox(height: 120),
                 ErrorRetry(
-                  message: l.homeLoadError(e.toString()),
+                  message: l.cust2LoadFailed(apiErrorText(l, e)),
                   onRetry: () => ref.invalidate(plansProvider),
                 ),
               ]),
@@ -170,7 +171,7 @@ class _MySubscriptions extends ConsumerWidget {
       ),
       error: (e, _) => Padding(
         padding: const EdgeInsets.all(16),
-        child: ErrorBanner(l.homeLoadError(e.toString())),
+        child: ErrorBanner(l.cust2LoadFailed(apiErrorText(l, e))),
       ),
       data: (items) {
         if (items.isEmpty) {

@@ -283,9 +283,9 @@ class _AvailableTabState extends ConsumerState<_AvailableTab> {
       await ref.read(kycoApiProvider).claimJob(jobId);
       if (!mounted) return;
       messenger.showSnackBar(SnackBar(content: Text(l.provClaimSuccess)));
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text(l.provClaimError)));
+      messenger.showSnackBar(SnackBar(content: Text(claimErrorMessage(e, l.provClaimError))));
     }
     // Refresh both surfaces — the claimed job leaves the pool and enters the
     // assigned pipeline / list. Guard on `mounted`: swiping tabs / navigating

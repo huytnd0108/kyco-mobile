@@ -5,6 +5,7 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/adaptive.dart';
 import '../../core/models.dart';
+import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import '../../theme/app_semantics.dart';
 import '../auth/auth_controller.dart';
@@ -36,7 +37,7 @@ class HomeScreen extends ConsumerWidget {
           error: (e, _) => ListView(children: [
             const SizedBox(height: 120),
             ErrorRetry(
-              message: l.homeLoadError(e.toString()),
+              message: l.homeLoadError(apiErrorText(l, e)),
               onRetry: () => ref.invalidate(homeProvider),
             ),
           ]),

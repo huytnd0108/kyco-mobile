@@ -60,28 +60,53 @@ class AccountScreen extends ConsumerWidget {
                 ),
               if (signedIn)
                 _AccountRow(
+                  icon: Icons.place_outlined,
+                  label: l.cust2Addresses,
+                  onTap: () => context.push('/addresses'),
+                ),
+              if (signedIn)
+                _AccountRow(
                   icon: Icons.phone_iphone,
                   label: l.changePhoneTitle,
                   onTap: () => _runChangePhone(context, ref),
                 ),
               const _RowDivider(),
-              // Static / external-link affordances (no in-app destination in
-              // v1 — the web links out; url_launcher is not a dependency, so
-              // these read as informational rows). See report.
-              _AccountRow(icon: Icons.card_giftcard, label: l.inviteFriends, external: true),
-              // Role-aware entry: a provider gets an in-app link to the /p
-              // workspace; everyone else keeps the onboarding CTA unchanged.
-              if (auth.user?.role == 'provider')
+              if (signedIn)
+                _AccountRow(
+                  icon: Icons.card_giftcard,
+                  label: l.inviteFriends,
+                  onTap: () => context.push('/invite'),
+                ),
+              // Role-aware entry: a provider (or admin — the /p gate admits both)
+              // gets the in-app /p workspace; everyone else the onboarding flow.
+              if (auth.user?.role == 'provider' || auth.user?.role == 'admin')
                 _AccountRow(
                   icon: Icons.handshake_outlined,
                   label: l.provWorkspace,
                   onTap: () => context.go('/p'),
                 )
               else
-                _AccountRow(icon: Icons.handshake_outlined, label: l.becomePartner, external: true),
-              _AccountRow(icon: Icons.chat_bubble_outline, label: l.contactUs, external: true),
-              _AccountRow(icon: Icons.info_outline, label: l.aboutKyco, external: true),
-              _AccountRow(icon: Icons.help_outline, label: l.faqs, external: true),
+                _AccountRow(
+                  icon: Icons.handshake_outlined,
+                  label: l.becomePartner,
+                  onTap: () => context.push('/become-tasker'),
+                ),
+              // Public curated content (GET /v1/legal/{doc}, /v1/help).
+              _AccountRow(
+                icon: Icons.chat_bubble_outline,
+                label: l.contactUs,
+                onTap: () => context.push('/legal/contact'),
+              ),
+              _AccountRow(
+                icon: Icons.info_outline,
+                label: l.aboutKyco,
+                onTap: () => context.push('/legal/about'),
+              ),
+              _AccountRow(
+                icon: Icons.help_outline,
+                label: l.faqs,
+                onTap: () => context.push('/help'),
+              ),
               const SizedBox(height: 20),
 
               // ── Appearance ─────────────────────────────────────────────
@@ -259,12 +284,10 @@ class _AccountRow extends StatelessWidget {
     required this.icon,
     required this.label,
     this.onTap,
-    this.external = false,
   });
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
-  final bool external;
 
   @override
   Widget build(BuildContext context) {
@@ -275,8 +298,8 @@ class _AccountRow extends StatelessWidget {
       leading: Icon(icon, color: cs.onSurfaceVariant),
       title: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
       trailing: Icon(
-        external ? Icons.open_in_new : Icons.chevron_right,
-        size: external ? 18 : 22,
+        Icons.chevron_right,
+        size: 22,
         color: cs.onSurfaceVariant,
       ),
       onTap: onTap,

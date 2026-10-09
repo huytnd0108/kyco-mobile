@@ -6,6 +6,7 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/breakpoints.dart';
 import '../../core/models.dart';
+import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import '../../theme/app_semantics.dart';
 import '../home/home_providers.dart';
@@ -75,6 +76,7 @@ class _BookingsList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final bookings = ref.watch(bookingsProvider);
+    final pager = ref.watch(bookingsPagerProvider);
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(bookingsProvider);
@@ -84,9 +86,19 @@ class _BookingsList extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ListView(children: [
           const SizedBox(height: 120),
-          ErrorRetry(message: l.bookingsLoadError(e.toString()), onRetry: () => ref.invalidate(bookingsProvider)),
+          ErrorRetry(
+              message: l.cust2BookingsLoadFailed(apiErrorText(l, e)),
+              onRetry: () => ref.invalidate(bookingsProvider)),
         ]),
-        data: (list) => list.isEmpty
+        data: (first) {
+          // Page 1 + any appended pages (de-duplicated by id: a new booking
+          // created meanwhile can shift a row across the keyset boundary).
+          final seen = <int>{};
+          final list = [
+            for (final b in [...first, ...pager.extra])
+              if (seen.add(b.id)) b,
+          ];
+          return list.isEmpty
             ? ListView(children: [
                 const SizedBox(height: 140),
                 Center(child: Padding(
@@ -96,14 +108,37 @@ class _BookingsList extends ConsumerWidget {
               ])
             : ListView.separated(
                 padding: const EdgeInsets.all(12),
-                itemCount: list.length,
+                itemCount: list.length + (pager.hasMore ? 1 : 0),
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
-                itemBuilder: (_, i) => _BookingTile(
-                  list[i],
-                  selected: list[i].id == selectedId,
-                  onTap: () => onTap(list[i]),
-                ),
-              ),
+                itemBuilder: (context, i) {
+                  if (i >= list.length) {
+                    return Center(
+                      child: pager.loading
+                          ? const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: SizedBox(
+                                  height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+                            )
+                          : TextButton(
+                              onPressed: () async {
+                                final err = await ref.read(bookingsPagerProvider.notifier).loadMore();
+                                if (err != null && context.mounted) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(SnackBar(content: Text(apiErrorText(l, err))));
+                                }
+                              },
+                              child: Text(l.loadMore),
+                            ),
+                    );
+                  }
+                  return _BookingTile(
+                    list[i],
+                    selected: list[i].id == selectedId,
+                    onTap: () => onTap(list[i]),
+                  );
+                },
+              );
+        },
       ),
     );
   }
@@ -136,24 +171,26 @@ class _BookingTile extends StatelessWidget {
         ),
         title: Text(b.serviceName ?? l.bookingNumber(b.id)),
         subtitle: parts.isEmpty ? null : Text(parts.join(' • ')),
-        trailing: _StatusChip(b.status),
+        trailing: BookingStatusChip(b.status),
       ),
     );
   }
 }
 
-class _StatusChip extends StatelessWidget {
-  const _StatusChip(this.status);
+/// Status pill shared by the list and the detail header.
+class BookingStatusChip extends StatelessWidget {
+  const BookingStatusChip(this.status, {super.key});
   final String status;
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final sem = context.semantics;
-    final (bg, fg) = switch (status.toUpperCase()) {
-      'SETTLED' || 'COMPLETED' || 'CONFIRMED' => (sem.successContainer, sem.onSuccessContainer),
-      'CANCELLED' || 'BAD_DEBT' => (cs.errorContainer, cs.onErrorContainer),
-      _ => (sem.infoContainer, sem.onInfoContainer),
+    final (bg, fg) = switch (bookingStatusTone(status)) {
+      BookingTone.success => (sem.successContainer, sem.onSuccessContainer),
+      BookingTone.danger => (cs.errorContainer, cs.onErrorContainer),
+      BookingTone.warning => (sem.warningContainer, sem.onWarningContainer),
+      BookingTone.info => (sem.infoContainer, sem.onInfoContainer),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

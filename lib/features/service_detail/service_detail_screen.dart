@@ -6,6 +6,7 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 import '../../core/adaptive.dart';
 import '../../core/api/problem.dart';
 import '../../core/models.dart';
+import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import 'review_list.dart';
 import 'service_detail_providers.dart';
@@ -37,7 +38,7 @@ class ServiceDetailScreen extends ConsumerWidget {
               : ListView(children: [
                   const SizedBox(height: 100),
                   ErrorRetry(
-                    message: l.homeLoadError(e.toString()),
+                    message: l.cust2LoadFailed(apiErrorText(l, e)),
                     onRetry: () => ref.invalidate(serviceDetailProvider(id)),
                   ),
                 ]),

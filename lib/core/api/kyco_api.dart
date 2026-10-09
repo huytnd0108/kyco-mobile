@@ -16,8 +16,30 @@ class KycoApi {
   final TokenStore _tokens;
 
   // ── auth ────────────────────────────────────────────────────────────────
-  Future<AuthResult> login({required String email, required String password}) async {
-    final data = await _c.post('/auth/login', body: {'email': email, 'password': password}, auth: false);
+  Future<AuthResult> login({required String email, required String password, String? totpCode}) async {
+    final data = await _c.post('/auth/login', auth: false, body: {
+      'email': email,
+      'password': password,
+      if (totpCode != null && totpCode.isNotEmpty) 'totpCode': totpCode,
+    });
+    final result = AuthResult.fromJson(data as Map<String, dynamic>);
+    await _tokens.save(access: result.accessToken, refresh: result.refreshToken);
+    return result;
+  }
+
+  /// Request a phone OTP (`purpose: 'login'` for phone sign-in). The server
+  /// returns `{expiresAt, channel}`; the code itself is never returned.
+  Future<void> requestOtp({required String phone, String purpose = 'login'}) =>
+      _c.post('/auth/otp/request', body: {'phone': phone, 'purpose': purpose}, auth: false);
+
+  /// Phone + OTP sign-in (`POST /auth/login {phone, code}`). An account with
+  /// TOTP enabled answers 401 `TOTP_REQUIRED` until [totpCode] is supplied.
+  Future<AuthResult> loginWithOtp({required String phone, required String code, String? totpCode}) async {
+    final data = await _c.post('/auth/login', auth: false, body: {
+      'phone': phone,
+      'code': code,
+      if (totpCode != null && totpCode.isNotEmpty) 'totpCode': totpCode,
+    });
     final result = AuthResult.fromJson(data as Map<String, dynamic>);
     await _tokens.save(access: result.accessToken, refresh: result.refreshToken);
     return result;
@@ -68,14 +90,86 @@ class KycoApi {
   Future<void> changePhone({required String phone, required String code}) =>
       _c.post('/me/phone', body: {'phone': phone, 'code': code});
 
-  Future<List<Booking>> bookings() async {
-    final data = await _c.get('/bookings');
-    // data may be a bare list OR a paginated envelope { items: [...], meta }.
+  Future<List<Booking>> bookings() async => (await bookingsPage()).items;
+
+  /// Keyset-paged bookings (`meta.nextCursor` / `meta.hasMore`, id DESC).
+  Future<Paged<Booking>> bookingsPage({String? cursor, int limit = 20}) async {
+    final env = await _c.getWithMeta('/bookings', query: {
+      if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+      'limit': '$limit',
+    });
+    final data = env.data;
+    // data may be a bare list OR a legacy `{ items: [...] }` wrapper.
     final list = data is List
         ? data
         : (data is Map<String, dynamic> && data['items'] is List ? data['items'] as List : const []);
-    return list.whereType<Map<String, dynamic>>().map(Booking.fromJson).toList(growable: false);
+    final items = list.whereType<Map<String, dynamic>>().map(Booking.fromJson).toList(growable: false);
+    return Paged.of(items, env.meta);
   }
+
+  /// Booking detail via the `/bookings/{id}/page` BFF composite (owner-scoped;
+  /// another user's id is a 404). Richer than `/bookings/{id}`: job timeline,
+  /// assigned provider, `hasReview`.
+  Future<BookingDetail> bookingDetail(int id) async {
+    final data = await _c.get('/bookings/$id/page');
+    return BookingDetail.fromPage(data as Map<String, dynamic>);
+  }
+
+  /// Customer review of a completed booking (non-money). 409 CONFLICT when the
+  /// booking is not settled / has no provider / is already reviewed.
+  Future<void> createReview({required int bookingId, required int rating, String? comment}) =>
+      _c.post('/reviews', body: {
+        'bookingId': bookingId,
+        'rating': rating,
+        if (comment != null && comment.trim().isNotEmpty) 'comment': comment.trim(),
+      });
+
+  // ── account: invites / addresses / content ───────────────────────────────
+  Future<InviteStats> inviteStats() async {
+    final data = await _c.get('/invites/stats');
+    return InviteStats.fromJson(data is Map<String, dynamic> ? data : const {});
+  }
+
+  /// Idempotent: returns the existing invite code or allocates one.
+  Future<String> inviteCode() async {
+    final data = await _c.post('/invites/code');
+    return (data is Map<String, dynamic> ? data['code'] as String? : null) ?? '';
+  }
+
+  Future<List<SavedAddress>> addresses() async {
+    final data = await _c.get('/addresses');
+    return (data is List ? data : const [])
+        .whereType<Map<String, dynamic>>()
+        .map(SavedAddress.fromJson)
+        .toList(growable: false);
+  }
+
+  Future<void> createAddress(SavedAddress a) => _c.post('/addresses', body: a.toWriteBody());
+
+  /// Always the FULL object (MQA-2: the PATCH wipes omitted columns).
+  Future<void> updateAddress(SavedAddress a) => _c.patch('/addresses/${a.id}', body: a.toWriteBody());
+
+  Future<void> deleteAddress(int id) => _c.delete('/addresses/$id');
+
+  /// Public curated FAQ (`{faq, taskerFaq}`); the customer list is returned.
+  /// The server resolves the Accept-Language into `titleVi`/`bodyVi`.
+  Future<List<ContentSection>> helpFaq() async {
+    final data = await _c.get('/help', auth: false);
+    final faq = data is Map<String, dynamic> ? data['faq'] : null;
+    return (faq is List ? faq : const [])
+        .whereType<Map<String, dynamic>>()
+        .map(ContentSection.fromJson)
+        .toList(growable: false);
+  }
+
+  /// Public curated legal/company doc (`about`, `contact`). 404 when unseeded.
+  Future<ContentSection> legalDoc(String doc) async {
+    final data = await _c.get('/legal/$doc', auth: false);
+    return ContentSection.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// Mark ONE notification read (`POST /notifications/{id}/read`).
+  Future<void> markNotificationRead(int id) => _c.post('/notifications/$id/read');
 
   // ── catalog / services (all public/anon) ─────────────────────────────────
   /// Cursor-paged service list. `cursor` is an opaque base64url token — round

@@ -909,5 +909,163 @@
   "provTaskerNotLiveTitle": "Sắp ra mắt trên ứng dụng",
   "provTaskerNotLiveBody": "Đăng ký cộng tác viên chưa mở trên ứng dụng, nên hồ sơ chưa được gửi đi. Vui lòng hoàn tất đăng ký tại kyco.vn hoặc email tasker@kyco.vn.",
   "provTaskerRetake": "Chụp lại",
-  "provTaskerCapturePhoto": "Chụp ảnh"
+  "provTaskerCapturePhoto": "Chụp ảnh",
+  "cust2ErrNetwork": "Không có kết nối mạng. Vui lòng kiểm tra kết nối và thử lại.",
+  "cust2ErrRateLimit": "Bạn thao tác quá nhanh. Vui lòng đợi một chút rồi thử lại.",
+  "cust2ErrMaintenance": "Hệ thống đang bảo trì. Vui lòng thử lại sau.",
+  "cust2ErrSessionExpired": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+  "cust2ErrForbidden": "Bạn không có quyền thực hiện thao tác này.",
+  "cust2ErrNotFound": "Không tìm thấy nội dung bạn yêu cầu.",
+  "cust2ErrValidation": "Thông tin chưa hợp lệ. Vui lòng kiểm tra lại.",
+  "cust2ErrServer": "Máy chủ đang gặp sự cố. Vui lòng thử lại sau.",
+  "cust2ErrConflict": "Không thể thực hiện thao tác ở trạng thái hiện tại.",
+  "cust2ErrTotpRequired": "Tài khoản bật xác thực 2 lớp. Vui lòng nhập mã từ ứng dụng Authenticator.",
+  "cust2ErrTotpInvalid": "Mã xác thực 2 lớp không đúng hoặc đã hết hạn.",
+  "cust2ErrLoginInvalid": "Email hoặc mật khẩu không đúng.",
+  "cust2ErrOtpLoginInvalid": "Mã OTP không đúng/đã hết hạn, hoặc số điện thoại chưa được xác minh.",
+  "cust2BookingsLoadFailed": "Không tải được đơn.\n{reason}",
+  "@cust2BookingsLoadFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "cust2LoginModeEmail": "Email",
+  "cust2LoginModePhone": "Số điện thoại",
+  "cust2PhoneLabel": "Số điện thoại",
+  "cust2PhoneInvalid": "Số điện thoại không hợp lệ.",
+  "cust2SendCode": "Gửi mã OTP",
+  "cust2ResendCode": "Gửi lại mã",
+  "cust2OtpLabel": "Mã OTP",
+  "cust2OtpFormat": "Mã OTP gồm 4–8 chữ số.",
+  "cust2OtpSent": "Đã gửi mã tới {phone}.",
+  "@cust2OtpSent": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "cust2TotpLabel": "Mã xác thực 2 lớp",
+  "cust2StatusEnRoute": "Đang di chuyển",
+  "cust2StatusArrived": "Đã đến nơi",
+  "cust2StatusCheckedIn": "Đã check-in",
+  "cust2StatusActive": "Đang thực hiện",
+  "cust2StatusAwaitingConfirmation": "Chờ bạn xác nhận",
+  "cust2StatusAwaitingPayment": "Chờ thanh toán",
+  "cust2StatusAwaitingCashConfirm": "Chờ xác nhận tiền mặt",
+  "cust2StatusClosed": "Đã đóng",
+  "cust2StatusInDispute": "Đang khiếu nại",
+  "cust2DetailScheduled": "Lịch hẹn",
+  "cust2DetailAddress": "Địa chỉ",
+  "cust2DetailNotes": "Ghi chú",
+  "cust2DetailPayment": "Thanh toán",
+  "cust2DetailCode": "Mã xác nhận",
+  "cust2DetailProvider": "Cộng tác viên",
+  "cust2DetailTimeline": "Tiến trình",
+  "cust2PayCash": "Tiền mặt",
+  "cust2TlCreated": "Đặt đơn",
+  "cust2TlScheduled": "Lịch hẹn",
+  "cust2TlClaimed": "CTV nhận việc",
+  "cust2TlStarted": "Bắt đầu làm",
+  "cust2TlFinished": "CTV báo hoàn tất",
+  "cust2TlCompleted": "Hoàn thành",
+  "cust2TlCustomerConfirmed": "Bạn đã xác nhận",
+  "cust2TlCashReceived": "Đã nhận tiền mặt",
+  "cust2TlSettled": "Đã quyết toán",
+  "cust2ReviewCta": "Đánh giá dịch vụ",
+  "cust2ReviewComment": "Nhận xét (không bắt buộc)",
+  "cust2ReviewSubmit": "Gửi đánh giá",
+  "cust2ReviewThanks": "Cảm ơn bạn đã đánh giá!",
+  "cust2ReviewDone": "Bạn đã đánh giá đơn này.",
+  "cust2RatingRequired": "Vui lòng chọn số sao.",
+  "cust2RatingStar": "{n} sao",
+  "@cust2RatingStar": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "cust2InviteYourCode": "Mã mời của bạn",
+  "cust2InviteBody": "Chia sẻ mã này để bạn bè đăng ký Kyco.",
+  "cust2InviteCopy": "Sao chép",
+  "cust2InviteCopied": "Đã sao chép mã mời",
+  "cust2InvitePending": "Đang chờ",
+  "cust2InviteSignedUp": "Đã đăng ký",
+  "cust2HelpEmpty": "Chưa có câu hỏi thường gặp.",
+  "cust2DocUnavailable": "Nội dung này chưa có trên ứng dụng.",
+  "cust2Addresses": "Địa chỉ đã lưu",
+  "cust2AddressAdd": "Thêm địa chỉ",
+  "cust2AddressEdit": "Sửa địa chỉ",
+  "cust2AddressLabel": "Tên gợi nhớ (VD: Nhà, Công ty)",
+  "cust2AddressLine": "Số nhà, tên đường",
+  "cust2AddressWard": "Phường / Xã",
+  "cust2AddressDistrict": "Quận / Huyện",
+  "cust2AddressCity": "Tỉnh / Thành phố",
+  "cust2AddressDefault": "Đặt làm địa chỉ mặc định",
+  "cust2AddressDefaultBadge": "Mặc định",
+  "cust2AddressDelete": "Xoá",
+  "cust2AddressDeleteConfirm": "Xoá địa chỉ này?",
+  "cust2AddressEmpty": "Bạn chưa lưu địa chỉ nào.",
+  "cust2Save": "Lưu",
+  "cust2Cancel": "Huỷ",
+  "cust2Required": "Bắt buộc",
+  "cust2Saved": "Đã lưu",
+  "cust2LoadFailed": "Không tải được dữ liệu.\n{reason}",
+  "@cust2LoadFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "prov2StepUpOtpTo": "Mã OTP sẽ được gửi tới số điện thoại đã xác minh của tài khoản: {phone}",
+  "@prov2StepUpOtpTo": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "prov2StepUpNoVerifiedPhone": "Tài khoản chưa có số điện thoại đã xác minh. Vui lòng xác minh số điện thoại trong mục Tài khoản rồi thử lại.",
+  "prov2StepUpPhoneLoadFailed": "Không tải được thông tin tài khoản, vui lòng thử lại.",
+  "prov2TaskerNationalId": "Số CCCD (không bắt buộc)",
+  "prov2TaskerPartialUpload": "Chưa tải lên được: {kinds}. Vui lòng chụp lại và gửi lại.",
+  "@prov2TaskerPartialUpload": {
+    "placeholders": {
+      "kinds": {
+        "type": "String"
+      }
+    }
+  },
+  "prov2TaskerSubmitFailed": "Không gửi được hồ sơ, vui lòng thử lại.",
+  "prov2TaskerOtpInvalid": "Mã OTP không đúng hoặc đã hết hạn. Vui lòng kiểm tra lại.",
+  "prov2LiveShareTitle": "Chia sẻ vị trí trực tiếp",
+  "prov2LiveShareOff": "Bật để khách thấy vị trí của bạn trên đường tới. Chỉ gửi khi màn hình này đang mở.",
+  "prov2LiveShareOn": "Đang chia sẻ vị trí · cập nhật lúc {time}",
+  "@prov2LiveShareOn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "prov2LiveShareStarting": "Đang lấy vị trí…",
+  "prov2LiveShareNotEnRoute": "Chỉ chia sẻ được khi đang di chuyển tới nhà khách (trước khi check-in).",
+  "prov2LiveShareStopped": "Đã dừng chia sẻ vị trí.",
+  "prov2ResubmitTitle": "Khách chưa đồng ý hoàn thành",
+  "prov2ResubmitBody": "Khách đã phản hồi về công việc. Kiểm tra lại (bổ sung ảnh nếu cần) rồi gửi lại xác nhận hoàn thành.",
+  "prov2ResubmitNote": "Phản hồi của khách: {note}",
+  "@prov2ResubmitNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "prov2ResubmitAction": "Gửi lại xác nhận hoàn thành",
+  "prov2ResubmitDone": "Đã gửi lại — khách sẽ được nhắc xác nhận.",
+  "prov2ComplaintNeedsText": "Vui lòng nhập nội dung khiếu nại."
 }

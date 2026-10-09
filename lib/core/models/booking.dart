@@ -146,3 +146,120 @@ class CreateBookingResult {
         deeplink: j['deeplink'] as String?,
       );
 }
+
+/// Every booking status the backend FSM knows (`lib/orders/status-machine.ts`),
+/// in rank order. The app LABELS these; it never decides transitions.
+const kBookingStatuses = <String>[
+  'PENDING', 'CONFIRMED', 'EN_ROUTE', 'ARRIVED', 'CHECKED_IN', 'ACTIVE',
+  'AWAITING_CUSTOMER_CONFIRMATION', 'AWAITING_PAYMENT', 'AWAITING_CASH_CONFIRM',
+  'COMPLETED', 'CLOSED', 'SETTLED', 'IN_DISPUTE', 'BAD_DEBT', 'CANCELLED',
+];
+
+/// Statuses the review core accepts (`lib/reviews/write.ts` TERMINAL_SETTLED).
+const kReviewableStatuses = {'COMPLETED', 'CLOSED', 'SETTLED'};
+
+/// One timestamped step of the booking timeline (label resolved by the UI).
+class BookingTimelineEvent {
+  const BookingTimelineEvent(this.kind, this.at);
+
+  /// created | scheduled | claimed | started | finished | completed |
+  /// customerConfirmed | cashReceived | settled
+  final String kind;
+  final String at;
+}
+
+/// Booking detail — parsed from the `GET /v1/bookings/{id}/page` composite
+/// (`{booking, service, job, provider, payments, hasReview, ...}`), the richest
+/// owner-scoped read. Only display-safe fields are read; amounts are shown
+/// verbatim from the server (`totalVnd`) and NEVER recomputed client-side.
+class BookingDetail {
+  const BookingDetail({
+    required this.id,
+    required this.status,
+    this.serviceName,
+    this.serviceId,
+    this.scheduledAt,
+    this.createdAt,
+    this.totalVnd,
+    this.paymentMethod,
+    this.addressLine,
+    this.district,
+    this.ward,
+    this.notes,
+    this.confirmationCode,
+    this.providerId,
+    this.providerName,
+    this.hasReview = false,
+    this.timeline = const [],
+  });
+
+  final int id;
+  final String status;
+  final String? serviceName;
+  final int? serviceId;
+  final String? scheduledAt;
+  final String? createdAt;
+  final int? totalVnd;
+  final String? paymentMethod;
+  final String? addressLine;
+  final String? district;
+  final String? ward;
+  final String? notes;
+  final String? confirmationCode;
+  final int? providerId;
+  final String? providerName;
+  final bool hasReview;
+  final List<BookingTimelineEvent> timeline;
+
+  /// Customer review is allowed once the booking is settled-ish, has an
+  /// assigned provider, and has no review yet (mirrors the review core).
+  bool get canReview =>
+      kReviewableStatuses.contains(status.toUpperCase()) && providerId != null && !hasReview;
+
+  static String? _s(Object? v) => v is String && v.isNotEmpty ? v : null;
+
+  /// Parse the /page composite. Also accepts the flat `GET /bookings/{id}` DTO
+  /// (no `booking` key) so either read can back the screen.
+  factory BookingDetail.fromPage(Map<String, dynamic> j) {
+    final b = j['booking'] is Map<String, dynamic> ? j['booking'] as Map<String, dynamic> : j;
+    final svc = j['service'] is Map<String, dynamic> ? j['service'] as Map<String, dynamic> : null;
+    final job = j['job'] is Map<String, dynamic> ? j['job'] as Map<String, dynamic> : null;
+    final prov = j['provider'] is Map<String, dynamic> ? j['provider'] as Map<String, dynamic> : null;
+
+    final events = <BookingTimelineEvent>[];
+    void add(String kind, Object? at) {
+      final s = _s(at);
+      if (s != null) events.add(BookingTimelineEvent(kind, s));
+    }
+
+    add('created', b['createdAt']);
+    add('scheduled', b['scheduledAt']);
+    add('claimed', job?['claimedAt']);
+    add('started', job?['startedAt']);
+    add('finished', job?['finishedAt']);
+    add('completed', b['completedAt']);
+    add('customerConfirmed', b['customerConfirmedAt']);
+    add('cashReceived', b['cashReceivedAt']);
+    add('settled', b['settledAt']);
+
+    return BookingDetail(
+      id: (b['id'] as num).toInt(),
+      status: _s(b['status']) ?? 'PENDING',
+      serviceName: _s(svc?['name']) ?? _s(b['serviceName']),
+      serviceId: (b['serviceId'] as num?)?.toInt() ?? (svc?['id'] as num?)?.toInt(),
+      scheduledAt: _s(b['scheduledAt']),
+      createdAt: _s(b['createdAt']),
+      totalVnd: (b['totalVnd'] as num?)?.toInt(),
+      paymentMethod: _s(b['paymentMethod']),
+      addressLine: _s(b['addressLine']),
+      district: _s(b['district']),
+      ward: _s(b['ward']),
+      notes: _s(b['notes']),
+      confirmationCode: _s(b['confirmationCode']),
+      providerId: (prov?['id'] as num?)?.toInt() ?? (job?['providerId'] as num?)?.toInt(),
+      providerName: _s(prov?['name']),
+      hasReview: j['hasReview'] == true,
+      timeline: events,
+    );
+  }
+}

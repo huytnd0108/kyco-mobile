@@ -3403,6 +3403,618 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chụp ảnh'**
   String get provTaskerCapturePhoto;
+
+  /// No description provided for @cust2ErrNetwork.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có kết nối mạng. Vui lòng kiểm tra kết nối và thử lại.'**
+  String get cust2ErrNetwork;
+
+  /// No description provided for @cust2ErrRateLimit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn thao tác quá nhanh. Vui lòng đợi một chút rồi thử lại.'**
+  String get cust2ErrRateLimit;
+
+  /// No description provided for @cust2ErrMaintenance.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hệ thống đang bảo trì. Vui lòng thử lại sau.'**
+  String get cust2ErrMaintenance;
+
+  /// No description provided for @cust2ErrSessionExpired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'**
+  String get cust2ErrSessionExpired;
+
+  /// No description provided for @cust2ErrForbidden.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn không có quyền thực hiện thao tác này.'**
+  String get cust2ErrForbidden;
+
+  /// No description provided for @cust2ErrNotFound.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy nội dung bạn yêu cầu.'**
+  String get cust2ErrNotFound;
+
+  /// No description provided for @cust2ErrValidation.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thông tin chưa hợp lệ. Vui lòng kiểm tra lại.'**
+  String get cust2ErrValidation;
+
+  /// No description provided for @cust2ErrServer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Máy chủ đang gặp sự cố. Vui lòng thử lại sau.'**
+  String get cust2ErrServer;
+
+  /// No description provided for @cust2ErrConflict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thể thực hiện thao tác ở trạng thái hiện tại.'**
+  String get cust2ErrConflict;
+
+  /// No description provided for @cust2ErrTotpRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản bật xác thực 2 lớp. Vui lòng nhập mã từ ứng dụng Authenticator.'**
+  String get cust2ErrTotpRequired;
+
+  /// No description provided for @cust2ErrTotpInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã xác thực 2 lớp không đúng hoặc đã hết hạn.'**
+  String get cust2ErrTotpInvalid;
+
+  /// No description provided for @cust2ErrLoginInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Email hoặc mật khẩu không đúng.'**
+  String get cust2ErrLoginInvalid;
+
+  /// No description provided for @cust2ErrOtpLoginInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã OTP không đúng/đã hết hạn, hoặc số điện thoại chưa được xác minh.'**
+  String get cust2ErrOtpLoginInvalid;
+
+  /// No description provided for @cust2BookingsLoadFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được đơn.\n{reason}'**
+  String cust2BookingsLoadFailed(String reason);
+
+  /// No description provided for @cust2LoginModeEmail.
+  ///
+  /// In vi, this message translates to:
+  /// **'Email'**
+  String get cust2LoginModeEmail;
+
+  /// No description provided for @cust2LoginModePhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại'**
+  String get cust2LoginModePhone;
+
+  /// No description provided for @cust2PhoneLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại'**
+  String get cust2PhoneLabel;
+
+  /// No description provided for @cust2PhoneInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại không hợp lệ.'**
+  String get cust2PhoneInvalid;
+
+  /// No description provided for @cust2SendCode.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi mã OTP'**
+  String get cust2SendCode;
+
+  /// No description provided for @cust2ResendCode.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lại mã'**
+  String get cust2ResendCode;
+
+  /// No description provided for @cust2OtpLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã OTP'**
+  String get cust2OtpLabel;
+
+  /// No description provided for @cust2OtpFormat.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã OTP gồm 4–8 chữ số.'**
+  String get cust2OtpFormat;
+
+  /// No description provided for @cust2OtpSent.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi mã tới {phone}.'**
+  String cust2OtpSent(String phone);
+
+  /// No description provided for @cust2TotpLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã xác thực 2 lớp'**
+  String get cust2TotpLabel;
+
+  /// No description provided for @cust2StatusEnRoute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang di chuyển'**
+  String get cust2StatusEnRoute;
+
+  /// No description provided for @cust2StatusArrived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đến nơi'**
+  String get cust2StatusArrived;
+
+  /// No description provided for @cust2StatusCheckedIn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã check-in'**
+  String get cust2StatusCheckedIn;
+
+  /// No description provided for @cust2StatusActive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang thực hiện'**
+  String get cust2StatusActive;
+
+  /// No description provided for @cust2StatusAwaitingConfirmation.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ bạn xác nhận'**
+  String get cust2StatusAwaitingConfirmation;
+
+  /// No description provided for @cust2StatusAwaitingPayment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ thanh toán'**
+  String get cust2StatusAwaitingPayment;
+
+  /// No description provided for @cust2StatusAwaitingCashConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ xác nhận tiền mặt'**
+  String get cust2StatusAwaitingCashConfirm;
+
+  /// No description provided for @cust2StatusClosed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đóng'**
+  String get cust2StatusClosed;
+
+  /// No description provided for @cust2StatusInDispute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang khiếu nại'**
+  String get cust2StatusInDispute;
+
+  /// No description provided for @cust2DetailScheduled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch hẹn'**
+  String get cust2DetailScheduled;
+
+  /// No description provided for @cust2DetailAddress.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ'**
+  String get cust2DetailAddress;
+
+  /// No description provided for @cust2DetailNotes.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú'**
+  String get cust2DetailNotes;
+
+  /// No description provided for @cust2DetailPayment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán'**
+  String get cust2DetailPayment;
+
+  /// No description provided for @cust2DetailCode.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã xác nhận'**
+  String get cust2DetailCode;
+
+  /// No description provided for @cust2DetailProvider.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cộng tác viên'**
+  String get cust2DetailProvider;
+
+  /// No description provided for @cust2DetailTimeline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiến trình'**
+  String get cust2DetailTimeline;
+
+  /// No description provided for @cust2PayCash.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tiền mặt'**
+  String get cust2PayCash;
+
+  /// No description provided for @cust2TlCreated.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt đơn'**
+  String get cust2TlCreated;
+
+  /// No description provided for @cust2TlScheduled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lịch hẹn'**
+  String get cust2TlScheduled;
+
+  /// No description provided for @cust2TlClaimed.
+  ///
+  /// In vi, this message translates to:
+  /// **'CTV nhận việc'**
+  String get cust2TlClaimed;
+
+  /// No description provided for @cust2TlStarted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt đầu làm'**
+  String get cust2TlStarted;
+
+  /// No description provided for @cust2TlFinished.
+  ///
+  /// In vi, this message translates to:
+  /// **'CTV báo hoàn tất'**
+  String get cust2TlFinished;
+
+  /// No description provided for @cust2TlCompleted.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn thành'**
+  String get cust2TlCompleted;
+
+  /// No description provided for @cust2TlCustomerConfirmed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã xác nhận'**
+  String get cust2TlCustomerConfirmed;
+
+  /// No description provided for @cust2TlCashReceived.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã nhận tiền mặt'**
+  String get cust2TlCashReceived;
+
+  /// No description provided for @cust2TlSettled.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã quyết toán'**
+  String get cust2TlSettled;
+
+  /// No description provided for @cust2ReviewCta.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đánh giá dịch vụ'**
+  String get cust2ReviewCta;
+
+  /// No description provided for @cust2ReviewComment.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận xét (không bắt buộc)'**
+  String get cust2ReviewComment;
+
+  /// No description provided for @cust2ReviewSubmit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi đánh giá'**
+  String get cust2ReviewSubmit;
+
+  /// No description provided for @cust2ReviewThanks.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cảm ơn bạn đã đánh giá!'**
+  String get cust2ReviewThanks;
+
+  /// No description provided for @cust2ReviewDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã đánh giá đơn này.'**
+  String get cust2ReviewDone;
+
+  /// No description provided for @cust2RatingRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng chọn số sao.'**
+  String get cust2RatingRequired;
+
+  /// No description provided for @cust2RatingStar.
+  ///
+  /// In vi, this message translates to:
+  /// **'{n} sao'**
+  String cust2RatingStar(String n);
+
+  /// No description provided for @cust2InviteYourCode.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã mời của bạn'**
+  String get cust2InviteYourCode;
+
+  /// No description provided for @cust2InviteBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ mã này để bạn bè đăng ký Kyco.'**
+  String get cust2InviteBody;
+
+  /// No description provided for @cust2InviteCopy.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sao chép'**
+  String get cust2InviteCopy;
+
+  /// No description provided for @cust2InviteCopied.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép mã mời'**
+  String get cust2InviteCopied;
+
+  /// No description provided for @cust2InvitePending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ'**
+  String get cust2InvitePending;
+
+  /// No description provided for @cust2InviteSignedUp.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã đăng ký'**
+  String get cust2InviteSignedUp;
+
+  /// No description provided for @cust2HelpEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có câu hỏi thường gặp.'**
+  String get cust2HelpEmpty;
+
+  /// No description provided for @cust2DocUnavailable.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nội dung này chưa có trên ứng dụng.'**
+  String get cust2DocUnavailable;
+
+  /// No description provided for @cust2Addresses.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ đã lưu'**
+  String get cust2Addresses;
+
+  /// No description provided for @cust2AddressAdd.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thêm địa chỉ'**
+  String get cust2AddressAdd;
+
+  /// No description provided for @cust2AddressEdit.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sửa địa chỉ'**
+  String get cust2AddressEdit;
+
+  /// No description provided for @cust2AddressLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tên gợi nhớ (VD: Nhà, Công ty)'**
+  String get cust2AddressLabel;
+
+  /// No description provided for @cust2AddressLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số nhà, tên đường'**
+  String get cust2AddressLine;
+
+  /// No description provided for @cust2AddressWard.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phường / Xã'**
+  String get cust2AddressWard;
+
+  /// No description provided for @cust2AddressDistrict.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quận / Huyện'**
+  String get cust2AddressDistrict;
+
+  /// No description provided for @cust2AddressCity.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tỉnh / Thành phố'**
+  String get cust2AddressCity;
+
+  /// No description provided for @cust2AddressDefault.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt làm địa chỉ mặc định'**
+  String get cust2AddressDefault;
+
+  /// No description provided for @cust2AddressDefaultBadge.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mặc định'**
+  String get cust2AddressDefaultBadge;
+
+  /// No description provided for @cust2AddressDelete.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá'**
+  String get cust2AddressDelete;
+
+  /// No description provided for @cust2AddressDeleteConfirm.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá địa chỉ này?'**
+  String get cust2AddressDeleteConfirm;
+
+  /// No description provided for @cust2AddressEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa lưu địa chỉ nào.'**
+  String get cust2AddressEmpty;
+
+  /// No description provided for @cust2Save.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lưu'**
+  String get cust2Save;
+
+  /// No description provided for @cust2Cancel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ'**
+  String get cust2Cancel;
+
+  /// No description provided for @cust2Required.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bắt buộc'**
+  String get cust2Required;
+
+  /// No description provided for @cust2Saved.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu'**
+  String get cust2Saved;
+
+  /// No description provided for @cust2LoadFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được dữ liệu.\n{reason}'**
+  String cust2LoadFailed(String reason);
+
+  /// No description provided for @prov2StepUpOtpTo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã OTP sẽ được gửi tới số điện thoại đã xác minh của tài khoản: {phone}'**
+  String prov2StepUpOtpTo(String phone);
+
+  /// No description provided for @prov2StepUpNoVerifiedPhone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản chưa có số điện thoại đã xác minh. Vui lòng xác minh số điện thoại trong mục Tài khoản rồi thử lại.'**
+  String get prov2StepUpNoVerifiedPhone;
+
+  /// No description provided for @prov2StepUpPhoneLoadFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tải được thông tin tài khoản, vui lòng thử lại.'**
+  String get prov2StepUpPhoneLoadFailed;
+
+  /// No description provided for @prov2TaskerNationalId.
+  ///
+  /// In vi, this message translates to:
+  /// **'Số CCCD (không bắt buộc)'**
+  String get prov2TaskerNationalId;
+
+  /// No description provided for @prov2TaskerPartialUpload.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tải lên được: {kinds}. Vui lòng chụp lại và gửi lại.'**
+  String prov2TaskerPartialUpload(String kinds);
+
+  /// No description provided for @prov2TaskerSubmitFailed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không gửi được hồ sơ, vui lòng thử lại.'**
+  String get prov2TaskerSubmitFailed;
+
+  /// No description provided for @prov2TaskerOtpInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã OTP không đúng hoặc đã hết hạn. Vui lòng kiểm tra lại.'**
+  String get prov2TaskerOtpInvalid;
+
+  /// No description provided for @prov2LiveShareTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ vị trí trực tiếp'**
+  String get prov2LiveShareTitle;
+
+  /// No description provided for @prov2LiveShareOff.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bật để khách thấy vị trí của bạn trên đường tới. Chỉ gửi khi màn hình này đang mở.'**
+  String get prov2LiveShareOff;
+
+  /// No description provided for @prov2LiveShareOn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chia sẻ vị trí · cập nhật lúc {time}'**
+  String prov2LiveShareOn(String time);
+
+  /// No description provided for @prov2LiveShareStarting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang lấy vị trí…'**
+  String get prov2LiveShareStarting;
+
+  /// No description provided for @prov2LiveShareNotEnRoute.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉ chia sẻ được khi đang di chuyển tới nhà khách (trước khi check-in).'**
+  String get prov2LiveShareNotEnRoute;
+
+  /// No description provided for @prov2LiveShareStopped.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã dừng chia sẻ vị trí.'**
+  String get prov2LiveShareStopped;
+
+  /// No description provided for @prov2ResubmitTitle.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách chưa đồng ý hoàn thành'**
+  String get prov2ResubmitTitle;
+
+  /// No description provided for @prov2ResubmitBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách đã phản hồi về công việc. Kiểm tra lại (bổ sung ảnh nếu cần) rồi gửi lại xác nhận hoàn thành.'**
+  String get prov2ResubmitBody;
+
+  /// No description provided for @prov2ResubmitNote.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phản hồi của khách: {note}'**
+  String prov2ResubmitNote(String note);
+
+  /// No description provided for @prov2ResubmitAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lại xác nhận hoàn thành'**
+  String get prov2ResubmitAction;
+
+  /// No description provided for @prov2ResubmitDone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi lại — khách sẽ được nhắc xác nhận.'**
+  String get prov2ResubmitDone;
+
+  /// No description provided for @prov2ComplaintNeedsText.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng nhập nội dung khiếu nại.'**
+  String get prov2ComplaintNeedsText;
 }
 
 class _AppLocalizationsDelegate

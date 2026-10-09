@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/models.dart';
 import '../../core/prefs.dart';
@@ -82,3 +83,18 @@ class DraftController extends FamilyNotifier<BookingDraft?, int> {
 /// checkout has its own draft.
 final draftControllerProvider =
     NotifierProvider.family<DraftController, BookingDraft?, int>(DraftController.new);
+
+/// Remove EVERY persisted checkout draft (`draft:*` prefs keys) and reset the
+/// live editors. Called on sign-out so a draft (address, notes) never leaks to
+/// the next person using the device.
+Future<void> clearAllCheckoutDrafts(SharedPreferences prefs) async {
+  for (final k in prefs.getKeys().where((k) => k.startsWith('draft:')).toList()) {
+    await prefs.remove(k);
+  }
+}
+
+/// Widget-side helper: wipe persisted drafts and invalidate the editors.
+void clearCheckoutDrafts(WidgetRef ref) {
+  clearAllCheckoutDrafts(ref.read(sharedPrefsProvider));
+  ref.invalidate(draftControllerProvider);
+}

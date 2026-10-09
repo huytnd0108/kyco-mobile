@@ -6,6 +6,7 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 import '../../core/api/kyco_api.dart';
 import '../../core/di.dart';
 import '../../core/widgets.dart';
+import '../auth/auth_controller.dart';
 // Re-export so app.dart (which imports only messages_screen.dart) resolves the
 // thread route target alongside the list.
 export 'message_thread_screen.dart';
@@ -57,7 +58,11 @@ final messagesRepoProvider = Provider<MessagesRepo>(
 /// (redirect handles anon), so this is only ever read while signed in.
 final conversationsProvider =
     FutureProvider.autoDispose<List<MessageConversation>>(
-  (ref) => ref.watch(messagesRepoProvider).conversations(),
+  (ref) {
+    // Refetch on account switch; drop (no Bearer call) once signed out.
+    if (ref.watch(authUserIdProvider) == null) return Future.value(const <MessageConversation>[]);
+    return ref.watch(messagesRepoProvider).conversations();
+  },
 );
 
 /// `/messages` — route-gated (anon is redirected to login before reaching it).

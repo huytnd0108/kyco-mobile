@@ -201,9 +201,7 @@ class _HistoryTile extends StatelessWidget {
     final period = [item.periodStart, item.periodEnd]
         .where((s) => s != null && s.isNotEmpty)
         .join(' → ');
-    final paid = item.paidAt != null && item.paidAt!.length >= 10
-        ? item.paidAt!.substring(0, 10)
-        : null;
+    final paid = _localDate(item.paidAt);
     final sub = [period, ?paid].where((s) => s.isNotEmpty).join(' · ');
 
     return Padding(
@@ -247,4 +245,15 @@ String _bonusLabel(AppLocalizations l, String? kind) {
     default:
       return kind ?? '—';
   }
+}
+
+/// `paidAt` is a UTC ISO timestamp — show the payout DATE in the device's local
+/// zone (a 23:30 UTC payout is already the next day in Vietnam). Falls back to
+/// the raw yyyy-MM-dd prefix when the string doesn't parse.
+String? _localDate(String? iso) {
+  if (iso == null || iso.isEmpty) return null;
+  final dt = DateTime.tryParse(iso)?.toLocal();
+  if (dt == null) return iso.length >= 10 ? iso.substring(0, 10) : null;
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${dt.year}-${two(dt.month)}-${two(dt.day)}';
 }
