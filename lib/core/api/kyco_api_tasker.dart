@@ -214,11 +214,16 @@ extension KycoApiTasker on KycoApi {
   Future<Map<String, dynamic>> declineJob(int id, {String? reason}) =>
       _postMap('/tasker/jobs/$id/decline', body: {'reason': ?reason});
 
-  Future<Map<String, dynamic>> cancelJob(int id, {String reasonCode = 'other', String? reasonText}) =>
-      _postMap('/tasker/jobs/$id/cancel', body: {
-        'reasonCode': reasonCode,
-        'reasonText': ?reasonText,
-      });
+  /// 💰 May levy a cancellation fine server-side → money POST: requires the
+  /// action's [idempotencyKey] (IdempotencyLedger, MQA-36).
+  Future<Map<String, dynamic>> cancelJob(int id,
+          {String reasonCode = 'other', String? reasonText, required String idempotencyKey}) =>
+      _postMap('/tasker/jobs/$id/cancel',
+          body: {
+            'reasonCode': reasonCode,
+            'reasonText': ?reasonText,
+          },
+          idempotencyKey: idempotencyKey);
 
   Future<StartTrackingResult> startTracking(int id) async {
     final data = await _c.post('/tasker/jobs/$id/start-tracking');
@@ -275,8 +280,9 @@ extension KycoApiTasker on KycoApi {
       _postMap('/tasker/bookings/$bookingId/resubmit-completion');
 
   /// POST cash-received (20% commission debit is server-side). 💰
-  Future<Map<String, dynamic>> cashReceived(int bookingId) =>
-      _postMap('/tasker/bookings/$bookingId/cash-received');
+  /// 💰 Charges the commission server-side → requires [idempotencyKey] (MQA-36).
+  Future<Map<String, dynamic>> cashReceived(int bookingId, {required String idempotencyKey}) =>
+      _postMap('/tasker/bookings/$bookingId/cash-received', idempotencyKey: idempotencyKey);
 
   /// GET the tasker's own live position feed for a job (used by W3's live
   /// panel). Returns the raw map — shape is bound by the consuming unit.
@@ -327,6 +333,25 @@ extension KycoApiTasker on KycoApi {
         .map(Payout.fromJson)
         .toList(growable: false);
     return Paged.of(items, env.meta);
+  }
+
+  /// GET /tasker/payout-requests (MQA-69) — own withdrawal requests, newest first.
+  Future<Paged<PayoutRequest>> payoutRequests({String? cursor, int limit = 20}) async {
+    final env = await _c.getWithMeta('/tasker/payout-requests', query: {
+      if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+      'limit': '$limit',
+    });
+    final items = (env.data is List ? env.data as List : const [])
+        .whereType<Map<String, dynamic>>()
+        .map(PayoutRequest.fromJson)
+        .toList(growable: false);
+    return Paged.of(items, env.meta);
+  }
+
+  /// GET /tasker/payout-requests/{id} — foreign or missing id → 404.
+  Future<PayoutRequest> payoutRequest(int id) async {
+    final data = await _c.get('/tasker/payout-requests/$id');
+    return PayoutRequest.fromJson(data as Map<String, dynamic>);
   }
 
   // ── growth (existing) ──────────────────────────────────────────────────────
@@ -502,8 +527,11 @@ extension KycoApiTasker on KycoApi {
   // ── new routes (Section A — defined now, live when A deploys) ──────────────
   /// POST /tasker/payouts (A1) 💰 — the only user-supplied amount; validated +
   /// balance-checked server-side. Requires a fresh step-up grant (see [stepUp]).
-  Future<PayoutRequestResult> requestPayout(int amountVnd) async {
-    final data = await _c.post('/tasker/payouts', body: {'amountVnd': amountVnd});
+  /// The user-typed [amountVnd] is sent unchanged; [idempotencyKey] makes a
+  /// retried request replay instead of creating a second payout (MQA-36).
+  Future<PayoutRequestResult> requestPayout(int amountVnd, {required String idempotencyKey}) async {
+    final data = await _c.post('/tasker/payouts',
+        body: {'amountVnd': amountVnd}, idempotencyKey: idempotencyKey);
     return PayoutRequestResult.fromJson(data as Map<String, dynamic>);
   }
 
@@ -556,8 +584,8 @@ extension KycoApiTasker on KycoApi {
       _c.getBytes('/tasker/wallet/export', query: {'year': year, 'month': month});
 
   // ── helpers ────────────────────────────────────────────────────────────────
-  Future<Map<String, dynamic>> _postMap(String path, {Object? body}) async {
-    final data = await _c.post(path, body: body);
+  Future<Map<String, dynamic>> _postMap(String path, {Object? body, String? idempotencyKey}) async {
+    final data = await _c.post(path, body: body, idempotencyKey: idempotencyKey);
     return data is Map<String, dynamic> ? data : <String, dynamic>{};
   }
 }

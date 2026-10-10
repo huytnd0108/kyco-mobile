@@ -655,5 +655,11 @@
   "prov2ResubmitDone": "Resubmitted — the customer will be reminded to confirm.",
   "prov2ComplaintNeedsText": "Please describe the complaint (at least 20 characters).",
   "provPoolDistanceKm": "~{km} km",
-  "provPoolAddressAfterClaim": "The exact address and customer notes appear after you claim the job."
+  "provPoolAddressAfterClaim": "The exact address and customer notes appear after you claim the job.",
+  "provWalletPayoutRequests": "Withdrawal requests",
+  "provWalletPayoutRequestsEmpty": "No withdrawal requests yet.",
+  "provWalletPayoutRequestPending": "Pending",
+  "provWalletPayoutRequestPaid": "Paid",
+  "provWalletPayoutRequestRejected": "Rejected",
+  "provWalletPayoutRequestReason": "Reason: {reason}"
 }

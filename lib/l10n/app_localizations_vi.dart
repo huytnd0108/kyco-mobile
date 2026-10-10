@@ -2170,4 +2170,24 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get provPoolAddressAfterClaim =>
       'Địa chỉ chính xác và ghi chú của khách hiện sau khi bạn nhận việc.';
+
+  @override
+  String get provWalletPayoutRequests => 'Lệnh rút tiền';
+
+  @override
+  String get provWalletPayoutRequestsEmpty => 'Chưa có lệnh rút tiền nào.';
+
+  @override
+  String get provWalletPayoutRequestPending => 'Chờ duyệt';
+
+  @override
+  String get provWalletPayoutRequestPaid => 'Đã chuyển';
+
+  @override
+  String get provWalletPayoutRequestRejected => 'Từ chối';
+
+  @override
+  String provWalletPayoutRequestReason(String reason) {
+    return 'Lý do: $reason';
+  }
 }

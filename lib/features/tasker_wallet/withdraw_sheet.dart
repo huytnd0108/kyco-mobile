@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
+import '../../core/api/idempotency_ledger.dart';
 import '../../core/api/kyco_api.dart';
 import '../../core/api/problem.dart';
 import '../../core/di.dart';
@@ -148,6 +149,24 @@ Future<String?> runWithdrawFlow(
   WidgetRef ref, {
   required int balanceVnd,
 }) async {
+  // One withdraw flow at a time: a double tap on "Rút tiền" must never start
+  // two confirmations (MQA-70). Same-amount retries also share one key below.
+  if (_withdrawInFlight) return null;
+  _withdrawInFlight = true;
+  try {
+    return await _runWithdrawFlow(context, ref, balanceVnd: balanceVnd);
+  } finally {
+    _withdrawInFlight = false;
+  }
+}
+
+bool _withdrawInFlight = false;
+
+Future<String?> _runWithdrawFlow(
+  BuildContext context,
+  WidgetRef ref, {
+  required int balanceVnd,
+}) async {
   final l = AppLocalizations.of(context);
 
   final amount = await showModalBottomSheet<int>(
@@ -182,8 +201,23 @@ Future<String?> runWithdrawFlow(
   // failure and maps to the right message.
   final PayoutRequestResult result;
   try {
-    result = await api.requestPayout(amount);
+    // One key per requested amount, kept until a definitive answer: if the
+    // response is lost and the tasker retries the same amount, the server
+    // replays the first payout instead of creating a second one (MQA-36).
+    result = await ref.read(idempotencyLedgerProvider).run(
+        'payout:$amount', (key) => api.requestPayout(amount, idempotencyKey: key));
   } on ApiException catch (e) {
+    if (e.code == 'IDEMPOTENCY_STALE') {
+      // Outcome unknown server-side: show the server's "check the transaction"
+      // message and refetch the wallet so the real state is visible.
+      try {
+        ref.invalidate(walletSummaryProvider);
+        ref.invalidate(walletTxnsControllerProvider);
+        ref.invalidate(payoutsControllerProvider);
+        ref.invalidate(payoutRequestsControllerProvider);
+      } catch (_) {}
+      return e.message;
+    }
     switch (e.status) {
       case 409:
         return l.provWalletWithdrawPending;
@@ -212,6 +246,7 @@ Future<String?> runWithdrawFlow(
     ref.invalidate(walletSummaryProvider);
     ref.invalidate(walletTxnsControllerProvider);
     ref.invalidate(payoutsControllerProvider);
+    ref.invalidate(payoutRequestsControllerProvider);
   } catch (_) {
     // Ref disposed after unmount — the balance refreshes on the next wallet open.
   }

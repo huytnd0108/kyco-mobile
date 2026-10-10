@@ -189,4 +189,29 @@ void main() {
     await c.get('/home', auth: false);
     expect(adapter.requests.single.headers['accept-language'], 'en');
   });
+
+  test('MQA-36: idempotencyKey goes out as the Idempotency-Key header and survives the 401 retry', () async {
+    final tokens = InMemoryTokenStore(access: 'old', refresh: 'r1');
+    final adapter = _FakeAdapter((o) {
+      if (o.path.endsWith('/auth/refresh')) {
+        return _json({'ok': true, 'data': {'accessToken': 'new', 'refreshToken': 'r2'}}, 200);
+      }
+      return o.headers['authorization'] == 'Bearer new'
+          ? _json({'ok': true, 'data': {'id': 7}}, 201)
+          : _json({'ok': false, 'code': 'AUTH_REQUIRED', 'message': 'x'}, 401);
+    });
+    final c = _client(tokens, adapter);
+    await c.post('/tasker/payouts', body: {'amountVnd': 100000}, idempotencyKey: 'k-123');
+    final payoutCalls = adapter.requests.where((r) => r.path.endsWith('/tasker/payouts')).toList();
+    expect(payoutCalls, hasLength(2));
+    expect(payoutCalls.map((r) => r.headers['Idempotency-Key']), everyElement('k-123'));
+    expect(payoutCalls.last.data, {'amountVnd': 100000}); // amount sent unchanged
+  });
+
+  test('no Idempotency-Key header when none is given', () async {
+    final adapter = _FakeAdapter((o) => _json({'ok': true, 'data': {}}, 200));
+    final c = _client(InMemoryTokenStore(access: 'a'), adapter);
+    await c.post('/addresses', body: {});
+    expect(adapter.requests.single.headers.containsKey('Idempotency-Key'), isFalse);
+  });
 }

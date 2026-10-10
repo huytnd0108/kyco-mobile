@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
+import '../../core/api/idempotency_ledger.dart';
 import '../../core/ui/error_text.dart';
 import '../../core/api/kyco_api.dart';
 import '../../core/api/problem.dart';
@@ -156,6 +157,9 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
       _refreshAfterMutation(id, wallet: refreshWallet);
       return resp;
     } on ApiException catch (e) {
+      // A stale server-side key means the outcome is unknown: refetch so the
+      // tasker sees the real job/wallet state before acting again.
+      if (e.code == 'IDEMPOTENCY_STALE') _refreshAfterMutation(id, wallet: refreshWallet);
       _snack(apiErrorText(l, e));
       return null;
     } catch (_) {
@@ -207,8 +211,15 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
       confirmLabel: l.provJdCancelJob,
     );
     if (reason == null) return;
-    final resp = await _runMap('cancel', id,
-        (api) => api.cancelJob(id, reasonCode: 'other', reasonText: reason.isEmpty ? null : reason));
+    // One idempotency key per (job, reason): a retry of the same cancel replays
+    // instead of re-running it (fines are server-side, MQA-36).
+    final reasonText = reason.isEmpty ? null : reason;
+    final ledger = ref.read(idempotencyLedgerProvider);
+    final resp = await _runMap(
+        'cancel',
+        id,
+        (api) => ledger.run('job-cancel:$id:${IdempotencyLedger.textTag(reasonText)}',
+            (key) => api.cancelJob(id, reasonCode: 'other', reasonText: reasonText, idempotencyKey: key)));
     if (resp != null) _showFineOutcome(l, resp, l.provJdCancelled);
   }
 
@@ -350,7 +361,12 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
     // returns the computed figures — we DISPLAY them, never compute.
     // Invalidate the SAME family key the screen watches (the route id) so the
     // post-cash refresh hits this instance, not a stale jobId-keyed one.
-    final resp = await _runMap('cash', id, (api) => api.cashReceived(bookingId),
+    final ledger = ref.read(idempotencyLedgerProvider);
+    final resp = await _runMap(
+        'cash',
+        id,
+        (api) => ledger.run('cash-received:$bookingId',
+            (key) => api.cashReceived(bookingId, idempotencyKey: key)),
         refreshWallet: true);
     if (resp != null && mounted) _showCashOutcome(resp);
   }

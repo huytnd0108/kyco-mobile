@@ -203,6 +203,77 @@ class PayoutsController extends AutoDisposeAsyncNotifier<PayoutsData> {
   }
 }
 
+/// Accumulated cursor-paged withdrawal requests.
+class PayoutRequestsData {
+  const PayoutRequestsData({
+    required this.items,
+    this.nextCursor,
+    this.hasMore = false,
+    this.loadingMore = false,
+  });
+
+  final List<PayoutRequest> items;
+  final String? nextCursor;
+  final bool hasMore;
+  final bool loadingMore;
+
+  PayoutRequestsData copyWith({bool? loadingMore}) => PayoutRequestsData(
+        items: items,
+        nextCursor: nextCursor,
+        hasMore: hasMore,
+        loadingMore: loadingMore ?? this.loadingMore,
+      );
+}
+
+/// Withdrawal requests (`GET /v1/tasker/payout-requests`, MQA-69) with cursor
+/// paging. 💰 display-only.
+final payoutRequestsControllerProvider = AsyncNotifierProvider.autoDispose<
+    PayoutRequestsController, PayoutRequestsData>(PayoutRequestsController.new);
+
+class PayoutRequestsController extends AutoDisposeAsyncNotifier<PayoutRequestsData> {
+  KycoApi get _api => ref.read(kycoApiProvider);
+
+  bool _disposed = false;
+
+  @override
+  Future<PayoutRequestsData> build() async {
+    ref.onDispose(() => _disposed = true);
+    final page = await _api.payoutRequests();
+    return PayoutRequestsData(
+      items: page.items,
+      nextCursor: page.nextCursor,
+      hasMore: page.hasMore,
+    );
+  }
+
+  /// Append the next page. No-op when already loading, exhausted, or cursorless.
+  Future<void> loadMore() async {
+    final cur = state.valueOrNull;
+    if (cur == null || cur.loadingMore || !cur.hasMore || cur.nextCursor == null) {
+      return;
+    }
+    final loading = cur.copyWith(loadingMore: true);
+    state = AsyncData(loading);
+    try {
+      final page = await _api.payoutRequests(cursor: cur.nextCursor);
+      // Bail if disposed or a refresh reset page 1 while we awaited.
+      if (_disposed || !identical(state.valueOrNull, loading)) return;
+      state = AsyncData(PayoutRequestsData(
+        items: [...cur.items, ...page.items],
+        nextCursor: page.nextCursor,
+        hasMore: page.hasMore,
+      ));
+    } catch (_) {
+      if (_disposed) return;
+      try {
+        if (identical(state.valueOrNull, loading)) {
+          state = AsyncData(cur.copyWith(loadingMore: false));
+        }
+      } catch (_) {}
+    }
+  }
+}
+
 // ── display helpers (labels only — never money math) ─────────────────────────
 
 /// Human label for a wallet-transaction `reason`, mirroring the web's

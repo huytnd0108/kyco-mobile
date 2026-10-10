@@ -1086,5 +1086,16 @@
       }
     }
   },
-  "provPoolAddressAfterClaim": "Địa chỉ chính xác và ghi chú của khách hiện sau khi bạn nhận việc."
+  "provPoolAddressAfterClaim": "Địa chỉ chính xác và ghi chú của khách hiện sau khi bạn nhận việc.",
+  "provWalletPayoutRequests": "Lệnh rút tiền",
+  "provWalletPayoutRequestsEmpty": "Chưa có lệnh rút tiền nào.",
+  "provWalletPayoutRequestPending": "Chờ duyệt",
+  "provWalletPayoutRequestPaid": "Đã chuyển",
+  "provWalletPayoutRequestRejected": "Từ chối",
+  "provWalletPayoutRequestReason": "Lý do: {reason}",
+  "@provWalletPayoutRequestReason": {
+    "placeholders": {
+      "reason": {"type": "String"}
+    }
+  }
 }

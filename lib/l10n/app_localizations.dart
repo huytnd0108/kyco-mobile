@@ -4033,6 +4033,42 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Địa chỉ chính xác và ghi chú của khách hiện sau khi bạn nhận việc.'**
   String get provPoolAddressAfterClaim;
+
+  /// No description provided for @provWalletPayoutRequests.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lệnh rút tiền'**
+  String get provWalletPayoutRequests;
+
+  /// No description provided for @provWalletPayoutRequestsEmpty.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có lệnh rút tiền nào.'**
+  String get provWalletPayoutRequestsEmpty;
+
+  /// No description provided for @provWalletPayoutRequestPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ duyệt'**
+  String get provWalletPayoutRequestPending;
+
+  /// No description provided for @provWalletPayoutRequestPaid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chuyển'**
+  String get provWalletPayoutRequestPaid;
+
+  /// No description provided for @provWalletPayoutRequestRejected.
+  ///
+  /// In vi, this message translates to:
+  /// **'Từ chối'**
+  String get provWalletPayoutRequestRejected;
+
+  /// No description provided for @provWalletPayoutRequestReason.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do: {reason}'**
+  String provWalletPayoutRequestReason(String reason);
 }
 
 class _AppLocalizationsDelegate

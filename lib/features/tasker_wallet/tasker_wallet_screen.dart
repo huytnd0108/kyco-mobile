@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/format.dart';
+import '../../core/api/problem.dart';
+import '../../core/ui/error_text.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
 import '../../theme/app_semantics.dart';
@@ -47,6 +49,7 @@ class _WalletBody extends ConsumerWidget {
     ref.invalidate(walletSummaryProvider);
     ref.invalidate(walletTxnsControllerProvider);
     ref.invalidate(payoutsControllerProvider);
+    ref.invalidate(payoutRequestsControllerProvider);
     await ref.read(walletSummaryProvider.future);
   }
 
@@ -103,6 +106,14 @@ class _WalletBody extends ConsumerWidget {
                         await runWithdrawFlow(context, ref, balanceVnd: s.balanceVnd));
                   },
                 ),
+                const SizedBox(height: 24),
+                Text(l.provWalletPayoutRequests,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                const _PayoutRequestList(),
                 const SizedBox(height: 24),
                 Text(l.provWalletTxns,
                     style: Theme.of(context)
@@ -495,6 +506,103 @@ class _PayoutTile extends StatelessWidget {
   }
 }
 
+/// Withdrawal requests — pending / paid / rejected, cursor-paged. 💰
+class _PayoutRequestList extends ConsumerWidget {
+  const _PayoutRequestList();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final async = ref.watch(payoutRequestsControllerProvider);
+    return async.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      // A backend without MQA-69 yet answers 404 → hide the section instead of
+      // showing an error on the wallet (graceful rollout).
+      error: (e, _) => (e is ApiException && e.status == 404)
+          ? const SizedBox.shrink()
+          : ErrorRetry(
+              message: apiErrorText(l, e),
+              onRetry: () => ref.invalidate(payoutRequestsControllerProvider),
+            ),
+      data: (data) {
+        if (data.items.isEmpty) {
+          return EmptyState(icon: '🏦', message: l.provWalletPayoutRequestsEmpty);
+        }
+        return Column(
+          children: [
+            for (final r in data.items) _PayoutRequestTile(r),
+            if (data.hasMore)
+              _LoadMoreFooter(
+                loading: data.loadingMore,
+                onLoadMore: () =>
+                    ref.read(payoutRequestsControllerProvider.notifier).loadMore(),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PayoutRequestTile extends StatelessWidget {
+  const _PayoutRequestTile(this.request);
+  final PayoutRequest request;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
+    final tone = switch (request.status) {
+      'paid' => 'success',
+      'rejected' => 'error',
+      'pending' => 'warning',
+      _ => 'neutral',
+    };
+    final label = (request.statusLabel?.isNotEmpty ?? false)
+        ? request.statusLabel!
+        : switch (request.status) {
+            'paid' => l.provWalletPayoutRequestPaid,
+            'rejected' => l.provWalletPayoutRequestRejected,
+            'pending' => l.provWalletPayoutRequestPending,
+            _ => request.status ?? '—',
+          };
+    final mutedStyle = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
+    final reason = request.rejectReason;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(request.amountVnd == null ? '—' : formatVnd(request.amountVnd!),
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(formatWalletDate(context, request.createdAt), style: mutedStyle),
+                if (request.bank?.masked?.isNotEmpty ?? false)
+                  Text(request.bank!.masked!, style: mutedStyle),
+                if (request.status == 'rejected' && reason != null && reason.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(l.provWalletPayoutRequestReason(reason),
+                        style: TextStyle(fontSize: 12, color: cs.error)),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _StatusChip(label: label, tone: tone),
+        ],
+      ),
+    );
+  }
+}
+
 class _StatusChip extends StatelessWidget {
   const _StatusChip({required this.label, required this.tone});
   final String label;
@@ -509,6 +617,10 @@ class _StatusChip extends StatelessWidget {
       'error' => (
           Theme.of(context).colorScheme.errorContainer,
           Theme.of(context).colorScheme.onErrorContainer
+        ),
+      'neutral' => (
+          Theme.of(context).colorScheme.surfaceContainerHighest,
+          Theme.of(context).colorScheme.onSurfaceVariant
         ),
       _ => (sem.warningContainer, sem.onWarningContainer),
     };

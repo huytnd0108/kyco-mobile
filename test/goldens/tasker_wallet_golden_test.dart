@@ -43,6 +43,30 @@ const _payouts = PayoutsData(
   ],
 );
 
+const _requests = PayoutRequestsData(
+  items: [
+    PayoutRequest(id: 12, amountVnd: 1000000, status: 'pending', statusLabel: 'Chờ duyệt', createdAt: '2026-08-21T12:00:00Z', bank: PayoutRequestBank(code: 'VCB', accountTail: '1234', masked: 'VCB ••••1234')),
+    PayoutRequest(id: 11, amountVnd: 2000000, status: 'paid', statusLabel: 'Đã chuyển', createdAt: '2026-08-10T12:00:00Z', decidedAt: '2026-08-11T12:00:00Z', bank: PayoutRequestBank(code: 'VCB', accountTail: '1234', masked: 'VCB ••••1234')),
+    PayoutRequest(id: 10, amountVnd: 500000, status: 'rejected', statusLabel: 'Từ chối', createdAt: '2026-08-05T12:00:00Z', decidedAt: '2026-08-06T12:00:00Z', rejectReason: 'Sai tên chủ tài khoản', bank: PayoutRequestBank(code: 'TCB', accountTail: '9876', masked: 'TCB ••••9876')),
+    PayoutRequest(id: 9, amountVnd: 300000, status: 'on_hold', statusLabel: 'Đang xử lý', createdAt: '2026-08-01T12:00:00Z'),
+  ],
+  hasMore: true,
+);
+
+class _FakeRequests extends PayoutRequestsController {
+  _FakeRequests(this._data);
+  final PayoutRequestsData _data;
+  @override
+  Future<PayoutRequestsData> build() async => _data;
+  @override
+  Future<void> loadMore() async {}
+}
+
+class _ErrorRequests extends PayoutRequestsController {
+  @override
+  Future<PayoutRequestsData> build() async => throw Exception('boom');
+}
+
 /// Fixed-state fake controllers (never touch the API).
 class _FakeTxns extends WalletTxnsController {
   _FakeTxns(this._data);
@@ -70,6 +94,8 @@ Future<void> _pump(
   WalletSummary summary = _summary,
   WalletTxnsData txns = _txns,
   PayoutsData payouts = _payouts,
+  PayoutRequestsData requests = _requests,
+  bool requestsError = false,
 }) async {
   tester.view.physicalSize = device.size;
   tester.view.devicePixelRatio = 1.0;
@@ -86,6 +112,8 @@ Future<void> _pump(
       walletSummaryProvider.overrideWith((ref) => Future.value(summary)),
       walletTxnsControllerProvider.overrideWith(() => _FakeTxns(txns)),
       payoutsControllerProvider.overrideWith(() => _FakePayouts(payouts)),
+      payoutRequestsControllerProvider.overrideWith(
+          () => requestsError ? _ErrorRequests() : _FakeRequests(requests)),
     ],
     child: MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -120,7 +148,8 @@ void main() {
     await _pump(t,
         device: GoldenDevice.iphone16,
         txns: const WalletTxnsData(items: []),
-        payouts: const PayoutsData(items: []));
+        payouts: const PayoutsData(items: []),
+        requests: const PayoutRequestsData(items: []));
     await expectGolden(t, goldenName('tasker_wallet', 'empty', GoldenDevice.iphone16, Brightness.light));
   });
 
@@ -130,5 +159,11 @@ void main() {
     await _pump(t, device: GoldenDevice.iphone16, locale: const Locale('en'));
     await expectGolden(t,
         goldenName('tasker_wallet', 'full', GoldenDevice.iphone16, Brightness.light, locale: const Locale('en')));
+  });
+
+  // Withdrawal-requests section failed → ErrorRetry (rest of the wallet intact).
+  goldenTest('tasker_wallet requests error 393', (t) async {
+    await _pump(t, device: GoldenDevice.iphone16, requestsError: true);
+    await expectGolden(t, goldenName('tasker_wallet', 'requests_error', GoldenDevice.iphone16, Brightness.light));
   });
 }

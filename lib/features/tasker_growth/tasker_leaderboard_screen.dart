@@ -205,12 +205,20 @@ class _RankRow extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(formatVnd(row.revenueVnd),
-                  style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w800)),
-              Text(
-                l.provLbJobs(row.jobs),
-                style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-              ),
+              // Others' revenue is withheld by the server (MQA-68): show the
+              // job count as the headline instead of a fake 0₫.
+              if (row.revenueVnd != null) ...[
+                Text(formatVnd(row.revenueVnd!),
+                    style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w800)),
+                Text(
+                  l.provLbJobs(row.jobs),
+                  style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                ),
+              ] else
+                Text(
+                  l.provLbJobs(row.jobs),
+                  style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
             ],
           ),
         ],

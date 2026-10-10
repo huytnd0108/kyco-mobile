@@ -61,8 +61,12 @@ class KycoApiClient {
       _send('GET', path, query: query, auth: auth);
 
   /// POST → unwrapped `data`.
-  Future<dynamic> post(String path, {Object? body, bool auth = true}) =>
-      _send('POST', path, body: body, auth: auth);
+  ///
+  /// [idempotencyKey] is sent as the `Idempotency-Key` header (required by the
+  /// backend on every money POST, MQA-36) and reused verbatim on the 401 →
+  /// refresh → retry, so the retry replays rather than re-executes.
+  Future<dynamic> post(String path, {Object? body, bool auth = true, String? idempotencyKey}) =>
+      _send('POST', path, body: body, auth: auth, idempotencyKey: idempotencyKey);
 
   /// PUT → unwrapped `data`.
   Future<dynamic> put(String path, {Object? body, bool auth = true}) =>
@@ -153,14 +157,22 @@ class KycoApiClient {
   }
 
   Future<dynamic> _send(String method, String path,
-      {Map<String, dynamic>? query, Object? body, required bool auth, bool retried = false}) async {
+      {Map<String, dynamic>? query,
+      Object? body,
+      required bool auth,
+      bool retried = false,
+      String? idempotencyKey}) async {
     final Response<dynamic> res;
     try {
       res = await _dio.request<dynamic>(
         path,
         data: body,
         queryParameters: query,
-        options: Options(method: method, extra: {'noAuth': !auth}),
+        options: Options(
+          method: method,
+          extra: {'noAuth': !auth},
+          headers: {'Idempotency-Key': ?idempotencyKey},
+        ),
       );
     } on DioException catch (e) {
       throw ApiException('network', e.message ?? 'Network error');
@@ -177,7 +189,8 @@ class KycoApiClient {
           // Dio FormData is single-use (finalized by the first send); rebuild it
           // for the retry so we don't hit StateError "already finalized".
           final retryBody = body is FormData ? body.clone() : body;
-          return _send(method, path, query: query, body: retryBody, auth: auth, retried: true);
+          return _send(method, path,
+              query: query, body: retryBody, auth: auth, retried: true, idempotencyKey: idempotencyKey);
         }
       }
       // Either the refresh failed, or we already refreshed and STILL got 401

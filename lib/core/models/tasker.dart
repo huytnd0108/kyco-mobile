@@ -368,6 +368,62 @@ class WalletTxn {
       );
 }
 
+/// Bank snapshot of a withdrawal request (`bank` on `GET /tasker/payout-requests`).
+/// [masked] is server-built (e.g. `VCB ••••1234`) — shown as-is.
+class PayoutRequestBank {
+  const PayoutRequestBank({this.code, this.accountTail, this.masked});
+
+  final String? code;
+  final String? accountTail;
+  final String? masked;
+
+  factory PayoutRequestBank.fromJson(Map<String, dynamic> j) => PayoutRequestBank(
+        code: _str(j['code']),
+        accountTail: _str(j['accountTail']),
+        masked: _str(j['masked']),
+      );
+}
+
+/// One withdrawal request (`GET /tasker/payout-requests[/{id}]`, MQA-69).
+/// [status] is `pending` | `paid` | `rejected`; an unknown value is kept raw and
+/// the UI falls back to the server's [statusLabel]. Money is displayed as given.
+class PayoutRequest {
+  const PayoutRequest({
+    required this.id,
+    this.amountVnd,
+    this.status,
+    this.statusLabel,
+    this.createdAt,
+    this.decidedAt,
+    this.rejectReason,
+    this.bank,
+  });
+
+  final int id;
+
+  /// Server value; null if absent — rendered as "—", never as 0₫.
+  final int? amountVnd;
+  final String? status;
+  final String? statusLabel;
+  final String? createdAt;
+  final String? decidedAt;
+  final String? rejectReason;
+  final PayoutRequestBank? bank;
+
+  factory PayoutRequest.fromJson(Map<String, dynamic> j) => PayoutRequest(
+        id: _intd(j['id']),
+        amountVnd: _int(j['amountVnd']),
+        status: _str(j['status']),
+        statusLabel: _str(j['statusLabel']),
+        createdAt: _str(j['createdAt']),
+        decidedAt: _str(j['decidedAt']),
+        rejectReason: _str(j['rejectReason']),
+        bank: j['bank'] is Map<String, dynamic>
+            ? PayoutRequestBank.fromJson(j['bank'] as Map<String, dynamic>)
+            : null,
+      );
+}
+
 /// The A1 201 body of a successful payout request (server-derived echo).
 class PayoutRequestResult {
   const PayoutRequestResult({
@@ -490,7 +546,7 @@ class LeaderboardRow {
     this.district,
     this.tier,
     this.jobs = 0,
-    this.revenueVnd = 0,
+    this.revenueVnd,
     this.rank = 0,
   });
 
@@ -499,7 +555,10 @@ class LeaderboardRow {
   final String? district;
   final String? tier;
   final int jobs;
-  final int revenueVnd;
+
+  /// Only the caller's OWN row carries revenue (MQA-68 data minimisation);
+  /// other taskers' rows omit it (null) — never render it as 0₫.
+  final int? revenueVnd;
   final int rank;
 
   factory LeaderboardRow.fromJson(Map<String, dynamic> j) => LeaderboardRow(
@@ -508,7 +567,7 @@ class LeaderboardRow {
         district: _str(j['district']),
         tier: _str(j['tier']),
         jobs: _intd(j['jobs']),
-        revenueVnd: _intd(j['revenueVnd']),
+        revenueVnd: _int(j['revenueVnd']),
         rank: _intd(j['rank']),
       );
 }

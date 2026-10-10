@@ -232,4 +232,96 @@ void main() {
     expect(PoolJob.fromJson({'jobId': 2, 'distanceKm': 3}).distanceKm, 3.0);
     expect(PoolJob.fromJson({'jobId': 3}).distanceKm, isNull);
   });
+
+  test('MQA-68 leaderboard: others\' revenue absent → null (never 0₫), own row keeps it', () {
+    expect(LeaderboardRow.fromJson({'taskerId': 2, 'rank': 1, 'jobs': 9}).revenueVnd, isNull);
+    expect(LeaderboardRow.fromJson({'taskerId': 2, 'revenueVnd': null}).revenueVnd, isNull);
+    expect(LeaderboardRow.fromJson({'taskerId': 1, 'revenueVnd': 1200000}).revenueVnd, 1200000);
+  });
+
+  group('payout requests (MQA-69)', () {
+    test('list: path, limit + cursor query, meta parsing', () async {
+      final rec = _Recorder((o) => ResponseBody.fromString(
+            jsonEncode({
+              'ok': true,
+              'data': [
+                {
+                  'id': 7,
+                  'amountVnd': 1000000,
+                  'status': 'paid',
+                  'statusLabel': 'Đã chuyển',
+                  'createdAt': '2026-08-10T12:00:00Z',
+                  'decidedAt': '2026-08-11T12:00:00Z',
+                  'rejectReason': null,
+                  'bank': {'code': 'VCB', 'accountTail': '1234', 'masked': 'VCB ••••1234'},
+                },
+                'junk',
+              ],
+              'meta': {'nextCursor': 'c2', 'hasMore': true},
+            }),
+            200,
+            headers: {Headers.contentTypeHeader: [Headers.jsonContentType]},
+          ));
+      final page = await _api(rec).payoutRequests(cursor: 'c1', limit: 5);
+      final o = rec.calls.single.$1;
+      expect(o.path, endsWith('/tasker/payout-requests'));
+      expect(o.queryParameters, {'cursor': 'c1', 'limit': '5'});
+      expect(page.items.single.amountVnd, 1000000);
+      expect(page.items.single.bank?.masked, 'VCB ••••1234');
+      expect(page.nextCursor, 'c2');
+      expect(page.hasMore, isTrue);
+
+      await _api(rec).payoutRequests();
+      expect(rec.calls.last.$1.queryParameters, {'limit': '20'});
+    });
+
+    test('detail: GET by id; foreign id surfaces as 404', () async {
+      final rec = _Recorder((o) => o.path.endsWith('/9')
+          ? ResponseBody.fromString(
+              jsonEncode({'ok': false, 'error': {'code': 'NOT_FOUND', 'message': 'nope'}}),
+              404,
+              headers: {Headers.contentTypeHeader: [Headers.jsonContentType]})
+          : _ok({'id': 3, 'amountVnd': 100000, 'status': 'pending'}));
+      final r = await _api(rec).payoutRequest(3);
+      expect(rec.calls.single.$1.path, endsWith('/tasker/payout-requests/3'));
+      expect(r.status, 'pending');
+      expect(r.decidedAt, isNull);
+      await expectLater(
+          _api(rec).payoutRequest(9), throwsA(isA<ApiException>().having((e) => e.status, 'status', 404)));
+    });
+
+    test('model parsing is tolerant', () {
+      final full = PayoutRequest.fromJson({
+        'id': 1,
+        'amountVnd': 250000,
+        'status': 'paid',
+        'statusLabel': 'Đã chuyển',
+        'createdAt': '2026-08-10T12:00:00Z',
+        'decidedAt': '2026-08-11T12:00:00Z',
+        'extra': 1,
+        'bank': {'code': 'VCB', 'accountTail': '1234', 'masked': 'VCB ••••1234'},
+      });
+      expect((full.id, full.amountVnd, full.status), (1, 250000, 'paid'));
+      expect(full.bank?.code, 'VCB');
+      expect(full.bank?.accountTail, '1234');
+      expect(full.decidedAt, '2026-08-11T12:00:00Z');
+
+      expect(PayoutRequest.fromJson({'id': 9}).amountVnd, isNull); // absent → null, never 0₫
+      final pending = PayoutRequest.fromJson({'id': 2, 'amountVnd': 1, 'status': 'pending', 'decidedAt': null});
+      expect(pending.decidedAt, isNull);
+      expect(pending.rejectReason, isNull);
+
+      final rejected = PayoutRequest.fromJson(
+          {'id': 3, 'amountVnd': 1, 'status': 'rejected', 'rejectReason': 'Sai tên'});
+      expect(rejected.rejectReason, 'Sai tên');
+
+      final unknown = PayoutRequest.fromJson({'id': 4, 'status': 'on_hold', 'statusLabel': 'Đang xử lý'});
+      expect(unknown.status, 'on_hold');
+      expect(unknown.statusLabel, 'Đang xử lý');
+      expect(unknown.amountVnd, isNull);
+
+      expect(PayoutRequest.fromJson({'id': 5, 'bank': 'oops'}).bank, isNull);
+      expect(PayoutRequest.fromJson({'id': 6}).bank, isNull);
+    });
+  });
 }

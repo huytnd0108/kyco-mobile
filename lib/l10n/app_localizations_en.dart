@@ -2167,4 +2167,24 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get provPoolAddressAfterClaim =>
       'The exact address and customer notes appear after you claim the job.';
+
+  @override
+  String get provWalletPayoutRequests => 'Withdrawal requests';
+
+  @override
+  String get provWalletPayoutRequestsEmpty => 'No withdrawal requests yet.';
+
+  @override
+  String get provWalletPayoutRequestPending => 'Pending';
+
+  @override
+  String get provWalletPayoutRequestPaid => 'Paid';
+
+  @override
+  String get provWalletPayoutRequestRejected => 'Rejected';
+
+  @override
+  String provWalletPayoutRequestReason(String reason) {
+    return 'Reason: $reason';
+  }
 }
