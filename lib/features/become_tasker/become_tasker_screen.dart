@@ -20,8 +20,8 @@ import '../auth/auth_controller.dart';
 ///  * guest (the primary audience): `POST /api/v1/become-tasker` (PUBLIC
 ///    multipart: phone, otp_code, name, city, district, referral_code?,
 ///    cccd_front, cccd_back, selfie) — verifies the `register` OTP, creates the
-///    pending_provider account and stores the 3 docs in one call;
-///  * a signed-in `pending_provider` re-uploading (rejected / incomplete KYC):
+///    pending_tasker account and stores the 3 docs in one call;
+///  * a signed-in `pending_tasker` re-uploading (rejected / incomplete KYC):
 ///    Bearer `POST /api/v1/kyc/upload` (+ optional national_id). That route
 ///    answers 200 even when single files fail, so success is shown ONLY when
 ///    every required doc kind came back `ok`.
@@ -70,12 +70,12 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
   String? _error;
   bool _done = false;
 
-  /// A signed-in pending_provider re-uploading KYC: no phone/OTP/profile steps
+  /// A signed-in pending_tasker re-uploading KYC: no phone/OTP/profile steps
   /// (the account exists) — straight to the captures, sent via /kyc/upload.
   bool get _reapply {
     final auth = ref.read(authControllerProvider);
     return auth.status == AuthStatus.signedIn &&
-        auth.user?.role == 'pending_provider';
+        auth.user?.role == 'pending_tasker';
   }
 
   @override

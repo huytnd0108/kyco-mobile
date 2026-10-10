@@ -1067,5 +1067,5 @@
   },
   "prov2ResubmitAction": "Gửi lại xác nhận hoàn thành",
   "prov2ResubmitDone": "Đã gửi lại — khách sẽ được nhắc xác nhận.",
-  "prov2ComplaintNeedsText": "Vui lòng nhập nội dung khiếu nại."
+  "prov2ComplaintNeedsText": "Vui lòng mô tả khiếu nại (ít nhất 20 ký tự)."
 }

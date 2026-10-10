@@ -14,8 +14,8 @@ BookingDetail fakeBookingDetail(int id) => switch (id) {
             'notes': 'Có nuôi mèo', 'confirmationCode': 'KY-1040', 'completedAt': '2026-01-10T15:00:00Z',
           },
           'service': {'id': 3, 'name': 'Tổng vệ sinh'},
-          'job': {'providerId': 4, 'claimedAt': '2026-01-08T13:00:00Z', 'startedAt': '2026-01-10T12:05:00Z', 'finishedAt': '2026-01-10T14:50:00Z'},
-          'provider': {'id': 4, 'name': 'Nguyễn Thị Lan'},
+          'job': {'taskerId': 4, 'claimedAt': '2026-01-08T13:00:00Z', 'startedAt': '2026-01-10T12:05:00Z', 'finishedAt': '2026-01-10T14:50:00Z'},
+          'tasker': {'id': 4, 'name': 'Nguyễn Thị Lan'},
           'hasReview': false,
         }),
       _ => BookingDetail.fromPage({

@@ -169,7 +169,7 @@ class BookingTimelineEvent {
 }
 
 /// Booking detail — parsed from the `GET /v1/bookings/{id}/page` composite
-/// (`{booking, service, job, provider, payments, hasReview, ...}`), the richest
+/// (`{booking, service, job, tasker, payments, hasReview, ...}`), the richest
 /// owner-scoped read. Only display-safe fields are read; amounts are shown
 /// verbatim from the server (`totalVnd`) and NEVER recomputed client-side.
 class BookingDetail {
@@ -187,8 +187,8 @@ class BookingDetail {
     this.ward,
     this.notes,
     this.confirmationCode,
-    this.providerId,
-    this.providerName,
+    this.taskerId,
+    this.taskerName,
     this.hasReview = false,
     this.timeline = const [],
   });
@@ -206,15 +206,15 @@ class BookingDetail {
   final String? ward;
   final String? notes;
   final String? confirmationCode;
-  final int? providerId;
-  final String? providerName;
+  final int? taskerId;
+  final String? taskerName;
   final bool hasReview;
   final List<BookingTimelineEvent> timeline;
 
   /// Customer review is allowed once the booking is settled-ish, has an
-  /// assigned provider, and has no review yet (mirrors the review core).
+  /// assigned tasker, and has no review yet (mirrors the review core).
   bool get canReview =>
-      kReviewableStatuses.contains(status.toUpperCase()) && providerId != null && !hasReview;
+      kReviewableStatuses.contains(status.toUpperCase()) && taskerId != null && !hasReview;
 
   static String? _s(Object? v) => v is String && v.isNotEmpty ? v : null;
 
@@ -224,7 +224,7 @@ class BookingDetail {
     final b = j['booking'] is Map<String, dynamic> ? j['booking'] as Map<String, dynamic> : j;
     final svc = j['service'] is Map<String, dynamic> ? j['service'] as Map<String, dynamic> : null;
     final job = j['job'] is Map<String, dynamic> ? j['job'] as Map<String, dynamic> : null;
-    final prov = j['provider'] is Map<String, dynamic> ? j['provider'] as Map<String, dynamic> : null;
+    final prov = j['tasker'] is Map<String, dynamic> ? j['tasker'] as Map<String, dynamic> : null;
 
     final events = <BookingTimelineEvent>[];
     void add(String kind, Object? at) {
@@ -256,8 +256,8 @@ class BookingDetail {
       ward: _s(b['ward']),
       notes: _s(b['notes']),
       confirmationCode: _s(b['confirmationCode']),
-      providerId: (prov?['id'] as num?)?.toInt() ?? (job?['providerId'] as num?)?.toInt(),
-      providerName: _s(prov?['name']),
+      taskerId: (prov?['id'] as num?)?.toInt() ?? (job?['taskerId'] as num?)?.toInt(),
+      taskerName: _s(prov?['name']),
       hasReview: j['hasReview'] == true,
       timeline: events,
     );

@@ -8,7 +8,7 @@ import '../../core/api/problem.dart';
 import '../../core/di.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
-import '../provider_wallet/step_up_sheet.dart';
+import '../tasker_wallet/step_up_sheet.dart';
 
 /// Verified phone-change sheet for the customer account area.
 ///
@@ -19,7 +19,7 @@ import '../provider_wallet/step_up_sheet.dart';
 ///   2. enter the 6-digit code → `POST /me/phone { phone, code }`.
 ///
 /// The change is step-up-gated server-side. We prove freshness BEFORE the POST
-/// via [KycoApiProvider.stepUpStatus] + [showStepUpSheet] (reusing the wallet's
+/// via [KycoApiTasker.stepUpStatus] + [showStepUpSheet] (reusing the wallet's
 /// existing sheet unchanged), and ALSO retry once if the server still answers
 /// 403 `STEP_UP_REQUIRED` (freshness can lapse between the check and the POST).
 /// 422 VALIDATION (`fields.phone`/`fields.code`) and 409 CONFLICT surface as

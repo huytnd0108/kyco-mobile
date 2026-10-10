@@ -116,7 +116,7 @@ void main() {
           'ok': true,
           'data': {
             'accessToken': 'a', 'refreshToken': 'r', 'expiresIn': 900,
-            'user': {'id': 9, 'role': 'provider', 'name': 'P'},
+            'user': {'id': 9, 'role': 'tasker', 'name': 'P'},
           },
         }, 200);
       });
@@ -125,7 +125,7 @@ void main() {
       expect(adapter.requests.last.headers['authorization'], isNull);
       final res = await api.loginWithOtp(phone: '0901110002', code: '1234567', totpCode: '123456');
       expect(_body(adapter.requests.last), {'phone': '0901110002', 'code': '1234567', 'totpCode': '123456'});
-      expect(res.user?.role, 'provider');
+      expect(res.user?.role, 'tasker');
       expect(await tokens.accessToken, 'a');
     });
     test('TOTP_REQUIRED surfaces as a typed code', () async {
@@ -160,18 +160,18 @@ void main() {
           'addressLine': '1 A', 'completedAt': '2026-08-12 11:00:00+00', 'settledAt': null,
         },
         'service': {'id': 3, 'name': 'Tổng vệ sinh'},
-        'job': {'providerId': 4, 'startedAt': '2026-08-12 09:05:00+00', 'earningsVnd': 999},
-        'provider': {'id': 4, 'name': 'Chị Lan', 'bankAccountNumber': 'SECRET'},
+        'job': {'taskerId': 4, 'startedAt': '2026-08-12 09:05:00+00', 'earningsVnd': 999},
+        'tasker': {'id': 4, 'name': 'Chị Lan', 'bankAccountNumber': 'SECRET'},
         'hasReview': false,
       });
       expect(d.serviceName, 'Tổng vệ sinh');
-      expect(d.providerName, 'Chị Lan');
+      expect(d.taskerName, 'Chị Lan');
       expect(d.totalVnd, 37);
       expect(d.timeline.map((e) => e.kind), ['created', 'scheduled', 'started', 'completed']);
       expect(d.canReview, isTrue);
-      expect(BookingDetail.fromPage({'booking': {'id': 1, 'status': 'ACTIVE'}, 'provider': {'id': 2}}).canReview,
+      expect(BookingDetail.fromPage({'booking': {'id': 1, 'status': 'ACTIVE'}, 'tasker': {'id': 2}}).canReview,
           isFalse);
-      expect(BookingDetail.fromPage({'booking': {'id': 1, 'status': 'SETTLED'}, 'hasReview': true, 'provider': {'id': 2}})
+      expect(BookingDetail.fromPage({'booking': {'id': 1, 'status': 'SETTLED'}, 'hasReview': true, 'tasker': {'id': 2}})
           .canReview, isFalse);
     });
 
@@ -202,17 +202,17 @@ void main() {
   });
 
   group('redirects / links', () {
-    test('resumeAfterLogin drops /p* for non-provider roles', () {
+    test('resumeAfterLogin drops /p* for non-tasker roles', () {
       expect(resumeAfterLogin('/p/wallet', 'customer'), '/');
       expect(resumeAfterLogin('/p', null), '/');
-      expect(resumeAfterLogin('/p/wallet', 'provider'), '/p/wallet');
+      expect(resumeAfterLogin('/p/wallet', 'tasker'), '/p/wallet');
       expect(resumeAfterLogin('/p', 'admin'), '/p');
-      expect(resumeAfterLogin('/providers/7', 'customer'), '/providers/7');
+      expect(resumeAfterLogin('/taskers/7', 'customer'), '/taskers/7');
       expect(resumeAfterLogin(null, 'customer'), '/');
     });
     test('appRedirect on /login with a /p from', () {
       expect(appRedirect(status: AuthStatus.signedIn, role: 'customer', loc: '/login', from: '/p/jobs'), '/');
-      expect(appRedirect(status: AuthStatus.signedIn, role: 'provider', loc: '/login', from: '/p/jobs'), '/p/jobs');
+      expect(appRedirect(status: AuthStatus.signedIn, role: 'tasker', loc: '/login', from: '/p/jobs'), '/p/jobs');
       expect(appRedirect(status: AuthStatus.signedIn, role: 'customer', loc: '/login', from: '/bookings'), '/bookings');
     });
     test('notification links → in-app routes', () {
@@ -221,9 +221,11 @@ void main() {
       expect(inAppRouteForLink('/bookings/12/dispute/3'), '/bookings/12');
       expect(inAppRouteForLink('/vi/bookings/12'), '/bookings/12');
       expect(inAppRouteForLink('https://kyco.vn/en/services/5?suggested_date=x'), '/services/5');
-      expect(inAppRouteForLink('/provider/jobs/available'), '/p/jobs');
-      expect(inAppRouteForLink('/provider/jobs/44'), '/p/jobs/44');
-      expect(inAppRouteForLink('/provider/wallet'), '/p/wallet');
+      expect(inAppRouteForLink('/tasker/jobs/available'), '/p/jobs');
+      expect(inAppRouteForLink('/tasker/jobs/44'), '/p/jobs/44');
+      expect(inAppRouteForLink('/tasker/wallet'), '/p/wallet');
+      expect(inAppRouteForLink('/vi/taskers/7'), '/taskers/7');
+      expect(inAppRouteForLink('/provider/wallet'), isNull); // pre-rename link: no alias
       expect(inAppRouteForLink('/subscriptions/3'), '/subscriptions');
       expect(inAppRouteForLink('/admin/sos/1'), isNull);
       expect(inAppRouteForLink('/settings/security'), isNull);

@@ -28,7 +28,7 @@ const PSQL_DB = process.env.PSQL_DB || 'kyco_wapi_mobileqa';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ACC = {
   customer: ['demo@demo.local', 'demo12345'],
-  provider: ['provider@qa.local', 'ProvQa12345!'],
+  tasker: ['tasker@qa.local', 'TaskerQa12345!'],
   admin: ['admin@qa.local', 'Admin12345qa'],
 };
 const results = [];
@@ -38,9 +38,9 @@ const rec = (name, ok, detail) => {
   console.log(`${tag}  ${name}${ok ? '' : `  — ${detail}`}`);
 };
 
-async function req(method, path, { token, cookie, body, origin, form, multipart } = {}) {
+async function req(method, path, { token, cookie, body, origin, form, multipart, headers = {} } = {}) {
   await sleep(PACE);
-  const h = { Accept: 'application/json' };
+  const h = { Accept: 'application/json', ...headers };
   if (token) h.Authorization = `Bearer ${token}`;
   if (cookie) h.Cookie = cookie;
   if (origin) h.Origin = origin;
@@ -112,7 +112,8 @@ const NEW_ROUTES = [
 const optsFor = (o) => (o.multipart ? { multipart: pngForm() } : o.body !== undefined ? { body: o.body } : {});
 
 (async () => {
-  const A = await bearer('admin'), C = await bearer('customer'), P = await bearer('provider');
+  const RUN_START_AUDIT = Number(psql(`select coalesce(max(id),0) from kycore.admin_audit`)) || 0;
+  const A = await bearer('admin'), C = await bearer('customer'), P = await bearer('tasker');
   rec('bearer logins', !!(A && C && P), 'login failed');
   const su = await req('GET', '/api/v1/auth/step-up', { token: A });
   const preFresh = su.json?.data?.fresh === true;
@@ -123,7 +124,7 @@ const optsFor = (o) => (o.multipart ? { multipart: pngForm() } : o.body !== unde
   check('admin Bearer GET /admin/v1/dashboard', await req('GET', '/api/admin/v1/dashboard', { token: A }), [200]);
   check('admin Bearer GET /admin/v1/payments/dashboard', await req('GET', '/api/admin/v1/payments/dashboard', { token: A }), [200]);
   check('customer Bearer → 403', await req('GET', '/api/admin/v1/dashboard', { token: C }), [403]);
-  check('provider Bearer → 403', await req('GET', '/api/admin/v1/dashboard', { token: P }), [403]);
+  check('tasker Bearer → 403', await req('GET', '/api/admin/v1/dashboard', { token: P }), [403]);
   check('no auth → 401', await req('GET', '/api/admin/v1/dashboard'), [401], 'AUTH_REQUIRED');
   // Money write without a fresh step-up must be refused BEFORE touching the row (id 999999 never exists).
   stepUpCheck('admin Bearer payout resolve w/o step-up (foreign Origin ignored for Bearer) → STEP_UP_REQUIRED',
@@ -145,10 +146,13 @@ const optsFor = (o) => (o.multipart ? { multipart: pngForm() } : o.body !== unde
   // ── Part B — admin-ops new routes: role + step-up gates (pre-grant) ───────
   for (const [m, p, o] of NEW_ROUTES) {
     check(`customer Bearer ${m} ${p} → 403`, await req(m, p, { token: C, ...optsFor(o) }), [403], 'FORBIDDEN');
-    check(`provider Bearer ${m} ${p} → 403`, await req(m, p, { token: P, ...optsFor(o) }), [403], 'FORBIDDEN');
-    stepUpCheck(`admin Bearer ${m} ${p} w/o step-up → STEP_UP_REQUIRED`, await req(m, p, { token: A, ...optsFor(o) }));
+    check(`tasker Bearer ${m} ${p} → 403`, await req(m, p, { token: P, ...optsFor(o) }), [403], 'FORBIDDEN');
+    // SAFETY: with a pre-existing fresh grant the request would EXECUTE (restore-defaults turned
+    // api_mobile_v1_enabled OFF in the lab on 2026-10-10) — so it is not sent at all.
+    if (preFresh) rec(`admin Bearer ${m} ${p} w/o step-up → STEP_UP_REQUIRED`, null, 'grant already fresh — request NOT sent');
+    else stepUpCheck(`admin Bearer ${m} ${p} w/o step-up → STEP_UP_REQUIRED`, await req(m, p, { token: A, ...optsFor(o) }));
   }
-  const killAudits = psql(`select count(*) from kycore.admin_audit where action in ('admin.flags.disable_payments','admin.flags.restore_defaults') and created_at > now() - interval '15 minutes'`);
+  const killAudits = psql(`select count(*) from kycore.admin_audit where action in ('admin.flags.disable_payments','admin.flags.restore_defaults') and id > ${RUN_START_AUDIT}`);
   rec('refused disable-payments/restore-defaults wrote no audit row & no flag change', killAudits === '0'
     && psql(`select count(*) from kycore.site_settings where key in ('feature.payment_vnpay_enabled','feature.payment_momo_enabled','feature.payment_wallet_enabled')`) === '0', `audit rows=${killAudits}`);
 
@@ -225,7 +229,9 @@ const optsFor = (o) => (o.multipart ? { multipart: pngForm() } : o.body !== unde
 
   // Cookie transport AFTER the grant (grant is per user, either transport).
   if (ck) {
-    check('admin cookie same-Origin payout 999999 after step-up → 404 (gate passed, id unknown)', await req('POST', '/api/admin/v1/payouts/999999', { cookie: ck, body: { action: 'reject', reason: 'qa' }, origin: ORIGIN }), [404]);
+    // MQA-36 (3e9d764): money routes need an Idempotency-Key on every transport → send one so the 404 is reached.
+    check('admin cookie same-Origin payout 999999 after step-up → 404 (gate passed, id unknown)', await req('POST', '/api/admin/v1/payouts/999999', { cookie: ck, body: { action: 'reject', reason: 'qa' }, origin: ORIGIN, headers: { 'Idempotency-Key': `qa-vrf1-${Date.now()}-${Math.random().toString(36).slice(2)}` } }), [404]);
+    check('admin cookie payout 999999 WITHOUT Idempotency-Key → 422 (MQA-36)', await req('POST', '/api/admin/v1/payouts/999999', { cookie: ck, body: { action: 'reject', reason: 'qa' }, origin: ORIGIN }), [422]);
   }
   rec('payment flags untouched (no feature.payment_* rows)', psql(`select count(*) from kycore.site_settings where key like 'feature.payment_%'`) === '0', 'payment flag rows present');
   finish();

@@ -243,7 +243,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get providersAvailable => 'Providers available';
+  String get providersAvailable => 'Taskers available';
 
   @override
   String get checkoutTitle => 'Book service';
@@ -418,7 +418,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get manageOnWeb => 'Create or change a plan on kyco.vn';
 
   @override
-  String get provWorkspace => 'Provider workspace';
+  String get provWorkspace => 'Tasker workspace';
 
   @override
   String get provComingSoon => 'Coming soon';
@@ -2151,5 +2151,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Resubmitted — the customer will be reminded to confirm.';
 
   @override
-  String get prov2ComplaintNeedsText => 'Please describe the complaint.';
+  String get prov2ComplaintNeedsText =>
+      'Please describe the complaint (at least 20 characters).';
 }

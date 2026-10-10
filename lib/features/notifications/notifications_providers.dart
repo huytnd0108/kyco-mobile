@@ -192,7 +192,10 @@ String? inAppRouteForLink(String? link) {
     case 'addresses':
     case 'become-tasker':
       return '/${segs.first}';
-    case 'provider':
+    case 'taskers':
+      // Public tasker profile (`/taskers/{id}`) — guest-visible in-app route.
+      return segs.length >= 2 && isId(segs[1]) ? '/taskers/${segs[1]}' : null;
+    case 'tasker':
       if (segs.length == 1) return '/p';
       switch (segs[1]) {
         case 'jobs':

@@ -55,3 +55,4 @@ android/key.properties
 # golden diff artifacts
 test/goldens/failures/
 /android/build/
+tool/api-contract/.qa-money-fixtures.json

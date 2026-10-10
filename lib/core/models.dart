@@ -8,4 +8,4 @@ export 'models/home.dart';
 export 'models/locations.dart';
 export 'models/booking.dart';
 export 'models/social.dart';
-export 'models/provider.dart';
+export 'models/tasker.dart';

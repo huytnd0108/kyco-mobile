@@ -7,13 +7,13 @@ import '../../core/di.dart';
 import '../../core/models.dart';
 
 /// Where to land after sign-in: the `from` flow the guest came from, except a
-/// provider-shell (`/p`, `/p/*`) target is dropped for a role that cannot
-/// enter it (customer / pending_provider / unknown) — they go home instead of
+/// tasker-shell (`/p`, `/p/*`) target is dropped for a role that cannot
+/// enter it (customer / pending_tasker / unknown) — they go home instead of
 /// bouncing through the role gate into onboarding.
 String resumeAfterLogin(String? from, String? role) {
   if (from == null || from.isEmpty) return '/';
-  final isProvider = from == '/p' || from.startsWith('/p/') || from.startsWith('/p?');
-  if (isProvider && role != 'provider' && role != 'admin') return '/';
+  final isTasker = from == '/p' || from.startsWith('/p/') || from.startsWith('/p?');
+  if (isTasker && role != 'tasker' && role != 'admin') return '/';
   return from;
 }
 

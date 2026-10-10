@@ -4,10 +4,10 @@ import '../models.dart';
 import 'api_client.dart';
 import 'token_store.dart';
 
-// Provider (/api/v1/provider) methods live in a same-library part so the
-// `extension KycoApiProvider on KycoApi` can reuse the private `_c` client and
-// the shared Paged/Envelope patterns. See kyco_api_provider.dart.
-part 'kyco_api_provider.dart';
+// Tasker (/api/v1/tasker) methods live in a same-library part so the
+// `extension KycoApiTasker on KycoApi` can reuse the private `_c` client and
+// the shared Paged/Envelope patterns. See kyco_api_tasker.dart.
+part 'kyco_api_tasker.dart';
 
 /// Typed facade over the kyco /api/v1 endpoints the app uses.
 class KycoApi {
@@ -109,14 +109,14 @@ class KycoApi {
 
   /// Booking detail via the `/bookings/{id}/page` BFF composite (owner-scoped;
   /// another user's id is a 404). Richer than `/bookings/{id}`: job timeline,
-  /// assigned provider, `hasReview`.
+  /// assigned tasker, `hasReview`.
   Future<BookingDetail> bookingDetail(int id) async {
     final data = await _c.get('/bookings/$id/page');
     return BookingDetail.fromPage(data as Map<String, dynamic>);
   }
 
   /// Customer review of a completed booking (non-money). 409 CONFLICT when the
-  /// booking is not settled / has no provider / is already reviewed.
+  /// booking is not settled / has no tasker / is already reviewed.
   Future<void> createReview({required int bookingId, required int rating, String? comment}) =>
       _c.post('/reviews', body: {
         'bookingId': bookingId,
@@ -250,9 +250,9 @@ class KycoApi {
     return CityLanding.fromJson(data as Map<String, dynamic>);
   }
 
-  Future<ProviderPublicProfile> providerPublic(int id) async {
-    final data = await _c.get('/providers/$id/public', auth: false);
-    return ProviderPublicProfile.fromJson(data as Map<String, dynamic>);
+  Future<TaskerPublicProfile> taskerPublic(int id) async {
+    final data = await _c.get('/taskers/$id/public', auth: false);
+    return TaskerPublicProfile.fromJson(data as Map<String, dynamic>);
   }
 
   Future<List<PlanCard>> plans() async {
@@ -318,4 +318,28 @@ class KycoApi {
 
   /// Mark all notifications read (POST /notifications).
   Future<void> markNotificationsRead() => _c.post('/notifications');
+
+  /// Emergency SOS (POST /v1/sos — MQA-26). Customer or tasker; the server
+  /// checks booking/job ownership, pages ops on every channel and dedups
+  /// repeat presses. Every field is optional (location-only SOS is valid).
+  Future<Map<String, dynamic>> triggerSos({
+    int? bookingId,
+    int? jobId,
+    double? lat,
+    double? lng,
+    double? accuracyM,
+    String category = 'safety',
+    String? note,
+  }) async {
+    final data = await _c.post('/sos', body: {
+      'bookingId': ?bookingId,
+      'jobId': ?jobId,
+      'lat': ?lat,
+      'lng': ?lng,
+      'accuracyM': ?accuracyM,
+      'category': category,
+      'note': ?note,
+    });
+    return (data as Map?)?.cast<String, dynamic>() ?? const {};
+  }
 }

@@ -2154,5 +2154,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get prov2ResubmitDone => 'Đã gửi lại — khách sẽ được nhắc xác nhận.';
 
   @override
-  String get prov2ComplaintNeedsText => 'Vui lòng nhập nội dung khiếu nại.';
+  String get prov2ComplaintNeedsText =>
+      'Vui lòng mô tả khiếu nại (ít nhất 20 ký tự).';
 }

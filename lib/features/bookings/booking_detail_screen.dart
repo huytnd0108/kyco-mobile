@@ -142,7 +142,7 @@ class _Detail extends ConsumerWidget {
           _row(context, l.cust2DetailScheduled, formatBookingDateTime(context, b.scheduledAt)),
           if (address.isNotEmpty) _row(context, l.cust2DetailAddress, address),
           if (b.notes != null) _row(context, l.cust2DetailNotes, b.notes!),
-          if (b.providerName != null) _row(context, l.cust2DetailProvider, b.providerName!),
+          if (b.taskerName != null) _row(context, l.cust2DetailProvider, b.taskerName!),
           _row(context, l.totalLabel, vnd),
           _row(context, l.cust2DetailPayment, paymentMethodLabel(l, b.paymentMethod)),
           if (b.confirmationCode != null) _row(context, l.cust2DetailCode, b.confirmationCode!),

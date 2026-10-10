@@ -27,25 +27,25 @@ import 'features/locations/locations_screen.dart';
 import 'features/messages/messages_screen.dart';
 import 'features/notifications/notifications_providers.dart';
 import 'features/notifications/notifications_screen.dart';
-import 'features/providers/provider_screen.dart';
-// ── provider (/p) shell + stubs ──
+import 'features/taskers/tasker_screen.dart';
+// ── tasker (/p) shell + stubs ──
 import 'features/become_tasker/become_tasker_screen.dart';
-import 'features/provider_availability/provider_availability_screen.dart';
-import 'features/provider_compliance/provider_cancellations_screen.dart';
-import 'features/provider_compliance/provider_fine_appeal_screen.dart';
-import 'features/provider_compliance/provider_fines_screen.dart';
-import 'features/provider_compliance/provider_referrals_screen.dart';
-import 'features/provider_growth/provider_bonuses_screen.dart';
-import 'features/provider_growth/provider_goals_screen.dart';
-import 'features/provider_growth/provider_leaderboard_screen.dart';
-import 'features/provider_growth/provider_vip_screen.dart';
-import 'features/provider_home/provider_home_screen.dart';
-import 'features/provider_job_detail/provider_job_detail_screen.dart';
-import 'features/provider_jobs/provider_jobs_screen.dart';
-import 'features/provider_shell/provider_more_screen.dart';
-import 'features/provider_shell/provider_scaffold.dart';
-import 'features/provider_support/provider_support_screen.dart';
-import 'features/provider_wallet/provider_wallet_screen.dart';
+import 'features/tasker_availability/tasker_availability_screen.dart';
+import 'features/tasker_compliance/tasker_cancellations_screen.dart';
+import 'features/tasker_compliance/tasker_fine_appeal_screen.dart';
+import 'features/tasker_compliance/tasker_fines_screen.dart';
+import 'features/tasker_compliance/tasker_referrals_screen.dart';
+import 'features/tasker_growth/tasker_bonuses_screen.dart';
+import 'features/tasker_growth/tasker_goals_screen.dart';
+import 'features/tasker_growth/tasker_leaderboard_screen.dart';
+import 'features/tasker_growth/tasker_vip_screen.dart';
+import 'features/tasker_home/tasker_home_screen.dart';
+import 'features/tasker_job_detail/tasker_job_detail_screen.dart';
+import 'features/tasker_jobs/tasker_jobs_screen.dart';
+import 'features/tasker_shell/tasker_more_screen.dart';
+import 'features/tasker_shell/tasker_scaffold.dart';
+import 'features/tasker_support/tasker_support_screen.dart';
+import 'features/tasker_wallet/tasker_wallet_screen.dart';
 import 'features/service_detail/service_detail_screen.dart';
 import 'features/services/services_providers.dart';
 import 'features/services/services_screen.dart';
@@ -69,7 +69,7 @@ final _rootKey = GlobalKey<NavigatorState>();
 
 /// The GUEST-FIRST redirect rule, pure + table-testable (see redirect_test).
 /// PUBLIC forever: / /services /services/:id /book-now /checkout/* /locations/*
-/// /providers/:id /subscriptions /notifications /account. The confirm-booking
+/// /taskers/:id /subscriptions /notifications /account. The confirm-booking
 /// gate is IN-SCREEN, never here — NEVER add /checkout (or anything) to the
 /// protected set.
 String? guestFirstRedirect({required AuthStatus status, required String loc, String? from}) {
@@ -85,11 +85,11 @@ String? guestFirstRedirect({required AuthStatus status, required String loc, Str
   return null;
 }
 
-/// True for the provider shell prefix ONLY — matches `/p` and `/p/*`, never the
-/// customer `/providers/:id` route (which begins with `/p` but not `/p/`).
-bool isProviderPath(String loc) => loc == '/p' || loc.startsWith('/p/');
+/// True for the tasker shell prefix ONLY — matches `/p` and `/p/*`, never the
+/// customer `/taskers/:id` route (which begins with `/p` but not `/p/`).
+bool isTaskerPath(String loc) => loc == '/p' || loc.startsWith('/p/');
 
-/// The composed router redirect. Provider role-gating applies ONLY to `/p*`;
+/// The composed router redirect. Tasker role-gating applies ONLY to `/p*`;
 /// every other path is delegated to [guestFirstRedirect] byte-for-byte, so the
 /// customer guest-first semantics are preserved exactly. Pure + table-testable.
 String? appRedirect({
@@ -98,25 +98,25 @@ String? appRedirect({
   required String loc,
   String? from,
 }) {
-  if (isProviderPath(loc)) {
+  if (isTaskerPath(loc)) {
     // Mid-bootstrap: never bounce to login (mirrors the guest-first unknown rule).
     if (status == AuthStatus.unknown) return '/';
     if (status != AuthStatus.signedIn) return '/login?from=$loc';
     // Role-UNKNOWN: bootstrap entered optimistically (signedIn with user==null
     // after a non-401 /me failure — offline / 503 dark-launch), so `role` is
-    // null but the account may well be a provider. Treat it exactly like the
+    // null but the account may well be a tasker. Treat it exactly like the
     // `unknown` status above (send /p* home), NEVER to become-tasker — otherwise
-    // a real provider is misrouted to onboarding for the whole session. Role
+    // a real tasker is misrouted to onboarding for the whole session. Role
     // backfills via AuthController.refreshMe once /me succeeds.
     if (role == null) return '/';
-    // A signed-in non-provider is sent to onboarding (pending_provider sees the
+    // A signed-in non-tasker is sent to onboarding (pending_tasker sees the
     // "under review" status inside /become-tasker).
-    if (role != 'provider' && role != 'admin') return '/become-tasker';
+    if (role != 'tasker' && role != 'admin') return '/become-tasker';
     return null;
   }
   // Public onboarding — reachable signed-out; guest-first would allow it anyway.
   if (loc.startsWith('/become-tasker')) return null;
-  // Signed in on an auth screen: resume `from`, but never into the provider
+  // Signed in on an auth screen: resume `from`, but never into the tasker
   // shell for a role that can't enter it (drop a `/p*` from → home).
   if (status == AuthStatus.signedIn && (loc == '/login' || loc == '/signup')) {
     return resumeAfterLogin(from, role);
@@ -130,7 +130,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     refreshListenable: ref.watch(_authRefreshProvider),
     // GUEST-FIRST. Only owned-data areas are protected; everything else
-    // (home, services, book-now, checkout, locations, providers, subscriptions,
+    // (home, services, book-now, checkout, locations, taskers, subscriptions,
     // notifications, account) is public. The confirm-booking wall is IN-SCREEN,
     // never a route redirect — NEVER add /checkout (or anything else) here.
     redirect: (context, state) {
@@ -182,9 +182,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
-        path: '/providers/:id',
+        path: '/taskers/:id',
         parentNavigatorKey: _rootKey,
-        builder: (_, s) => ProviderScreen(id: int.tryParse(s.pathParameters['id'] ?? '') ?? 0),
+        builder: (_, s) => TaskerScreen(id: int.tryParse(s.pathParameters['id'] ?? '') ?? 0),
       ),
       GoRoute(
         path: '/subscriptions',
@@ -266,69 +266,69 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // ── Provider onboarding (PUBLIC — a guest can start it) ──
+      // ── Tasker onboarding (PUBLIC — a guest can start it) ──
       GoRoute(
         path: '/become-tasker',
         parentNavigatorKey: _rootKey,
         builder: (_, _) => const BecomeTaskerScreen(),
       ),
 
-      // ── Provider (/p) shell — role-gated by appRedirect. Its own 5-tab
-      // ProviderScaffold; detail + More sub-screens ride the root navigator so
-      // they present full-screen over the provider tabs. ──
+      // ── Tasker (/p) shell — role-gated by appRedirect. Its own 5-tab
+      // TaskerScaffold; detail + More sub-screens ride the root navigator so
+      // they present full-screen over the tasker tabs. ──
       StatefulShellRoute.indexedStack(
-        builder: (context, state, shell) => ProviderScaffold(navigationShell: shell),
+        builder: (context, state, shell) => TaskerScaffold(navigationShell: shell),
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/p',
-              builder: (_, _) => const ProviderHomeScreen(),
+              builder: (_, _) => const TaskerHomeScreen(),
             ),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/p/jobs',
-              builder: (_, _) => const ProviderJobsScreen(),
+              builder: (_, _) => const TaskerJobsScreen(),
               routes: [
                 GoRoute(
                   path: ':id',
                   parentNavigatorKey: _rootKey,
-                  builder: (_, _) => const ProviderJobDetailScreen(),
+                  builder: (_, _) => const TaskerJobDetailScreen(),
                 ),
               ],
             ),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(path: '/p/wallet', builder: (_, _) => const ProviderWalletScreen()),
+            GoRoute(path: '/p/wallet', builder: (_, _) => const TaskerWalletScreen()),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(path: '/p/availability', builder: (_, _) => const ProviderAvailabilityScreen()),
+            GoRoute(path: '/p/availability', builder: (_, _) => const TaskerAvailabilityScreen()),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(path: '/p/more', builder: (_, _) => const ProviderMoreScreen()),
+            GoRoute(path: '/p/more', builder: (_, _) => const TaskerMoreScreen()),
           ]),
         ],
       ),
-      // Provider secondary surfaces (reached from the More menu) — full-screen.
-      GoRoute(path: '/p/bonuses', parentNavigatorKey: _rootKey, builder: (_, _) => const ProviderBonusesScreen()),
-      GoRoute(path: '/p/goals', parentNavigatorKey: _rootKey, builder: (_, _) => const ProviderGoalsScreen()),
-      GoRoute(path: '/p/leaderboard', parentNavigatorKey: _rootKey, builder: (_, _) => const ProviderLeaderboardScreen()),
-      GoRoute(path: '/p/vip', parentNavigatorKey: _rootKey, builder: (_, _) => const ProviderVipScreen()),
+      // Tasker secondary surfaces (reached from the More menu) — full-screen.
+      GoRoute(path: '/p/bonuses', parentNavigatorKey: _rootKey, builder: (_, _) => const TaskerBonusesScreen()),
+      GoRoute(path: '/p/goals', parentNavigatorKey: _rootKey, builder: (_, _) => const TaskerGoalsScreen()),
+      GoRoute(path: '/p/leaderboard', parentNavigatorKey: _rootKey, builder: (_, _) => const TaskerLeaderboardScreen()),
+      GoRoute(path: '/p/vip', parentNavigatorKey: _rootKey, builder: (_, _) => const TaskerVipScreen()),
       GoRoute(
         path: '/p/fines',
         parentNavigatorKey: _rootKey,
-        builder: (_, _) => const ProviderFinesScreen(),
+        builder: (_, _) => const TaskerFinesScreen(),
         routes: [
           GoRoute(
             path: ':id/appeal',
             parentNavigatorKey: _rootKey,
-            builder: (_, _) => const ProviderFineAppealScreen(),
+            builder: (_, _) => const TaskerFineAppealScreen(),
           ),
         ],
       ),
-      GoRoute(path: '/p/cancellations', parentNavigatorKey: _rootKey, builder: (_, _) => const ProviderCancellationsScreen()),
-      GoRoute(path: '/p/referrals', parentNavigatorKey: _rootKey, builder: (_, _) => const ProviderReferralsScreen()),
-      GoRoute(path: '/p/support', parentNavigatorKey: _rootKey, builder: (_, _) => const ProviderSupportScreen()),
+      GoRoute(path: '/p/cancellations', parentNavigatorKey: _rootKey, builder: (_, _) => const TaskerCancellationsScreen()),
+      GoRoute(path: '/p/referrals', parentNavigatorKey: _rootKey, builder: (_, _) => const TaskerReferralsScreen()),
+      GoRoute(path: '/p/support', parentNavigatorKey: _rootKey, builder: (_, _) => const TaskerSupportScreen()),
     ],
     errorBuilder: (context, state) => Scaffold(
       appBar: AppBar(title: const Text('Kyco')),
@@ -390,7 +390,7 @@ class _KycoAppState extends ConsumerState<KycoApp> {
         ref.read(routerProvider).go('/');
       }
       // Role-unknown optimistic session (bootstrap's non-401 /me failure): try
-      // once to backfill the user so a real provider can reach /p this session.
+      // once to backfill the user so a real tasker can reach /p this session.
       // refreshMe no-ops unless still signedIn-with-null-user, so no loop.
       if (next.status == AuthStatus.signedIn && next.user == null) {
         ref.read(authControllerProvider.notifier).refreshMe();

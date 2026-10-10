@@ -146,7 +146,7 @@ class CatalogCategory {
       );
 }
 
-/// A search hit from /v1/search (kind = service|provider|city).
+/// A search hit from /v1/search (kind = service|tasker|city).
 class SearchHit {
   const SearchHit({
     required this.kind,

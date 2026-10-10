@@ -1,4 +1,4 @@
-// Reviews, providers, subscriptions, plans and notifications — the "social"
+// Reviews, taskers, subscriptions, plans and notifications — the "social"
 // + account-adjacent read models. All parsing tolerant.
 
 class Review {
@@ -53,8 +53,8 @@ class ReviewPage {
       );
 }
 
-class ProviderPublicProfile {
-  const ProviderPublicProfile({
+class TaskerPublicProfile {
+  const TaskerPublicProfile({
     required this.id,
     required this.displayName,
     this.avatarUrl,
@@ -75,7 +75,7 @@ class ProviderPublicProfile {
   final String? joinedAt;
   final ReviewAggregate reviewSummary;
 
-  factory ProviderPublicProfile.fromJson(Map<String, dynamic> j) => ProviderPublicProfile(
+  factory TaskerPublicProfile.fromJson(Map<String, dynamic> j) => TaskerPublicProfile(
         id: (j['id'] as num?)?.toInt() ?? 0,
         displayName: (j['displayName'] as String?) ?? (j['name'] as String?) ?? '',
         avatarUrl: j['avatarUrl'] as String?,

@@ -77,9 +77,9 @@ class AccountScreen extends ConsumerWidget {
                   label: l.inviteFriends,
                   onTap: () => context.push('/invite'),
                 ),
-              // Role-aware entry: a provider (or admin — the /p gate admits both)
+              // Role-aware entry: a tasker (or admin — the /p gate admits both)
               // gets the in-app /p workspace; everyone else the onboarding flow.
-              if (auth.user?.role == 'provider' || auth.user?.role == 'admin')
+              if (auth.user?.role == 'tasker' || auth.user?.role == 'admin')
                 _AccountRow(
                   icon: Icons.handshake_outlined,
                   label: l.provWorkspace,

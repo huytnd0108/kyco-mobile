@@ -4013,7 +4013,7 @@ abstract class AppLocalizations {
   /// No description provided for @prov2ComplaintNeedsText.
   ///
   /// In vi, this message translates to:
-  /// **'Vui lòng nhập nội dung khiếu nại.'**
+  /// **'Vui lòng mô tả khiếu nại (ít nhất 20 ký tự).'**
   String get prov2ComplaintNeedsText;
 }
 

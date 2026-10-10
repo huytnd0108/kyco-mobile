@@ -108,7 +108,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!mounted) return;
     if (ok) {
       // Resume the flow the guest came from (?from=, the web's callbackUrl) —
-      // minus a provider-shell target the signed-in role cannot enter.
+      // minus a tasker-shell target the signed-in role cannot enter.
       final role = ref.read(authControllerProvider).user?.role;
       context.go(resumeAfterLogin(authFromParam(context), role));
       return;

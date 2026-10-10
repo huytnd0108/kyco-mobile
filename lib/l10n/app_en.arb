@@ -72,7 +72,7 @@
   "relatedServices": "Related services",
   "reviewsTitle": "Reviews",
   "reviewCount": "{n} reviews",
-  "providersAvailable": "Providers available",
+  "providersAvailable": "Taskers available",
   "checkoutTitle": "Book service",
   "dateLabel": "Date",
   "timeLabel": "Time",
@@ -124,7 +124,7 @@
   "sessionsProgress": "Sessions {done}/{total}",
   "nextChargeLabel": "Next charge: {date}",
   "manageOnWeb": "Create or change a plan on kyco.vn",
-  "provWorkspace": "Provider workspace",
+  "provWorkspace": "Tasker workspace",
   "provComingSoon": "Coming soon",
   "provTabHome": "Home",
   "provTabJobs": "Jobs",
@@ -652,5 +652,5 @@
   "prov2ResubmitNote": "Customer's note: {note}",
   "prov2ResubmitAction": "Resubmit completion",
   "prov2ResubmitDone": "Resubmitted — the customer will be reminded to confirm.",
-  "prov2ComplaintNeedsText": "Please describe the complaint."
+  "prov2ComplaintNeedsText": "Please describe the complaint (at least 20 characters)."
 }

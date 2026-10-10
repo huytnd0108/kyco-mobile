@@ -4,9 +4,9 @@
 // against a running kyco backend. Used to QA the web-API-only migration batch by
 // batch; failures go to kyco-wt/MOBILE-QA-FEEDBACK.md.
 //
-//   API_BASE=http://127.0.0.1:4142/api/v1 node tool/api-contract/smoke.mjs [--only=addresses,provider]
+//   API_BASE=http://127.0.0.1:4142/api/v1 node tool/api-contract/smoke.mjs [--only=addresses,tasker]
 //
-// Accounts (QA DB only): CUSTOMER_EMAIL/PASSWORD, PROVIDER_EMAIL/PASSWORD, ADMIN_EMAIL/PASSWORD.
+// Accounts (QA DB only): CUSTOMER_EMAIL/PASSWORD, TASKER_EMAIL/PASSWORD, ADMIN_EMAIL/PASSWORD.
 // Exit 1 when any check fails. Never point this at production: it creates data.
 
 const BASE = process.env.API_BASE || 'http://127.0.0.1:4142/api/v1';
@@ -16,7 +16,7 @@ if (/kyco\.vn/.test(BASE) && !process.env.ALLOW_REMOTE) {
 }
 const ACC = {
   customer: [process.env.CUSTOMER_EMAIL || 'demo@demo.local', process.env.CUSTOMER_PASSWORD || 'demo12345'],
-  provider: [process.env.PROVIDER_EMAIL || 'provider@qa.local', process.env.PROVIDER_PASSWORD || 'ProvQa12345!'],
+  tasker: [process.env.TASKER_EMAIL || 'tasker@qa.local', process.env.TASKER_PASSWORD || 'TaskerQa12345!'],
   admin: [process.env.ADMIN_EMAIL || 'admin@qa.local', process.env.ADMIN_PASSWORD || 'Admin12345qa'],
 };
 const only = (process.argv.find((a) => a.startsWith('--only=')) || '').slice(7).split(',').filter(Boolean);
@@ -79,7 +79,7 @@ async function main() {
   if (health.status === 503) { console.error('api_mobile_v1_enabled is OFF (503) — enable it first'); process.exit(2); }
 
   const cust = await login('customer');
-  const prov = await login('provider');
+  const prov = await login('tasker');
   const admin = await login('admin');
   const C = cust?.accessToken, P = prov?.accessToken;
 
@@ -105,7 +105,7 @@ async function main() {
       await expect('public', '', 'GET', `/services/${sid}/reviews`, {}, 200);
       if (C) await expect('customer', '', 'GET', `/checkout/${sid}`, { token: C }, 200);
     }
-    await expect('public', '', 'GET', '/providers/1/public', {}, [200, 404]);
+    await expect('public', '', 'GET', '/taskers/1/public', {}, [200, 404]);
   }
 
   if (want('customer') && C) {
@@ -114,7 +114,7 @@ async function main() {
     await expect('customer', '', 'GET', '/subscriptions', { token: C }, 200);
     await expect('customer', '', 'GET', '/notifications?limit=20', { token: C }, 200);
     await expect('customer', '', 'GET', '/dashboard', { token: C }, 200);
-    await expect('customer', 'customer forbidden on provider surface', 'GET', '/provider/workspace', { token: C }, [401, 403]);
+    await expect('customer', 'customer forbidden on tasker surface', 'GET', '/tasker/workspace', { token: C }, [401, 403]);
   }
 
   if (want('addresses') && C) {
@@ -141,14 +141,14 @@ async function main() {
     }
   }
 
-  if (want('provider') && P) {
-    const g = 'provider';
-    for (const p of ['/provider/workspace', '/provider/dashboard', '/provider/jobs?limit=20', '/provider/jobs/pool', '/provider/wallet',
-      '/provider/wallet/transactions?limit=20', '/provider/payouts?limit=20', '/provider/bonuses', '/provider/goals', '/provider/leaderboard',
-      '/provider/availability', '/provider/support', '/provider/fines', '/provider/referrals', '/provider/cancellations', '/auth/step-up']) {
+  if (want('tasker') && P) {
+    const g = 'tasker';
+    for (const p of ['/tasker/workspace', '/tasker/dashboard', '/tasker/jobs?limit=20', '/tasker/jobs/pool', '/tasker/wallet',
+      '/tasker/wallet/transactions?limit=20', '/tasker/payouts?limit=20', '/tasker/bonuses', '/tasker/goals', '/tasker/leaderboard',
+      '/tasker/availability', '/tasker/support', '/tasker/fines', '/tasker/referrals', '/tasker/cancellations', '/auth/step-up']) {
       await expect(g, '', 'GET', p, { token: P }, 200);
     }
-    const pool = data(await call('GET', '/provider/jobs/pool', { token: P }));
+    const pool = data(await call('GET', '/tasker/jobs/pool', { token: P }));
     const leaked = JSON.stringify(pool ?? {}).includes('dispatchCandidates');
     record(g, 'pool hides dispatchCandidates (review Z2)', !leaked, 'dispatchCandidates present in response');
   }
