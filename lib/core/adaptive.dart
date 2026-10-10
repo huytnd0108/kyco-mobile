@@ -48,15 +48,28 @@ class AdaptiveScaffold extends StatelessWidget {
     final i = navigationShell.currentIndex;
 
     if (size == WindowSize.compact) {
+      // The "Book now" CTA lives only on Home / Services, in its own band ABOVE
+      // the content area (not floating over it), so it never covers the last
+      // rows / "Load more" buttons or competes with the bottom bar.
+      final showCta = i == 0 || i == 1;
       return Scaffold(
-        body: navigationShell,
-        // Persistent primary CTA mirroring the web header's "⚡ Đặt ngay" pill.
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => context.push('/book-now'),
-          icon: const Text('⚡', style: TextStyle(fontSize: 16)),
-          label: Text(l.bookNow),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        body: showCta
+            ? Column(
+                children: [
+                  Expanded(child: navigationShell),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    // Persistent primary CTA mirroring the web header's "Đặt ngay" pill.
+                    child: FloatingActionButton.extended(
+                      heroTag: 'bookNowBar',
+                      onPressed: () => context.push('/book-now'),
+                      icon: const Icon(Icons.bolt),
+                      label: Text(l.bookNow),
+                    ),
+                  ),
+                ],
+              )
+            : navigationShell,
         bottomNavigationBar: NavigationBar(
           selectedIndex: i,
           onDestinationSelected: _go,
@@ -91,13 +104,14 @@ class AdaptiveScaffold extends StatelessWidget {
                     ? FloatingActionButton.extended(
                         heroTag: 'bookNowRail',
                         onPressed: () => context.push('/book-now'),
-                        icon: const Text('⚡', style: TextStyle(fontSize: 16)),
+                        icon: const Icon(Icons.bolt),
                         label: Text(l.bookNow),
                       )
                     : FloatingActionButton(
                         heroTag: 'bookNowRail',
                         onPressed: () => context.push('/book-now'),
-                        child: const Text('⚡', style: TextStyle(fontSize: 20)),
+                        tooltip: l.bookNow,
+                        child: const Icon(Icons.bolt),
                       ),
               ),
               destinations: [

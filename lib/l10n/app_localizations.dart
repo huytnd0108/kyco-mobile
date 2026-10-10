@@ -203,7 +203,7 @@ abstract class AppLocalizations {
   /// No description provided for @helloGreeting.
   ///
   /// In vi, this message translates to:
-  /// **'Xin chào, {name} 👋'**
+  /// **'Xin chào, {name}'**
   String helloGreeting(String name);
 
   /// No description provided for @homeTagline.
@@ -848,12 +848,6 @@ abstract class AppLocalizations {
   /// **'Khu vực đối tác'**
   String get provWorkspace;
 
-  /// No description provided for @provComingSoon.
-  ///
-  /// In vi, this message translates to:
-  /// **'Sắp ra mắt'**
-  String get provComingSoon;
-
   /// No description provided for @provTabHome.
   ///
   /// In vi, this message translates to:
@@ -1403,7 +1397,7 @@ abstract class AppLocalizations {
   /// No description provided for @provHomeTodayEmpty.
   ///
   /// In vi, this message translates to:
-  /// **'Không có lịch hôm nay. Tận hưởng ngày nghỉ ☕.'**
+  /// **'Không có lịch hôm nay. Tận hưởng ngày nghỉ.'**
   String get provHomeTodayEmpty;
 
   /// No description provided for @provHomeUpcoming.
@@ -2315,7 +2309,7 @@ abstract class AppLocalizations {
   /// No description provided for @provJdCashReceivedAction.
   ///
   /// In vi, this message translates to:
-  /// **'✅ Đã nhận tiền mặt từ khách'**
+  /// **'Đã nhận tiền mặt từ khách'**
   String get provJdCashReceivedAction;
 
   /// No description provided for @provJdCashCommissionNote.
@@ -2327,19 +2321,19 @@ abstract class AppLocalizations {
   /// No description provided for @provJdAwaitingCustomerInfo.
   ///
   /// In vi, this message translates to:
-  /// **'⏳ Chờ khách xác nhận hoàn thành (tự động sau 2h).'**
+  /// **'Chờ khách xác nhận hoàn thành (tự động sau 2h).'**
   String get provJdAwaitingCustomerInfo;
 
   /// No description provided for @provJdAwaitingPaymentInfo.
   ///
   /// In vi, this message translates to:
-  /// **'⏳ Khách đang thanh toán — Kyco sẽ chuyển 80% khi xác nhận.'**
+  /// **'Khách đang thanh toán — Kyco sẽ chuyển 80% khi xác nhận.'**
   String get provJdAwaitingPaymentInfo;
 
   /// No description provided for @provJdClosedInfo.
   ///
   /// In vi, this message translates to:
-  /// **'🔒 Công việc đã đóng. Không còn hành động nào.'**
+  /// **'Công việc đã đóng. Không còn hành động nào.'**
   String get provJdClosedInfo;
 
   /// No description provided for @provJdCancelledInfo.
@@ -2369,7 +2363,7 @@ abstract class AppLocalizations {
   /// No description provided for @provJdSettledThanks.
   ///
   /// In vi, this message translates to:
-  /// **'✅ Kyco đã thanh toán cho bạn 80% giá trị đơn hàng, cảm ơn bạn đã đồng hành!'**
+  /// **'Kyco đã thanh toán cho bạn 80% giá trị đơn hàng, cảm ơn bạn đã đồng hành!'**
   String get provJdSettledThanks;
 
   /// No description provided for @provJdJobPhotos.
@@ -2399,7 +2393,7 @@ abstract class AppLocalizations {
   /// No description provided for @provJdShareLocation.
   ///
   /// In vi, this message translates to:
-  /// **'📍 Chia sẻ vị trí với khách'**
+  /// **'Chia sẻ vị trí với khách'**
   String get provJdShareLocation;
 
   /// No description provided for @provJdShareLiveTitle.
@@ -2507,31 +2501,31 @@ abstract class AppLocalizations {
   /// No description provided for @provBonusKindWeeklyJobs.
   ///
   /// In vi, this message translates to:
-  /// **'🏆 Thưởng tuần (số đơn)'**
+  /// **'Thưởng tuần (số đơn)'**
   String get provBonusKindWeeklyJobs;
 
   /// No description provided for @provBonusKindMonthlyRevenue.
   ///
   /// In vi, this message translates to:
-  /// **'🏅 Thưởng tháng (doanh thu)'**
+  /// **'Thưởng tháng (doanh thu)'**
   String get provBonusKindMonthlyRevenue;
 
   /// No description provided for @provBonusKindPunctuality.
   ///
   /// In vi, this message translates to:
-  /// **'📅 Thưởng chuyên cần'**
+  /// **'Thưởng chuyên cần'**
   String get provBonusKindPunctuality;
 
   /// No description provided for @provBonusKindRating.
   ///
   /// In vi, this message translates to:
-  /// **'⭐ Thưởng rating cao'**
+  /// **'Thưởng rating cao'**
   String get provBonusKindRating;
 
   /// No description provided for @provBonusKindReferral.
   ///
   /// In vi, this message translates to:
-  /// **'👥 Thưởng giới thiệu'**
+  /// **'Thưởng giới thiệu'**
   String get provBonusKindReferral;
 
   /// No description provided for @provGoalsThisWeek.
@@ -2723,7 +2717,7 @@ abstract class AppLocalizations {
   /// No description provided for @provVipWelcome.
   ///
   /// In vi, this message translates to:
-  /// **'Chào mừng CTV VIP 💎'**
+  /// **'Chào mừng CTV VIP'**
   String get provVipWelcome;
 
   /// No description provided for @provVipPerksTitle.
@@ -4069,6 +4063,1044 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Lý do: {reason}'**
   String provWalletPayoutRequestReason(String reason);
+
+  /// Banner on the login screen after a stale or unknown role forces a re-login
+  ///
+  /// In vi, this message translates to:
+  /// **'Phiên đăng nhập đã cũ, vui lòng đăng nhập lại'**
+  String get authSessionStale;
+
+  /// Banner on the login screen after a banned account is signed out
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ bộ phận hỗ trợ.'**
+  String get authAccountLocked;
+
+  /// Disabled OTP resend button with a visible countdown
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lại mã sau {seconds} giây'**
+  String otpResendIn(int seconds);
+
+  /// Close / dismiss a full-screen page
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get closeAction;
+
+  /// Unknown route
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy trang'**
+  String get notFoundTitle;
+
+  /// No description provided for @notFoundBody.
+  ///
+  /// In vi, this message translates to:
+  /// **'Trang bạn tìm không tồn tại hoặc đã được di chuyển.'**
+  String get notFoundBody;
+
+  /// No description provided for @goHomeAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về trang chủ'**
+  String get goHomeAction;
+
+  /// No description provided for @bookingNotFoundNoId.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không tìm thấy đơn đặt.'**
+  String get bookingNotFoundNoId;
+
+  /// No description provided for @backToMyBookings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Về danh sách đơn'**
+  String get backToMyBookings;
+
+  /// No description provided for @bookingCreateUnconfirmed.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xác nhận được đơn đặt. Vui lòng kiểm tra mục Đơn của tôi trước khi thử lại.'**
+  String get bookingCreateUnconfirmed;
+
+  /// No description provided for @prov2LiveShareReconnecting.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mất kết nối, đang thử lại… Lần gửi gần nhất lúc {time}'**
+  String prov2LiveShareReconnecting(String time);
+
+  /// No description provided for @goalNumberPositive.
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập một số lớn hơn 0.'**
+  String get goalNumberPositive;
+
+  /// No description provided for @goalJobsMax.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa {max} công việc.'**
+  String goalJobsMax(int max);
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá tạm tính'**
+  String get moneyEstimateLabel;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Tổng cuối cùng do hệ thống tính sau khi bạn đặt lịch và có thể gồm phụ phí hoặc phí đền bù.'**
+  String get moneyEstimateNote;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Phụ phí'**
+  String get moneySurchargeLabel;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Phí đền bù'**
+  String get moneyCompensationLabel;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn đang chờ đối soát thanh toán. Chúng tôi sẽ cập nhật sớm.'**
+  String get moneyManualSettlementNote;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ cộng tác viên xác nhận đã nhận tiền mặt.'**
+  String get moneyCashAwaitingNote;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get moneyDialogClose;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy đơn'**
+  String get moneyCancelAction;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy đơn đặt?'**
+  String get moneyCancelTitle;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy trước giờ hẹn: miễn phí. Hủy sau giờ hẹn: có thể phát sinh phí hủy theo chính sách của Kyco.'**
+  String get moneyCancelPolicy;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do hủy'**
+  String get moneyCancelReasonLabel;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Tôi đổi ý'**
+  String get moneyCancelReasonPlanChanged;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Tôi đã chọn dịch vụ khác'**
+  String get moneyCancelReasonFoundOther;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt nhầm thời gian'**
+  String get moneyCancelReasonWrongTime;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do khác'**
+  String get moneyCancelReasonOther;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú thêm (không bắt buộc)'**
+  String get moneyCancelNoteLabel;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Giữ đơn'**
+  String get moneyCancelKeep;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận hủy'**
+  String get moneyCancelConfirm;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã hủy đơn.'**
+  String get moneyCancelDone;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã hủy quá số lần cho phép trong ngày. Vui lòng thử lại vào ngày mai.'**
+  String get moneyErrCancelRateLimit;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa rõ kết quả giao dịch. Vui lòng kiểm tra lại trạng thái trước khi thử lại.'**
+  String get moneyErrCheckTransaction;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu đang được xử lý. Vui lòng đợi giây lát rồi thử lại.'**
+  String get moneyErrInProgress;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận hoàn thành'**
+  String get moneyConfirmAction;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận công việc đã hoàn thành'**
+  String get moneyConfirmTitle;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Hình thức thanh toán'**
+  String get moneyConfirmMethodLabel;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Với VNPay hoặc MoMo, bạn sẽ thanh toán ở bước tiếp theo.'**
+  String get moneyConfirmOnlineNote;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Xác nhận'**
+  String get moneyConfirmSubmit;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xác nhận hoàn thành.'**
+  String get moneyConfirmDone;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo vấn đề'**
+  String get moneyDisputeAction;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo vấn đề với đơn này'**
+  String get moneyDisputeTitle;
+
+  /// No description provided for @moneyDisputeHint.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả vấn đề ({min}-{max} ký tự)'**
+  String moneyDisputeHint(int min, int max);
+
+  /// No description provided for @moneyDisputeTooShort.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng nhập ít nhất {min} ký tự.'**
+  String moneyDisputeTooShort(int min);
+
+  /// No description provided for @moneyDisputeTooLong.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tối đa {max} ký tự.'**
+  String moneyDisputeTooLong(int max);
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi báo cáo'**
+  String get moneyDisputeSubmit;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi báo cáo cho cộng tác viên.'**
+  String get moneyDisputeSent;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Cộng tác viên đang xử lý phản hồi trước của bạn.'**
+  String get moneyDisputeWaiting;
+
+  /// No description provided for @moneyPayAction.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán qua {method}'**
+  String moneyPayAction(String method);
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang xác nhận thanh toán…'**
+  String get moneyPayConfirming;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tất thanh toán trong trình duyệt hoặc ứng dụng thanh toán, rồi quay lại. Đơn chỉ được ghi nhận đã thanh toán khi hệ thống nhận được tiền.'**
+  String get moneyPayWaitNote;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Tôi đã thanh toán'**
+  String get moneyPayIPaid;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở lại trang thanh toán'**
+  String get moneyPayReopen;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Kiểm tra lại'**
+  String get moneyPayCheckAgain;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Hệ thống đã xác nhận thanh toán.'**
+  String get moneyPayPaid;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán chưa thành công. Bạn có thể thử lại.'**
+  String get moneyPayFailed;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa xác nhận được thanh toán. Nếu bạn đã thanh toán, vui lòng kiểm tra lại sau ít phút.'**
+  String get moneyPayTimeout;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn này thanh toán bằng tiền mặt, không cần thanh toán trực tuyến.'**
+  String get moneyPayCash;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn này đã được thanh toán.'**
+  String get moneyPayAlready;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Hình thức thanh toán này hiện chưa khả dụng. Vui lòng thử lại sau hoặc liên hệ hỗ trợ.'**
+  String get moneyPayNoRail;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Không mở được trang thanh toán. Vui lòng thử lại.'**
+  String get moneyPayOpenFailed;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Số tiền rút không hợp lệ hoặc vượt quá số dư khả dụng. Vui lòng kiểm tra lại số tiền.'**
+  String get provWalletWithdrawInvalidAmount;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Giá quá cao'**
+  String get moneyCancelReasonPrice;
+
+  /// No description provided for @moneyCancelReasonSick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tôi bị ốm hoặc không khỏe'**
+  String get moneyCancelReasonSick;
+
+  /// No description provided for @moneyCancelReasonAddressUnreach.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thể đến địa chỉ'**
+  String get moneyCancelReasonAddressUnreach;
+
+  /// No description provided for @moneyCancelReasonWrongScope.
+  ///
+  /// In vi, this message translates to:
+  /// **'Công việc khác với mô tả'**
+  String get moneyCancelReasonWrongScope;
+
+  /// No description provided for @moneyCancelReasonSafety.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lo ngại về an toàn'**
+  String get moneyCancelReasonSafety;
+
+  /// No description provided for @moneyRefundStatusNone.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có khoản hoàn tiền.'**
+  String get moneyRefundStatusNone;
+
+  /// No description provided for @moneyRefundStatusSucceeded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khoản hoàn tiền đã được chi trả.'**
+  String get moneyRefundStatusSucceeded;
+
+  /// No description provided for @moneyRefundStatusPending.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khoản hoàn tiền đang được xử lý.'**
+  String get moneyRefundStatusPending;
+
+  /// No description provided for @moneyRefundStatusManual.
+  ///
+  /// In vi, this message translates to:
+  /// **'Khoản hoàn tiền sẽ được đội ngũ xử lý thủ công.'**
+  String get moneyRefundStatusManual;
+
+  /// No description provided for @provJdCancelReasonPick.
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do hủy'**
+  String get provJdCancelReasonPick;
+
+  /// No description provided for @provJdCancelNoteLabel.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú thêm (không bắt buộc)'**
+  String get provJdCancelNoteLabel;
+
+  /// No description provided for @moneyCancelFeeLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phí hủy: {amount}'**
+  String moneyCancelFeeLine(String amount);
+
+  /// No description provided for @moneyCancelRefundLine.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn tiền: {amount}'**
+  String moneyCancelRefundLine(String amount);
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Tổng thanh toán'**
+  String get moneyQuoteLabel;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn này hiện chưa thể thanh toán. Vui lòng làm mới và kiểm tra trạng thái đơn.'**
+  String get moneyErrPaymentNotAllowed;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Cổng thanh toán đang gián đoạn. Vui lòng thử lại sau ít phút.'**
+  String get moneyErrGatewayUnavailable;
+
+  /// Neutral fallback for an unknown backend enum value (never print the raw code)
+  ///
+  /// In vi, this message translates to:
+  /// **'Khác'**
+  String get labelOther;
+
+  /// Tasker fine kind cancel_late
+  ///
+  /// In vi, this message translates to:
+  /// **'Huỷ muộn'**
+  String get fineKindCancelLate;
+
+  /// Tasker fine kind late
+  ///
+  /// In vi, this message translates to:
+  /// **'Đến trễ'**
+  String get fineKindLate;
+
+  /// Tasker fine kind extra_charge
+  ///
+  /// In vi, this message translates to:
+  /// **'Thu thêm ngoài hệ thống'**
+  String get fineKindExtraCharge;
+
+  /// Tasker fine kind private_client
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhận khách riêng'**
+  String get fineKindPrivateClient;
+
+  /// Tasker fine kind bad_attitude
+  ///
+  /// In vi, this message translates to:
+  /// **'Thái độ không phù hợp'**
+  String get fineKindBadAttitude;
+
+  /// Tasker fine kind fraud
+  ///
+  /// In vi, this message translates to:
+  /// **'Gian lận'**
+  String get fineKindFraud;
+
+  /// Tasker fine kind damage
+  ///
+  /// In vi, this message translates to:
+  /// **'Gây hư hại'**
+  String get fineKindDamage;
+
+  /// Fine appeal status pending
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang xem xét'**
+  String get appealStatusPending;
+
+  /// Fine appeal status accepted
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chấp nhận'**
+  String get appealStatusAccepted;
+
+  /// Fine appeal status rejected
+  ///
+  /// In vi, this message translates to:
+  /// **'Bị từ chối'**
+  String get appealStatusRejected;
+
+  /// Referral status pending_kyc
+  ///
+  /// In vi, this message translates to:
+  /// **'Chờ duyệt hồ sơ'**
+  String get referralStatusPendingKyc;
+
+  /// Referral status active
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang hoạt động'**
+  String get referralStatusActive;
+
+  /// Referral status completed
+  ///
+  /// In vi, this message translates to:
+  /// **'Hoàn thành'**
+  String get referralStatusCompleted;
+
+  /// Subscription frequency weekly
+  ///
+  /// In vi, this message translates to:
+  /// **'Hằng tuần'**
+  String get subFrequencyWeekly;
+
+  /// Subscription frequency biweekly
+  ///
+  /// In vi, this message translates to:
+  /// **'Hai tuần một lần'**
+  String get subFrequencyBiweekly;
+
+  /// Subscription frequency monthly
+  ///
+  /// In vi, this message translates to:
+  /// **'Hằng tháng'**
+  String get subFrequencyMonthly;
+
+  /// Subscription status active
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang hoạt động'**
+  String get subStatusActive;
+
+  /// Subscription status paused
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạm dừng'**
+  String get subStatusPaused;
+
+  /// Subscription status expired
+  ///
+  /// In vi, this message translates to:
+  /// **'Hết hạn'**
+  String get subStatusExpired;
+
+  /// Account role customer
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách hàng'**
+  String get roleCustomer;
+
+  /// Account role tasker
+  ///
+  /// In vi, this message translates to:
+  /// **'Cộng tác viên'**
+  String get roleTasker;
+
+  /// Account role pending_tasker
+  ///
+  /// In vi, this message translates to:
+  /// **'CTV chờ duyệt'**
+  String get rolePendingTasker;
+
+  /// Account role admin
+  ///
+  /// In vi, this message translates to:
+  /// **'Quản trị viên'**
+  String get roleAdmin;
+
+  /// Account role staff
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhân viên'**
+  String get roleStaff;
+
+  /// Goal period label for an ISO week key
+  ///
+  /// In vi, this message translates to:
+  /// **'Tuần {week}, {year}'**
+  String periodWeekLabel(int week, int year);
+
+  /// Goal period label for a month key
+  ///
+  /// In vi, this message translates to:
+  /// **'Tháng {month}/{year}'**
+  String periodMonthLabel(int month, int year);
+
+  /// Share-sheet subject of the wallet CSV export
+  ///
+  /// In vi, this message translates to:
+  /// **'Ví Kyco {period}'**
+  String provWalletExportSubject(String period);
+
+  /// Booking-created sheet info line
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán trực tuyến khả dụng trên website.'**
+  String get onlinePaymentOnWeb;
+
+  /// Service detail empty description
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có mô tả chi tiết cho dịch vụ này.'**
+  String get serviceNoDescription;
+
+  /// Default reviewer name when the API sends none
+  ///
+  /// In vi, this message translates to:
+  /// **'Khách'**
+  String get reviewAnonymous;
+
+  /// Copy tooltip
+  ///
+  /// In vi, this message translates to:
+  /// **'Sao chép'**
+  String get copyAction;
+
+  /// Copy confirmation
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép'**
+  String get copiedAction;
+
+  /// Generic delete tooltip
+  ///
+  /// In vi, this message translates to:
+  /// **'Xoá'**
+  String get deleteAction;
+
+  /// Screen-reader label of a star rating
+  ///
+  /// In vi, this message translates to:
+  /// **'{rating} trên 5 sao'**
+  String ratingOutOf(double rating);
+
+  /// Unread notification semantics
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa đọc'**
+  String get unreadLabel;
+
+  /// Empty bookings list call to action
+  ///
+  /// In vi, this message translates to:
+  /// **'Đặt dịch vụ'**
+  String get bookAServiceCta;
+
+  /// Account deletion row and screen title
+  ///
+  /// In vi, this message translates to:
+  /// **'Xóa tài khoản'**
+  String get deleteAccountTitle;
+
+  /// Delete account intro
+  ///
+  /// In vi, this message translates to:
+  /// **'Khi bạn yêu cầu xóa, tài khoản bị khóa ngay và đăng xuất khỏi mọi thiết bị. Bạn có 30 ngày để đổi ý.'**
+  String get deleteAccountIntro;
+
+  /// Delete consequence 1
+  ///
+  /// In vi, this message translates to:
+  /// **'Trong 30 ngày, bạn có thể hủy yêu cầu bằng email và mật khẩu của mình.'**
+  String get deleteConseq1;
+
+  /// Delete consequence 2
+  ///
+  /// In vi, this message translates to:
+  /// **'Sau 30 ngày, thông tin cá nhân (tên, số điện thoại, địa chỉ, thông báo) bị xóa vĩnh viễn.'**
+  String get deleteConseq2;
+
+  /// Delete consequence 3
+  ///
+  /// In vi, this message translates to:
+  /// **'Đơn hàng, thanh toán và hóa đơn được giữ lại theo quy định pháp luật và không còn gắn với danh tính của bạn.'**
+  String get deleteConseq3;
+
+  /// Delete consequence 4
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn cần hoàn tất hoặc hủy các đơn đang mở và gói định kỳ trước khi xóa.'**
+  String get deleteConseq4;
+
+  /// Data export button
+  ///
+  /// In vi, this message translates to:
+  /// **'Yêu cầu bản sao dữ liệu trước'**
+  String get deleteExportCta;
+
+  /// Data export hint
+  ///
+  /// In vi, this message translates to:
+  /// **'Kyco sẽ chuẩn bị bản sao dữ liệu cá nhân và thông báo khi sẵn sàng. Hãy yêu cầu trước khi xóa vì sau đó bạn không đăng nhập được nữa.'**
+  String get deleteExportHint;
+
+  /// Data export success
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi yêu cầu bản sao dữ liệu.'**
+  String get deleteExportRequested;
+
+  /// The word the user types to confirm account deletion
+  ///
+  /// In vi, this message translates to:
+  /// **'XÓA'**
+  String get deleteConfirmWord;
+
+  /// Confirmation field label
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập \"{word}\" để xác nhận'**
+  String deleteTypeToConfirm(String word);
+
+  /// Final destructive button
+  ///
+  /// In vi, this message translates to:
+  /// **'Xóa tài khoản của tôi'**
+  String get deleteConfirmButton;
+
+  /// Delete not available for tasker/admin
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản Cộng tác viên và quản trị không tự xóa được. Vui lòng liên hệ hỗ trợ để được xử lý.'**
+  String get deleteSupportOnly;
+
+  /// Contact support button
+  ///
+  /// In vi, this message translates to:
+  /// **'Liên hệ hỗ trợ'**
+  String get deleteContactSupport;
+
+  /// Pending-deletion title
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã yêu cầu xóa tài khoản'**
+  String get deletePendingTitle;
+
+  /// Pending-deletion body
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản sẽ bị xóa vĩnh viễn vào {date}. Trước thời điểm đó bạn có thể hủy yêu cầu.'**
+  String deletePendingBody(String date);
+
+  /// Pending-deletion body without date
+  ///
+  /// In vi, this message translates to:
+  /// **'Tài khoản đang chờ xóa. Bạn có thể hủy yêu cầu trong thời gian chờ.'**
+  String get deletePendingBodyNoDate;
+
+  /// Cancel deletion button
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy yêu cầu xóa'**
+  String get deleteCancelRequest;
+
+  /// Restore screen title
+  ///
+  /// In vi, this message translates to:
+  /// **'Khôi phục tài khoản'**
+  String get restoreTitle;
+
+  /// Restore body
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập email và mật khẩu của tài khoản đã yêu cầu xóa để khôi phục. Chỉ áp dụng trong 30 ngày chờ.'**
+  String get restoreBody;
+
+  /// Restore TOTP label
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã xác thực 2 bước (nếu có)'**
+  String get restoreTotpLabel;
+
+  /// Restore button
+  ///
+  /// In vi, this message translates to:
+  /// **'Khôi phục tài khoản'**
+  String get restoreButton;
+
+  /// Restore success
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã khôi phục tài khoản. Hãy đăng nhập lại.'**
+  String get restoreSuccess;
+
+  /// Restore failure
+  ///
+  /// In vi, this message translates to:
+  /// **'Không khôi phục được. Kiểm tra email, mật khẩu và thời hạn 30 ngày.'**
+  String get restoreFailed;
+
+  /// Login screen restore link
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã yêu cầu xóa tài khoản? Khôi phục'**
+  String get loginRestoreLink;
+
+  /// Go home button
+  ///
+  /// In vi, this message translates to:
+  /// **'Về trang chủ'**
+  String get goHome;
+
+  /// Live tracking card title
+  ///
+  /// In vi, this message translates to:
+  /// **'Vị trí người làm'**
+  String get trackCardTitle;
+
+  /// Last update time (VN)
+  ///
+  /// In vi, this message translates to:
+  /// **'Cập nhật lúc {time}'**
+  String trackUpdatedAt(String time);
+
+  /// Distance under 1 km
+  ///
+  /// In vi, this message translates to:
+  /// **'Cách khoảng {meters} m'**
+  String trackDistanceM(int meters);
+
+  /// Distance in km
+  ///
+  /// In vi, this message translates to:
+  /// **'Cách khoảng {km} km'**
+  String trackDistanceKm(String km);
+
+  /// ETA
+  ///
+  /// In vi, this message translates to:
+  /// **'Dự kiến đến sau khoảng {minutes} phút'**
+  String trackEta(int minutes);
+
+  /// Static position text
+  ///
+  /// In vi, this message translates to:
+  /// **'Tọa độ: {lat}, {lng}'**
+  String trackCoords(String lat, String lng);
+
+  /// Tracking empty state
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có vị trí. Vị trí sẽ hiện khi người làm bắt đầu di chuyển.'**
+  String get trackNoPosition;
+
+  /// Stale position note
+  ///
+  /// In vi, this message translates to:
+  /// **'Vị trí đã cũ, có thể chưa chính xác.'**
+  String get trackStale;
+
+  /// Open map button
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở bản đồ'**
+  String get trackOpenMap;
+
+  /// Open map semantics label
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở vị trí người làm trong ứng dụng bản đồ'**
+  String get trackOpenMapLabel;
+
+  /// Tracking transient error
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tải được vị trí. Sẽ tự thử lại.'**
+  String get trackLoadFailed;
+
+  /// Launch URL failure
+  ///
+  /// In vi, this message translates to:
+  /// **'Không mở được liên kết.'**
+  String get openLinkFailed;
+
+  /// Chat empty state
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có tin nhắn. Hãy gửi tin nhắn cho người làm.'**
+  String get chatEmpty;
+
+  /// Chat input label
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập tin nhắn'**
+  String get chatInputHint;
+
+  /// Chat send button
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi'**
+  String get chatSend;
+
+  /// Chat sender: customer
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn'**
+  String get chatFromYou;
+
+  /// Chat sender: tasker
+  ///
+  /// In vi, this message translates to:
+  /// **'Người làm'**
+  String get chatFromTasker;
+
+  /// Messages list empty
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có cuộc trò chuyện. Hãy đặt dịch vụ để nhắn tin với người làm.'**
+  String get chatNoConversations;
+
+  /// Customer SOS button on booking detail
+  ///
+  /// In vi, this message translates to:
+  /// **'Báo sự cố khẩn cấp'**
+  String get sosCustomerCta;
+
+  /// Customer SOS dialog title
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi cảnh báo khẩn cấp?'**
+  String get sosCustomerTitle;
+
+  /// Customer SOS dialog body
+  ///
+  /// In vi, this message translates to:
+  /// **'Kyco sẽ gửi cảnh báo kèm vị trí hiện tại của bạn (nếu bạn cho phép) tới đội an toàn. Chỉ dùng khi bạn thấy không an toàn.'**
+  String get sosCustomerBody;
+
+  /// Checkout saved-address button
+  ///
+  /// In vi, this message translates to:
+  /// **'Dùng địa chỉ đã lưu'**
+  String get checkoutUseSaved;
+
+  /// Saved-address picker title
+  ///
+  /// In vi, this message translates to:
+  /// **'Chọn địa chỉ đã lưu'**
+  String get checkoutSavedTitle;
+
+  /// Default saved address tag
+  ///
+  /// In vi, this message translates to:
+  /// **'Mặc định'**
+  String get checkoutSavedDefault;
+
+  /// Semantics label for the tasker row on booking detail
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem hồ sơ của {name}'**
+  String openTaskerProfile(String name);
+
+  /// Invite share button
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ'**
+  String get inviteShare;
+
+  /// Invite share text
+  ///
+  /// In vi, this message translates to:
+  /// **'Tham gia Kyco bằng mã mời {code}: {url}'**
+  String inviteShareText(String code, String url);
+
+  /// Semantics label of the manage-on-web link
+  ///
+  /// In vi, this message translates to:
+  /// **'Mở kyco.vn trong trình duyệt'**
+  String get manageOnWebOpenLabel;
+
+  /// Tasker More: settings row
+  ///
+  /// In vi, this message translates to:
+  /// **'Cài đặt và tài khoản'**
+  String get settingsAndAccountTitle;
+
+  /// Release error widget title
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xảy ra lỗi'**
+  String get errorFallbackTitle;
+
+  /// Release error widget body
+  ///
+  /// In vi, this message translates to:
+  /// **'Phần này gặp sự cố. Hãy quay lại và thử lại.'**
+  String get errorFallbackBody;
 }
 
 class _AppLocalizationsDelegate

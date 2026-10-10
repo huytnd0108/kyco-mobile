@@ -87,7 +87,7 @@ class _BookingsList extends ConsumerWidget {
         error: (e, _) => ListView(children: [
           const SizedBox(height: 120),
           ErrorRetry(
-              message: l.cust2BookingsLoadFailed(apiErrorText(l, e)),
+              error: e,
               onRetry: () => ref.invalidate(bookingsProvider)),
         ]),
         data: (first) {
@@ -100,11 +100,18 @@ class _BookingsList extends ConsumerWidget {
           ];
           return list.isEmpty
             ? ListView(children: [
-                const SizedBox(height: 140),
-                Center(child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(l.noBookingsYet, textAlign: TextAlign.center),
-                )),
+                const SizedBox(height: 80),
+                // Empty state with a way forward (UX-M30): book a service.
+                EmptyState(
+                  icon: Icons.receipt_long_outlined,
+                  message: l.noBookingsYet,
+                  action: FilledButton.icon(
+                    key: const ValueKey('bookings-empty-cta'),
+                    onPressed: () => context.push('/book-now'),
+                    icon: const Icon(Icons.bolt),
+                    label: Text(l.bookAServiceCta),
+                  ),
+                ),
               ])
             : ListView.separated(
                 padding: const EdgeInsets.all(12),

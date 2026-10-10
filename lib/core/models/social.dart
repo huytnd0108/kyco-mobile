@@ -19,7 +19,7 @@ class Review {
         id: (j['id'] as num?)?.toInt() ?? 0,
         rating: (j['rating'] as num?)?.toInt() ?? 0,
         comment: j['comment'] as String?,
-        displayName: (j['displayName'] as String?) ?? 'Khách',
+        displayName: (j['displayName'] as String?) ?? '',
         createdAt: (j['createdAt'] as String?) ?? '',
       );
 }
@@ -257,4 +257,76 @@ class SavedAddress {
         'city': city,
         'isDefault': isDefault,
       };
+}
+
+/// `GET /me/account/deletion` / `POST /me/account/deletion` result.
+class DeletionStatus {
+  const DeletionStatus({this.pending = false, this.scheduledFor});
+
+  /// True once the account is deactivated and awaiting anonymisation.
+  final bool pending;
+
+  /// ISO timestamp the account is anonymised (+30 days), if the server sent it.
+  final String? scheduledFor;
+
+  factory DeletionStatus.fromJson(Map<String, dynamic> j) {
+    final sched = j['scheduledFor'];
+    return DeletionStatus(
+      // GET sends `state: active|pending`; POST sends `state: pending`.
+      pending: j['state'] == 'pending',
+      scheduledFor: sched is String && sched.isNotEmpty ? sched : null,
+    );
+  }
+}
+
+/// A job's latest live-tracking fix (`GET /jobs/{id}/location`). `position` is
+/// null outside the live window or before the first ping; distance / ETA are
+/// server-derived (haversine + speed) and only present with a destination.
+class JobTracking {
+  const JobTracking({this.lat, this.lng, this.accuracyM, this.recordedAt, this.ageSec, this.distanceM, this.etaMin});
+
+  final double? lat;
+  final double? lng;
+  final num? accuracyM;
+  final String? recordedAt;
+  final int? ageSec;
+  final int? distanceM;
+  final int? etaMin;
+
+  bool get hasPosition => lat != null && lng != null;
+
+  factory JobTracking.fromJson(Map<String, dynamic> j) {
+    final p = j['position'];
+    final pos = p is Map ? p.cast<String, dynamic>() : const <String, dynamic>{};
+    double? d(Object? v) => v is num ? v.toDouble() : null;
+    int? i(Object? v) => v is num ? v.round() : null;
+    final lat = d(pos['lat']);
+    final lng = d(pos['lng']);
+    final ok = lat != null && lng != null;
+    return JobTracking(
+      lat: ok ? lat : null,
+      lng: ok ? lng : null,
+      accuracyM: pos['accuracy'] is num ? pos['accuracy'] as num : null,
+      recordedAt: pos['recordedAt'] is String ? pos['recordedAt'] as String : null,
+      ageSec: i(pos['ageSec']),
+      distanceM: i(j['distanceM']),
+      etaMin: i(j['etaMin']),
+    );
+  }
+}
+
+/// `GET /media/{id}` result: a signed, short-lived read URL.
+class MediaReadUrl {
+  const MediaReadUrl({this.url, this.expiresInSeconds = 0});
+  final String? url;
+  final int expiresInSeconds;
+
+  factory MediaReadUrl.fromJson(Map<String, dynamic> j) {
+    final u = j['readUrl'];
+    final e = j['expiresInSeconds'];
+    return MediaReadUrl(
+      url: u is String && u.isNotEmpty ? u : null,
+      expiresInSeconds: e is num ? e.toInt() : 0,
+    );
+  }
 }

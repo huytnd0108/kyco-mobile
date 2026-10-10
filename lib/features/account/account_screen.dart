@@ -4,11 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/adaptive.dart';
-import '../../core/locale_controller.dart';
-import '../../theme/theme_mode_controller.dart';
 import '../auth/auth_controller.dart';
 import 'account_providers.dart';
 import 'change_phone_sheet.dart';
+import 'settings_sections.dart';
+import 'package:kyco_mobile/core/labels.dart';
 
 /// Account tab — mirrors the web `mobile-account-sheet.tsx` drawer as a full
 /// scrollable page. GUEST-FIRST: the whole page is usable signed-out (browse
@@ -23,8 +23,6 @@ class AccountScreen extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     final auth = ref.watch(authControllerProvider);
     final signedIn = auth.status == AuthStatus.signedIn;
-    final mode = ref.watch(themeModeControllerProvider);
-    final locale = ref.watch(localeControllerProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l.accountTitle)),
@@ -110,48 +108,11 @@ class AccountScreen extends ConsumerWidget {
               const SizedBox(height: 20),
 
               // ── Appearance ─────────────────────────────────────────────
-              _SectionLabel(l.appearance),
-              // Wrap (not SegmentedButton) so it never overflows at 320dp /
-              // large Dynamic Type — chips flow to the next line (M1 fix).
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final (m, label, icon) in <(ThemeMode, String, IconData)>[
-                    (ThemeMode.system, l.themeSystem, Icons.brightness_auto),
-                    (ThemeMode.light, l.themeLight, Icons.light_mode),
-                    (ThemeMode.dark, l.themeDark, Icons.dark_mode),
-                  ])
-                    ChoiceChip(
-                      selected: mode == m,
-                      onSelected: (_) => ref.read(themeModeControllerProvider.notifier).set(m),
-                      avatar: Icon(icon, size: 18),
-                      label: Text(label),
-                    ),
-                ],
-              ),
+              const ThemeSettings(),
               const SizedBox(height: 24),
 
               // ── Language ───────────────────────────────────────────────
-              _SectionLabel(l.language),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final (code, label) in <(String, String)>[
-                    ('system', l.langSystem),
-                    ('vi', l.langVi),
-                    ('en', l.langEn),
-                  ])
-                    ChoiceChip(
-                      selected: (locale?.languageCode ?? 'system') == code,
-                      onSelected: (_) => ref
-                          .read(localeControllerProvider.notifier)
-                          .set(code == 'system' ? null : Locale(code)),
-                      label: Text(label),
-                    ),
-                ],
-              ),
+              const LanguageSettings(),
 
               // ── Sign out (authed only) ─────────────────────────────────
               if (signedIn) ...[
@@ -161,6 +122,18 @@ class AccountScreen extends ConsumerWidget {
                   icon: const Icon(Icons.logout),
                   label: Text(l.logout),
                   style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                ),
+                // Store policy (App Store 5.1.1(v), Play): in-app account deletion.
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  key: const ValueKey('account-delete-row'),
+                  onPressed: () => context.push('/delete-account'),
+                  icon: const Icon(Icons.delete_outline),
+                  label: Text(l.deleteAccountTitle),
+                  style: TextButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.error,
                     minimumSize: const Size.fromHeight(48),
                   ),
@@ -197,8 +170,10 @@ class _AccountCard extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final me = ref.watch(accountMeProvider).valueOrNull;
     final name = me?.name ?? auth.user?.name ?? l.myAccount;
-    // AuthUser exposes no email (see report) — surface role as the subtitle.
-    final subtitle = me?.role ?? auth.user?.role;
+    // AuthUser exposes no email — the subtitle is the localized role label.
+    final rawRole = me?.role ?? auth.user?.role;
+    final subtitle =
+        (rawRole == null || rawRole.isEmpty) ? null : accountRoleLabel(l, rawRole);
 
     return Card(
       child: Padding(
@@ -257,7 +232,7 @@ class _GuestHeader extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => context.push('/login'),
-                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
                     child: Text(l.login),
                   ),
                 ),
@@ -265,7 +240,7 @@ class _GuestHeader extends StatelessWidget {
                 Expanded(
                   child: FilledButton(
                     onPressed: () => context.push('/signup'),
-                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
                     child: Text(l.signup),
                   ),
                 ),
@@ -313,17 +288,4 @@ class _RowDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       const Divider(height: 16, thickness: 0.5, indent: 8, endIndent: 8);
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
-  final String text;
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 10, left: 4),
-        child: Text(text,
-            style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurfaceVariant)),
-      );
 }

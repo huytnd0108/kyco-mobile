@@ -9,6 +9,7 @@ import '../../core/api/problem.dart';
 import '../../core/di.dart';
 import '../../core/format.dart';
 import '../../core/models.dart';
+import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import 'tasker_wallet_providers.dart';
 import 'step_up_sheet.dart';
@@ -185,7 +186,7 @@ Future<String?> _runWithdrawFlow(
   try {
     status = await api.stepUpStatus();
   } on ApiException catch (e) {
-    return e.isMaintenance ? l.provWalletMaintenance : e.message;
+    return e.isMaintenance ? l.provWalletMaintenance : apiErrorText(l, e);
   } catch (_) {
     return l.genericError;
   }
@@ -216,23 +217,26 @@ Future<String?> _runWithdrawFlow(
         ref.invalidate(payoutsControllerProvider);
         ref.invalidate(payoutRequestsControllerProvider);
       } catch (_) {}
-      return e.message;
+      return l.moneyErrCheckTransaction;
     }
     switch (e.status) {
       case 409:
         return l.provWalletWithdrawPending;
       case 422:
-        // Server-returned insufficient message already carries the live balance.
-        return e.fields?['amount_vnd'] ?? e.message;
+        // The server rejected the amount (e.g. above the live balance): friendly
+        // localized copy; the raw field value / server text is never shown.
+        return e.fields?.containsKey('amount_vnd') == true
+            ? l.provWalletWithdrawInvalidAmount
+            : apiErrorText(l, e);
       case 403:
         // B7 — only a STEP_UP_REQUIRED 403 is the step-up gate; a plain
         // FORBIDDEN (non-tasker / banned) must surface the server reason
         // rather than loop the user through step-up forever.
         return e.code == 'STEP_UP_REQUIRED'
             ? l.provWalletWithdrawStepUp
-            : e.message;
+            : apiErrorText(l, e);
       default:
-        return e.isMaintenance ? l.provWalletMaintenance : e.message;
+        return e.isMaintenance ? l.provWalletMaintenance : apiErrorText(l, e);
     }
   } catch (_) {
     return l.genericError;

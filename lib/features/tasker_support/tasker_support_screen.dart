@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/api/kyco_api.dart';
+import '../../core/ui/error_text.dart';
 import '../../core/api/problem.dart';
 import '../../core/di.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
 import 'tasker_support_providers.dart';
+import 'package:kyco_mobile/core/datetime.dart';
 
 /// `/p/support` — 24/7 partner support (web parity: /tasker/support).
 ///
@@ -207,7 +209,7 @@ class _TicketFormState extends ConsumerState<_TicketForm> {
         SnackBar(content: Text(AppLocalizations.of(context).provSupportSent)),
       );
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      if (mounted) setState(() => _error = apiErrorText(AppLocalizations.of(context), e));
     } catch (_) {
       if (mounted) {
         setState(() =>
@@ -338,9 +340,8 @@ class _MyTickets extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Center(child: CircularProgressIndicator()),
           ),
-          // A7 not deployed yet (503) or a transient read error → treat as an
-          // empty history rather than a hard failure. Pull-to-refresh retries.
-          error: (_, _) => _EmptyTickets(cs: cs),
+          // A failed read is an error with Retry, never an "empty history".
+          error: (e, _) => InlineErrorRow(error: e, onRetry: () => ref.invalidate(myTicketsProvider)),
           data: (rows) => rows.isEmpty
               ? _EmptyTickets(cs: cs)
               : Column(
@@ -394,8 +395,9 @@ class _TicketTile extends StatelessWidget {
     final cat = _catDisplayLabel(l, ticket.category) ??
         ticket.category ??
         l.provSupportCatOther;
-    final created = (ticket.createdAt ?? '');
-    final createdShort = created.length >= 16 ? created.substring(0, 16) : created;
+    final createdShort = (ticket.createdAt ?? '').isEmpty
+        ? ''
+        : vnDateTime(context, ticket.createdAt);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),

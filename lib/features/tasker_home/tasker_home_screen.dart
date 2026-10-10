@@ -8,10 +8,13 @@ import '../../core/models.dart';
 import '../../core/widgets.dart';
 import '../auth/auth_controller.dart';
 import 'tasker_home_providers.dart';
+import 'package:kyco_mobile/core/datetime.dart';
+import 'package:intl/intl.dart';
+import '../../core/text_scale.dart';
 
 /// `/p` — the tasker (CTV) dashboard. Mirrors the web `/tasker` home, fully
 /// API-backed from `taskerWorkspace()` (single hop): greeting, KPI row (30d),
-/// earnings + balance 💰 (display-only, server-derived), job counters, and the
+/// earnings + balance (display-only, server-derived), job counters, and the
 /// Today / Upcoming job lists (tap → `/p/jobs/:id`). Pull-to-refresh refetches.
 class TaskerHomeScreen extends ConsumerWidget {
   const TaskerHomeScreen({super.key});
@@ -39,13 +42,13 @@ class TaskerHomeScreen extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(taskerWorkspaceProvider);
-            await ref.read(taskerWorkspaceProvider.future);
+            await refreshQuietly(ref.read(taskerWorkspaceProvider.future));
           },
           child: async.when(
             loading: () => const _ScrollableCenter(child: CircularProgressIndicator()),
             error: (e, _) => _ScrollableCenter(
               child: ErrorRetry(
-                message: l.genericError,
+                error: e,
                 onRetry: () => ref.invalidate(taskerWorkspaceProvider),
               ),
             ),
@@ -87,7 +90,7 @@ class _Dashboard extends StatelessWidget {
           l.provHomeSubtitle,
           style: Theme.of(context)
               .textTheme
-              .bodySmall
+              .bodyMedium
               ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 20),
@@ -98,7 +101,7 @@ class _Dashboard extends StatelessWidget {
         _KpiGrid(kpi: d.kpi),
         const SizedBox(height: 20),
 
-        // ── earnings + balance 💰 (display-only, server-derived) ──────────
+        // ── earnings + balance (display-only, server-derived) ──────────
         _EarningsCard(earnings: d.earnings),
         const SizedBox(height: 20),
 
@@ -171,18 +174,20 @@ class _KpiGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final cards = [
-      _kpiCard('🎯', l.provKpiAcceptanceLabel, _pct(_entry('acceptance')['rate']), _tone('acceptance')),
-      _kpiCard('✅', l.provKpiCompletionLabel, _pct(_entry('completion')['rate']), _tone('completion')),
-      _kpiCard('⭐', l.provKpiRatingLabel, _rating(_entry('rating')['value']), _tone('rating')),
-      _kpiCard('⏰', l.provKpiPunctualityLabel, _pct(_entry('punctuality')['rate']), _tone('punctuality')),
+      _kpiCard(Icons.track_changes, l.provKpiAcceptanceLabel, _pct(_entry('acceptance')['rate']), _tone('acceptance')),
+      _kpiCard(Icons.check_circle_outline, l.provKpiCompletionLabel, _pct(_entry('completion')['rate']), _tone('completion')),
+      _kpiCard(Icons.star_outline, l.provKpiRatingLabel, _rating(_entry('rating')['value']), _tone('rating')),
+      _kpiCard(Icons.schedule, l.provKpiPunctualityLabel, _pct(_entry('punctuality')['rate']), _tone('punctuality')),
     ];
-    return GridView.count(
-      crossAxisCount: 2,
+    return GridView(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.9,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        mainAxisExtent: 92 + scaledExtra(context, 46),
+      ),
       children: cards,
     );
   }
@@ -198,21 +203,21 @@ class _KpiGrid extends StatelessWidget {
 
   static String _rating(dynamic value) {
     final v = (value as num?)?.toDouble() ?? 0;
-    return '${v.toStringAsFixed(2)}★';
+    return v.toStringAsFixed(2);
   }
 
-  Widget _kpiCard(String emoji, String label, String display, String? tone) =>
-      _KpiCard(emoji: emoji, label: label, display: display, tone: tone);
+  Widget _kpiCard(IconData icon, String label, String display, String? tone) =>
+      _KpiCard(icon: icon, label: label, display: display, tone: tone);
 }
 
 class _KpiCard extends StatelessWidget {
   const _KpiCard({
-    required this.emoji,
+    required this.icon,
     required this.label,
     required this.display,
     required this.tone,
   });
-  final String emoji;
+  final IconData icon;
   final String label;
   final String display;
   final String? tone;
@@ -234,7 +239,7 @@ class _KpiCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 18)),
+              ExcludeSemantics(child: Icon(icon, size: 20, color: fg)),
               const Spacer(),
               Text(display,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: fg)),
@@ -302,10 +307,10 @@ class _EarningsCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _MoneyRow(icon: '💰', label: l.provHomeBalance, vnd: earnings.balanceVnd),
+                child: _MoneyRow(icon: Icons.account_balance_wallet_outlined, label: l.provHomeBalance, vnd: earnings.balanceVnd),
               ),
               Expanded(
-                child: _MoneyRow(icon: '📈', label: l.provHomeLifetime, vnd: earnings.lifetimeVnd),
+                child: _MoneyRow(icon: Icons.trending_up, label: l.provHomeLifetime, vnd: earnings.lifetimeVnd),
               ),
             ],
           ),
@@ -317,7 +322,7 @@ class _EarningsCard extends StatelessWidget {
 
 class _MoneyRow extends StatelessWidget {
   const _MoneyRow({required this.icon, required this.label, required this.vnd});
-  final String icon;
+  final IconData icon;
   final String label;
   final int vnd;
 
@@ -328,8 +333,17 @@ class _MoneyRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('$icon $label',
-            style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
+        Row(
+          children: [
+            ExcludeSemantics(
+                child: Icon(icon, size: 14, color: cs.onSurfaceVariant)),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(label,
+                  style: tt.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
+            ),
+          ],
+        ),
         const SizedBox(height: 2),
         Text(formatVnd(vnd),
             style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
@@ -449,12 +463,8 @@ class _JobTile extends StatelessWidget {
   /// Local date/time, matching job-detail's `fmtJobTime` so the same
   /// `scheduledAt` renders identically on the dashboard and job detail.
   static String _fmtWhen(String? iso) {
-    if (iso == null || iso.isEmpty) return '';
-    final dt = DateTime.tryParse(iso);
-    if (dt == null) return iso;
-    final l = dt.toLocal();
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${two(l.day)}/${two(l.month)}/${l.year} ${two(l.hour)}:${two(l.minute)}';
+    final w = vnWall(iso);
+    return w == null ? '' : DateFormat('dd/MM/yyyy HH:mm').format(w);
   }
 }
 
@@ -506,7 +516,7 @@ class _EmptyLine extends StatelessWidget {
         child: Text(text,
             style: Theme.of(context)
                 .textTheme
-                .bodySmall
+                .bodyMedium
                 ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
       );
 }

@@ -67,6 +67,21 @@ class DraftController extends FamilyNotifier<BookingDraft?, int> {
     if (d != null) _apply(d.copyWith(addressLine: value));
   }
 
+  /// Prefill the address block from a saved address in ONE persisted write.
+  /// [wardCode]/[wardName] are null when the saved ward could not be matched to
+  /// a bookable ward - the ward/neighborhood then stay as they were and the user
+  /// picks the ward; the street is still applied.
+  void applySavedAddress({required String line, int? wardCode, String? wardName, String? neighborhood}) {
+    final d = state;
+    if (d == null) return;
+    _apply(d.copyWith(
+      addressLine: line,
+      wardCode: wardCode,
+      wardName: wardName,
+      neighborhood: wardCode == null ? null : (neighborhood ?? ''),
+    ));
+  }
+
   void setNotes(String value) {
     final d = state;
     if (d != null) _apply(d.copyWith(notes: value));

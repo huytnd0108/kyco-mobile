@@ -61,7 +61,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String helloGreeting(String name) {
-    return 'Xin chào, $name 👋';
+    return 'Xin chào, $name';
   }
 
   @override
@@ -422,9 +422,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provWorkspace => 'Khu vực đối tác';
 
   @override
-  String get provComingSoon => 'Sắp ra mắt';
-
-  @override
   String get provTabHome => 'Trang chủ';
 
   @override
@@ -718,7 +715,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get provHomeTodayEmpty =>
-      'Không có lịch hôm nay. Tận hưởng ngày nghỉ ☕.';
+      'Không có lịch hôm nay. Tận hưởng ngày nghỉ.';
 
   @override
   String get provHomeUpcoming => 'Sắp tới';
@@ -1230,7 +1227,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provJdCheckOut => 'Check-out (GPS)';
 
   @override
-  String get provJdCashReceivedAction => '✅ Đã nhận tiền mặt từ khách';
+  String get provJdCashReceivedAction => 'Đã nhận tiền mặt từ khách';
 
   @override
   String get provJdCashCommissionNote =>
@@ -1238,15 +1235,14 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get provJdAwaitingCustomerInfo =>
-      '⏳ Chờ khách xác nhận hoàn thành (tự động sau 2h).';
+      'Chờ khách xác nhận hoàn thành (tự động sau 2h).';
 
   @override
   String get provJdAwaitingPaymentInfo =>
-      '⏳ Khách đang thanh toán — Kyco sẽ chuyển 80% khi xác nhận.';
+      'Khách đang thanh toán — Kyco sẽ chuyển 80% khi xác nhận.';
 
   @override
-  String get provJdClosedInfo =>
-      '🔒 Công việc đã đóng. Không còn hành động nào.';
+  String get provJdClosedInfo => 'Công việc đã đóng. Không còn hành động nào.';
 
   @override
   String get provJdCancelledInfo => 'Công việc đã huỷ.';
@@ -1264,7 +1260,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get provJdSettledThanks =>
-      '✅ Kyco đã thanh toán cho bạn 80% giá trị đơn hàng, cảm ơn bạn đã đồng hành!';
+      'Kyco đã thanh toán cho bạn 80% giá trị đơn hàng, cảm ơn bạn đã đồng hành!';
 
   @override
   String get provJdJobPhotos => 'Ảnh công việc (camera)';
@@ -1279,7 +1275,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provJdSendSos => 'Gửi SOS khẩn cấp';
 
   @override
-  String get provJdShareLocation => '📍 Chia sẻ vị trí với khách';
+  String get provJdShareLocation => 'Chia sẻ vị trí với khách';
 
   @override
   String get provJdShareLiveTitle => 'Chia sẻ vị trí trực tiếp — sắp ra mắt';
@@ -1334,19 +1330,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provBonusNotEarned => 'Chưa đạt';
 
   @override
-  String get provBonusKindWeeklyJobs => '🏆 Thưởng tuần (số đơn)';
+  String get provBonusKindWeeklyJobs => 'Thưởng tuần (số đơn)';
 
   @override
-  String get provBonusKindMonthlyRevenue => '🏅 Thưởng tháng (doanh thu)';
+  String get provBonusKindMonthlyRevenue => 'Thưởng tháng (doanh thu)';
 
   @override
-  String get provBonusKindPunctuality => '📅 Thưởng chuyên cần';
+  String get provBonusKindPunctuality => 'Thưởng chuyên cần';
 
   @override
-  String get provBonusKindRating => '⭐ Thưởng rating cao';
+  String get provBonusKindRating => 'Thưởng rating cao';
 
   @override
-  String get provBonusKindReferral => '👥 Thưởng giới thiệu';
+  String get provBonusKindReferral => 'Thưởng giới thiệu';
 
   @override
   String get provGoalsThisWeek => 'Tuần này';
@@ -1452,7 +1448,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Hệ số thưởng cao hơn cho cùng một mức thành tích.';
 
   @override
-  String get provVipWelcome => 'Chào mừng CTV VIP 💎';
+  String get provVipWelcome => 'Chào mừng CTV VIP';
 
   @override
   String get provVipPerksTitle => 'Đặc quyền VIP';
@@ -2190,4 +2186,609 @@ class AppLocalizationsVi extends AppLocalizations {
   String provWalletPayoutRequestReason(String reason) {
     return 'Lý do: $reason';
   }
+
+  @override
+  String get authSessionStale =>
+      'Phiên đăng nhập đã cũ, vui lòng đăng nhập lại';
+
+  @override
+  String get authAccountLocked =>
+      'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ bộ phận hỗ trợ.';
+
+  @override
+  String otpResendIn(int seconds) {
+    return 'Gửi lại mã sau $seconds giây';
+  }
+
+  @override
+  String get closeAction => 'Đóng';
+
+  @override
+  String get notFoundTitle => 'Không tìm thấy trang';
+
+  @override
+  String get notFoundBody =>
+      'Trang bạn tìm không tồn tại hoặc đã được di chuyển.';
+
+  @override
+  String get goHomeAction => 'Về trang chủ';
+
+  @override
+  String get bookingNotFoundNoId => 'Không tìm thấy đơn đặt.';
+
+  @override
+  String get backToMyBookings => 'Về danh sách đơn';
+
+  @override
+  String get bookingCreateUnconfirmed =>
+      'Chưa xác nhận được đơn đặt. Vui lòng kiểm tra mục Đơn của tôi trước khi thử lại.';
+
+  @override
+  String prov2LiveShareReconnecting(String time) {
+    return 'Mất kết nối, đang thử lại… Lần gửi gần nhất lúc $time';
+  }
+
+  @override
+  String get goalNumberPositive => 'Nhập một số lớn hơn 0.';
+
+  @override
+  String goalJobsMax(int max) {
+    return 'Tối đa $max công việc.';
+  }
+
+  @override
+  String get moneyEstimateLabel => 'Giá tạm tính';
+
+  @override
+  String get moneyEstimateNote =>
+      'Tổng cuối cùng do hệ thống tính sau khi bạn đặt lịch và có thể gồm phụ phí hoặc phí đền bù.';
+
+  @override
+  String get moneySurchargeLabel => 'Phụ phí';
+
+  @override
+  String get moneyCompensationLabel => 'Phí đền bù';
+
+  @override
+  String get moneyManualSettlementNote =>
+      'Đơn đang chờ đối soát thanh toán. Chúng tôi sẽ cập nhật sớm.';
+
+  @override
+  String get moneyCashAwaitingNote =>
+      'Đang chờ cộng tác viên xác nhận đã nhận tiền mặt.';
+
+  @override
+  String get moneyDialogClose => 'Đóng';
+
+  @override
+  String get moneyCancelAction => 'Hủy đơn';
+
+  @override
+  String get moneyCancelTitle => 'Hủy đơn đặt?';
+
+  @override
+  String get moneyCancelPolicy =>
+      'Hủy trước giờ hẹn: miễn phí. Hủy sau giờ hẹn: có thể phát sinh phí hủy theo chính sách của Kyco.';
+
+  @override
+  String get moneyCancelReasonLabel => 'Lý do hủy';
+
+  @override
+  String get moneyCancelReasonPlanChanged => 'Tôi đổi ý';
+
+  @override
+  String get moneyCancelReasonFoundOther => 'Tôi đã chọn dịch vụ khác';
+
+  @override
+  String get moneyCancelReasonWrongTime => 'Đặt nhầm thời gian';
+
+  @override
+  String get moneyCancelReasonOther => 'Lý do khác';
+
+  @override
+  String get moneyCancelNoteLabel => 'Ghi chú thêm (không bắt buộc)';
+
+  @override
+  String get moneyCancelKeep => 'Giữ đơn';
+
+  @override
+  String get moneyCancelConfirm => 'Xác nhận hủy';
+
+  @override
+  String get moneyCancelDone => 'Đã hủy đơn.';
+
+  @override
+  String get moneyErrCancelRateLimit =>
+      'Bạn đã hủy quá số lần cho phép trong ngày. Vui lòng thử lại vào ngày mai.';
+
+  @override
+  String get moneyErrCheckTransaction =>
+      'Chưa rõ kết quả giao dịch. Vui lòng kiểm tra lại trạng thái trước khi thử lại.';
+
+  @override
+  String get moneyErrInProgress =>
+      'Yêu cầu đang được xử lý. Vui lòng đợi giây lát rồi thử lại.';
+
+  @override
+  String get moneyConfirmAction => 'Xác nhận hoàn thành';
+
+  @override
+  String get moneyConfirmTitle => 'Xác nhận công việc đã hoàn thành';
+
+  @override
+  String get moneyConfirmMethodLabel => 'Hình thức thanh toán';
+
+  @override
+  String get moneyConfirmOnlineNote =>
+      'Với VNPay hoặc MoMo, bạn sẽ thanh toán ở bước tiếp theo.';
+
+  @override
+  String get moneyConfirmSubmit => 'Xác nhận';
+
+  @override
+  String get moneyConfirmDone => 'Đã xác nhận hoàn thành.';
+
+  @override
+  String get moneyDisputeAction => 'Báo vấn đề';
+
+  @override
+  String get moneyDisputeTitle => 'Báo vấn đề với đơn này';
+
+  @override
+  String moneyDisputeHint(int min, int max) {
+    return 'Mô tả vấn đề ($min-$max ký tự)';
+  }
+
+  @override
+  String moneyDisputeTooShort(int min) {
+    return 'Vui lòng nhập ít nhất $min ký tự.';
+  }
+
+  @override
+  String moneyDisputeTooLong(int max) {
+    return 'Tối đa $max ký tự.';
+  }
+
+  @override
+  String get moneyDisputeSubmit => 'Gửi báo cáo';
+
+  @override
+  String get moneyDisputeSent => 'Đã gửi báo cáo cho cộng tác viên.';
+
+  @override
+  String get moneyDisputeWaiting =>
+      'Cộng tác viên đang xử lý phản hồi trước của bạn.';
+
+  @override
+  String moneyPayAction(String method) {
+    return 'Thanh toán qua $method';
+  }
+
+  @override
+  String get moneyPayConfirming => 'Đang xác nhận thanh toán…';
+
+  @override
+  String get moneyPayWaitNote =>
+      'Hoàn tất thanh toán trong trình duyệt hoặc ứng dụng thanh toán, rồi quay lại. Đơn chỉ được ghi nhận đã thanh toán khi hệ thống nhận được tiền.';
+
+  @override
+  String get moneyPayIPaid => 'Tôi đã thanh toán';
+
+  @override
+  String get moneyPayReopen => 'Mở lại trang thanh toán';
+
+  @override
+  String get moneyPayCheckAgain => 'Kiểm tra lại';
+
+  @override
+  String get moneyPayPaid => 'Hệ thống đã xác nhận thanh toán.';
+
+  @override
+  String get moneyPayFailed =>
+      'Thanh toán chưa thành công. Bạn có thể thử lại.';
+
+  @override
+  String get moneyPayTimeout =>
+      'Chưa xác nhận được thanh toán. Nếu bạn đã thanh toán, vui lòng kiểm tra lại sau ít phút.';
+
+  @override
+  String get moneyPayCash =>
+      'Đơn này thanh toán bằng tiền mặt, không cần thanh toán trực tuyến.';
+
+  @override
+  String get moneyPayAlready => 'Đơn này đã được thanh toán.';
+
+  @override
+  String get moneyPayNoRail =>
+      'Hình thức thanh toán này hiện chưa khả dụng. Vui lòng thử lại sau hoặc liên hệ hỗ trợ.';
+
+  @override
+  String get moneyPayOpenFailed =>
+      'Không mở được trang thanh toán. Vui lòng thử lại.';
+
+  @override
+  String get provWalletWithdrawInvalidAmount =>
+      'Số tiền rút không hợp lệ hoặc vượt quá số dư khả dụng. Vui lòng kiểm tra lại số tiền.';
+
+  @override
+  String get moneyCancelReasonPrice => 'Giá quá cao';
+
+  @override
+  String get moneyCancelReasonSick => 'Tôi bị ốm hoặc không khỏe';
+
+  @override
+  String get moneyCancelReasonAddressUnreach => 'Không thể đến địa chỉ';
+
+  @override
+  String get moneyCancelReasonWrongScope => 'Công việc khác với mô tả';
+
+  @override
+  String get moneyCancelReasonSafety => 'Lo ngại về an toàn';
+
+  @override
+  String get moneyRefundStatusNone => 'Không có khoản hoàn tiền.';
+
+  @override
+  String get moneyRefundStatusSucceeded => 'Khoản hoàn tiền đã được chi trả.';
+
+  @override
+  String get moneyRefundStatusPending => 'Khoản hoàn tiền đang được xử lý.';
+
+  @override
+  String get moneyRefundStatusManual =>
+      'Khoản hoàn tiền sẽ được đội ngũ xử lý thủ công.';
+
+  @override
+  String get provJdCancelReasonPick => 'Lý do hủy';
+
+  @override
+  String get provJdCancelNoteLabel => 'Ghi chú thêm (không bắt buộc)';
+
+  @override
+  String moneyCancelFeeLine(String amount) {
+    return 'Phí hủy: $amount';
+  }
+
+  @override
+  String moneyCancelRefundLine(String amount) {
+    return 'Hoàn tiền: $amount';
+  }
+
+  @override
+  String get moneyQuoteLabel => 'Tổng thanh toán';
+
+  @override
+  String get moneyErrPaymentNotAllowed =>
+      'Đơn này hiện chưa thể thanh toán. Vui lòng làm mới và kiểm tra trạng thái đơn.';
+
+  @override
+  String get moneyErrGatewayUnavailable =>
+      'Cổng thanh toán đang gián đoạn. Vui lòng thử lại sau ít phút.';
+
+  @override
+  String get labelOther => 'Khác';
+
+  @override
+  String get fineKindCancelLate => 'Huỷ muộn';
+
+  @override
+  String get fineKindLate => 'Đến trễ';
+
+  @override
+  String get fineKindExtraCharge => 'Thu thêm ngoài hệ thống';
+
+  @override
+  String get fineKindPrivateClient => 'Nhận khách riêng';
+
+  @override
+  String get fineKindBadAttitude => 'Thái độ không phù hợp';
+
+  @override
+  String get fineKindFraud => 'Gian lận';
+
+  @override
+  String get fineKindDamage => 'Gây hư hại';
+
+  @override
+  String get appealStatusPending => 'Đang xem xét';
+
+  @override
+  String get appealStatusAccepted => 'Đã chấp nhận';
+
+  @override
+  String get appealStatusRejected => 'Bị từ chối';
+
+  @override
+  String get referralStatusPendingKyc => 'Chờ duyệt hồ sơ';
+
+  @override
+  String get referralStatusActive => 'Đang hoạt động';
+
+  @override
+  String get referralStatusCompleted => 'Hoàn thành';
+
+  @override
+  String get subFrequencyWeekly => 'Hằng tuần';
+
+  @override
+  String get subFrequencyBiweekly => 'Hai tuần một lần';
+
+  @override
+  String get subFrequencyMonthly => 'Hằng tháng';
+
+  @override
+  String get subStatusActive => 'Đang hoạt động';
+
+  @override
+  String get subStatusPaused => 'Tạm dừng';
+
+  @override
+  String get subStatusExpired => 'Hết hạn';
+
+  @override
+  String get roleCustomer => 'Khách hàng';
+
+  @override
+  String get roleTasker => 'Cộng tác viên';
+
+  @override
+  String get rolePendingTasker => 'CTV chờ duyệt';
+
+  @override
+  String get roleAdmin => 'Quản trị viên';
+
+  @override
+  String get roleStaff => 'Nhân viên';
+
+  @override
+  String periodWeekLabel(int week, int year) {
+    return 'Tuần $week, $year';
+  }
+
+  @override
+  String periodMonthLabel(int month, int year) {
+    return 'Tháng $month/$year';
+  }
+
+  @override
+  String provWalletExportSubject(String period) {
+    return 'Ví Kyco $period';
+  }
+
+  @override
+  String get onlinePaymentOnWeb =>
+      'Thanh toán trực tuyến khả dụng trên website.';
+
+  @override
+  String get serviceNoDescription => 'Chưa có mô tả chi tiết cho dịch vụ này.';
+
+  @override
+  String get reviewAnonymous => 'Khách';
+
+  @override
+  String get copyAction => 'Sao chép';
+
+  @override
+  String get copiedAction => 'Đã sao chép';
+
+  @override
+  String get deleteAction => 'Xoá';
+
+  @override
+  String ratingOutOf(double rating) {
+    final intl.NumberFormat ratingNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String ratingString = ratingNumberFormat.format(rating);
+
+    return '$ratingString trên 5 sao';
+  }
+
+  @override
+  String get unreadLabel => 'Chưa đọc';
+
+  @override
+  String get bookAServiceCta => 'Đặt dịch vụ';
+
+  @override
+  String get deleteAccountTitle => 'Xóa tài khoản';
+
+  @override
+  String get deleteAccountIntro =>
+      'Khi bạn yêu cầu xóa, tài khoản bị khóa ngay và đăng xuất khỏi mọi thiết bị. Bạn có 30 ngày để đổi ý.';
+
+  @override
+  String get deleteConseq1 =>
+      'Trong 30 ngày, bạn có thể hủy yêu cầu bằng email và mật khẩu của mình.';
+
+  @override
+  String get deleteConseq2 =>
+      'Sau 30 ngày, thông tin cá nhân (tên, số điện thoại, địa chỉ, thông báo) bị xóa vĩnh viễn.';
+
+  @override
+  String get deleteConseq3 =>
+      'Đơn hàng, thanh toán và hóa đơn được giữ lại theo quy định pháp luật và không còn gắn với danh tính của bạn.';
+
+  @override
+  String get deleteConseq4 =>
+      'Bạn cần hoàn tất hoặc hủy các đơn đang mở và gói định kỳ trước khi xóa.';
+
+  @override
+  String get deleteExportCta => 'Yêu cầu bản sao dữ liệu trước';
+
+  @override
+  String get deleteExportHint =>
+      'Kyco sẽ chuẩn bị bản sao dữ liệu cá nhân và thông báo khi sẵn sàng. Hãy yêu cầu trước khi xóa vì sau đó bạn không đăng nhập được nữa.';
+
+  @override
+  String get deleteExportRequested => 'Đã gửi yêu cầu bản sao dữ liệu.';
+
+  @override
+  String get deleteConfirmWord => 'XÓA';
+
+  @override
+  String deleteTypeToConfirm(String word) {
+    return 'Nhập \"$word\" để xác nhận';
+  }
+
+  @override
+  String get deleteConfirmButton => 'Xóa tài khoản của tôi';
+
+  @override
+  String get deleteSupportOnly =>
+      'Tài khoản Cộng tác viên và quản trị không tự xóa được. Vui lòng liên hệ hỗ trợ để được xử lý.';
+
+  @override
+  String get deleteContactSupport => 'Liên hệ hỗ trợ';
+
+  @override
+  String get deletePendingTitle => 'Đã yêu cầu xóa tài khoản';
+
+  @override
+  String deletePendingBody(String date) {
+    return 'Tài khoản sẽ bị xóa vĩnh viễn vào $date. Trước thời điểm đó bạn có thể hủy yêu cầu.';
+  }
+
+  @override
+  String get deletePendingBodyNoDate =>
+      'Tài khoản đang chờ xóa. Bạn có thể hủy yêu cầu trong thời gian chờ.';
+
+  @override
+  String get deleteCancelRequest => 'Hủy yêu cầu xóa';
+
+  @override
+  String get restoreTitle => 'Khôi phục tài khoản';
+
+  @override
+  String get restoreBody =>
+      'Nhập email và mật khẩu của tài khoản đã yêu cầu xóa để khôi phục. Chỉ áp dụng trong 30 ngày chờ.';
+
+  @override
+  String get restoreTotpLabel => 'Mã xác thực 2 bước (nếu có)';
+
+  @override
+  String get restoreButton => 'Khôi phục tài khoản';
+
+  @override
+  String get restoreSuccess => 'Đã khôi phục tài khoản. Hãy đăng nhập lại.';
+
+  @override
+  String get restoreFailed =>
+      'Không khôi phục được. Kiểm tra email, mật khẩu và thời hạn 30 ngày.';
+
+  @override
+  String get loginRestoreLink => 'Đã yêu cầu xóa tài khoản? Khôi phục';
+
+  @override
+  String get goHome => 'Về trang chủ';
+
+  @override
+  String get trackCardTitle => 'Vị trí người làm';
+
+  @override
+  String trackUpdatedAt(String time) {
+    return 'Cập nhật lúc $time';
+  }
+
+  @override
+  String trackDistanceM(int meters) {
+    return 'Cách khoảng $meters m';
+  }
+
+  @override
+  String trackDistanceKm(String km) {
+    return 'Cách khoảng $km km';
+  }
+
+  @override
+  String trackEta(int minutes) {
+    return 'Dự kiến đến sau khoảng $minutes phút';
+  }
+
+  @override
+  String trackCoords(String lat, String lng) {
+    return 'Tọa độ: $lat, $lng';
+  }
+
+  @override
+  String get trackNoPosition =>
+      'Chưa có vị trí. Vị trí sẽ hiện khi người làm bắt đầu di chuyển.';
+
+  @override
+  String get trackStale => 'Vị trí đã cũ, có thể chưa chính xác.';
+
+  @override
+  String get trackOpenMap => 'Mở bản đồ';
+
+  @override
+  String get trackOpenMapLabel => 'Mở vị trí người làm trong ứng dụng bản đồ';
+
+  @override
+  String get trackLoadFailed => 'Chưa tải được vị trí. Sẽ tự thử lại.';
+
+  @override
+  String get openLinkFailed => 'Không mở được liên kết.';
+
+  @override
+  String get chatEmpty => 'Chưa có tin nhắn. Hãy gửi tin nhắn cho người làm.';
+
+  @override
+  String get chatInputHint => 'Nhập tin nhắn';
+
+  @override
+  String get chatSend => 'Gửi';
+
+  @override
+  String get chatFromYou => 'Bạn';
+
+  @override
+  String get chatFromTasker => 'Người làm';
+
+  @override
+  String get chatNoConversations =>
+      'Chưa có cuộc trò chuyện. Hãy đặt dịch vụ để nhắn tin với người làm.';
+
+  @override
+  String get sosCustomerCta => 'Báo sự cố khẩn cấp';
+
+  @override
+  String get sosCustomerTitle => 'Gửi cảnh báo khẩn cấp?';
+
+  @override
+  String get sosCustomerBody =>
+      'Kyco sẽ gửi cảnh báo kèm vị trí hiện tại của bạn (nếu bạn cho phép) tới đội an toàn. Chỉ dùng khi bạn thấy không an toàn.';
+
+  @override
+  String get checkoutUseSaved => 'Dùng địa chỉ đã lưu';
+
+  @override
+  String get checkoutSavedTitle => 'Chọn địa chỉ đã lưu';
+
+  @override
+  String get checkoutSavedDefault => 'Mặc định';
+
+  @override
+  String openTaskerProfile(String name) {
+    return 'Xem hồ sơ của $name';
+  }
+
+  @override
+  String get inviteShare => 'Chia sẻ';
+
+  @override
+  String inviteShareText(String code, String url) {
+    return 'Tham gia Kyco bằng mã mời $code: $url';
+  }
+
+  @override
+  String get manageOnWebOpenLabel => 'Mở kyco.vn trong trình duyệt';
+
+  @override
+  String get settingsAndAccountTitle => 'Cài đặt và tài khoản';
+
+  @override
+  String get errorFallbackTitle => 'Đã xảy ra lỗi';
+
+  @override
+  String get errorFallbackBody =>
+      'Phần này gặp sự cố. Hãy quay lại và thử lại.';
 }

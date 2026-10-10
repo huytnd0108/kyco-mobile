@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/adaptive.dart';
+import '../../core/datetime.dart';
 import '../../core/format.dart';
+import '../../core/labels.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
 import 'tasker_growth_providers.dart';
@@ -26,14 +28,14 @@ class TaskerGoalsScreen extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(goalsProvider);
-            await ref.read(goalsProvider.future);
+            await refreshQuietly(ref.read(goalsProvider.future));
           },
           child: async.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => ListView(children: [
               const SizedBox(height: 120),
               ErrorRetry(
-                message: l.genericError,
+                error: e,
                 onRetry: () => ref.invalidate(goalsProvider),
               ),
             ]),
@@ -52,7 +54,7 @@ class _GoalsBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final now = DateTime.now();
+    final now = vnNow(); // goal periods follow the Vietnam calendar
     final wKey = isoWeekKeyOf(now);
     final mKey = monthKeyOf(now);
     final weekGoal = data.forPeriod('week', wKey);
@@ -63,7 +65,7 @@ class _GoalsBody extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
-          SectionHeader('${l.provGoalsThisWeek} · $wKey'),
+          SectionHeader('${l.provGoalsThisWeek} · ${periodLabel(l, wKey)}'),
           _GoalCard(
             periodKind: 'week',
             periodKey: wKey,
@@ -71,7 +73,7 @@ class _GoalsBody extends ConsumerWidget {
             achievedJobs: null, // no frozen weekly-achieved source
             achievedVnd: null,
           ),
-          SectionHeader('${l.provGoalsThisMonth} · $mKey'),
+          SectionHeader('${l.provGoalsThisMonth} · ${periodLabel(l, mKey)}'),
           _GoalCard(
             periodKind: 'month',
             periodKey: mKey,
@@ -278,10 +280,30 @@ class _GoalEditorState extends State<_GoalEditor> {
     super.dispose();
   }
 
+  static const _maxJobs = 500;
+  String? _jobsError;
+  String? _vndError;
+
+  /// Blank / non-numeric / zero input is rejected inline — it must never be
+  /// sent as a 0 target the user did not type, nor silently clamped.
   void _submit() {
-    final jobs = int.tryParse(_jobs.text.trim()) ?? 0;
-    final vnd = int.tryParse(_vnd.text.trim()) ?? 0;
-    Navigator.of(context).pop(_GoalDraft(jobs.clamp(0, 500), vnd < 0 ? 0 : vnd));
+    final l = AppLocalizations.of(context);
+    final jobs = int.tryParse(_jobs.text.trim());
+    final vnd = int.tryParse(_vnd.text.trim());
+    final jobsError = jobs == null || jobs <= 0
+        ? (_jobs.text.trim().isEmpty ? l.cust2Required : l.goalNumberPositive)
+        : (jobs > _maxJobs ? l.goalJobsMax(_maxJobs) : null);
+    final vndError = vnd == null || vnd <= 0
+        ? (_vnd.text.trim().isEmpty ? l.cust2Required : l.goalNumberPositive)
+        : null;
+    if (jobsError != null || vndError != null) {
+      setState(() {
+        _jobsError = jobsError;
+        _vndError = vndError;
+      });
+      return;
+    }
+    Navigator.of(context).pop(_GoalDraft(jobs!, vnd!));
   }
 
   @override
@@ -294,7 +316,7 @@ class _GoalEditorState extends State<_GoalEditor> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('${l.provGoalTitle} · ${widget.periodKey}',
+          Text('${l.provGoalTitle} · ${periodLabel(l, widget.periodKey)}',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700)),
           const SizedBox(height: 16),
@@ -302,7 +324,9 @@ class _GoalEditorState extends State<_GoalEditor> {
             controller: _jobs,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            onChanged: (_) => setState(() => _jobsError = null),
             decoration: InputDecoration(
+              errorText: _jobsError,
               labelText: l.provGoalTargetJobs,
               border: const OutlineInputBorder(),
             ),
@@ -312,7 +336,9 @@ class _GoalEditorState extends State<_GoalEditor> {
             controller: _vnd,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            onChanged: (_) => setState(() => _vndError = null),
             decoration: InputDecoration(
+              errorText: _vndError,
               labelText: l.provGoalTargetIncome,
               border: const OutlineInputBorder(),
             ),

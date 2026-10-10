@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/models.dart';
 import '../../core/widgets.dart';
 import '../auth/auth_controller.dart';
 import 'notifications_providers.dart';
+import 'package:kyco_mobile/core/datetime.dart';
 
 /// `/notifications` — a PUBLIC shell (web parity: notifications is public).
 /// Anon sees a sign-in prompt; signed-in sees the live feed with an unread
@@ -135,14 +135,14 @@ class _NotificationsListState extends ConsumerState<_NotificationsList> {
             error: (e, _) => ListView(children: [
               const SizedBox(height: 120),
               ErrorRetry(
-                message: l.genericError,
+                error: e,
                 onRetry: () => ref.invalidate(notificationsControllerProvider),
               ),
             ]),
             data: (data) => data.items.isEmpty
                 ? ListView(children: [
                     const SizedBox(height: 80),
-                    EmptyState(icon: '🔔', message: l.noResults),
+                    EmptyState(icon: Icons.notifications_none, message: l.noResults),
                   ])
                 : ListView.separated(
                     controller: _scroll,
@@ -174,15 +174,19 @@ class _UnreadBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-          color: cs.primary, borderRadius: BorderRadius.circular(999)),
-      child: Text('$count',
-          style: Theme.of(context)
-              .textTheme
-              .labelSmall
-              ?.copyWith(color: cs.onPrimary, fontWeight: FontWeight.w700)),
+    return Semantics(
+      label: '$count ${AppLocalizations.of(context).unreadLabel}',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+            color: cs.primary, borderRadius: BorderRadius.circular(999)),
+        child: Text('$count',
+            style: Theme.of(context)
+                .textTheme
+                .labelSmall
+                ?.copyWith(color: cs.onPrimary, fontWeight: FontWeight.w700)),
+      ),
     );
   }
 }
@@ -210,10 +214,14 @@ class _NotificationTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     final when = _formatWhen(context, n.createdAt);
     final body = (n.body?.isNotEmpty ?? false) ? n.body : null;
     final subtitleParts = <String>[?body, ?when];
-    return Card(
+    return Semantics(
+      // Unread is otherwise conveyed by colour / weight only.
+      value: n.read ? null : l.unreadLabel,
+      child: Card(
       color: n.read ? null : cs.primaryContainer.withValues(alpha: 0.35),
       child: ListTile(
         leading: CircleAvatar(
@@ -235,16 +243,12 @@ class _NotificationTile extends ConsumerWidget {
             ? Icon(Icons.chevron_right, color: cs.onSurfaceVariant)
             : null,
       ),
-    );
+    ));
   }
 
   static String? _formatWhen(BuildContext context, String? raw) {
     if (raw == null || raw.isEmpty) return null;
-    final dt = DateTime.tryParse(raw);
-    if (dt == null) return raw;
-    return DateFormat.yMd(Localizations.localeOf(context).toString())
-        .add_Hm()
-        .format(dt.toLocal());
+    return vnDateTime(context, raw);
   }
 }
 

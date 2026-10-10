@@ -1,14 +1,18 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import 'core/adaptive.dart';
+import 'core/error_reporter.dart';
 import 'core/locale_controller.dart';
+import 'core/ui/not_found_screen.dart';
 import 'features/account/account_providers.dart';
 import 'features/account/account_screen.dart';
 import 'features/account/addresses_screen.dart';
 import 'features/account/content_screens.dart';
+import 'features/account/delete_account_screen.dart';
 import 'features/account/invite_screen.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/auth/login_screen.dart';
@@ -44,6 +48,7 @@ import 'features/tasker_job_detail/tasker_job_detail_screen.dart';
 import 'features/tasker_jobs/tasker_jobs_screen.dart';
 import 'features/tasker_shell/tasker_more_screen.dart';
 import 'features/tasker_shell/tasker_scaffold.dart';
+import 'features/tasker_shell/tasker_settings_screen.dart';
 import 'features/tasker_support/tasker_support_screen.dart';
 import 'features/tasker_wallet/tasker_wallet_screen.dart';
 import 'features/service_detail/service_detail_screen.dart';
@@ -205,6 +210,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, s) => LegalDocScreen(doc: s.pathParameters['doc'] ?? ''),
       ),
       GoRoute(path: '/invite', parentNavigatorKey: _rootKey, builder: (_, _) => const InviteScreen()),
+      // Account deletion (signs in-screen) + the PUBLIC restore/cancel screen.
+      GoRoute(
+        path: '/delete-account',
+        parentNavigatorKey: _rootKey,
+        builder: (_, _) => const DeleteAccountScreen(),
+      ),
+      GoRoute(
+        path: '/restore-account',
+        parentNavigatorKey: _rootKey,
+        builder: (_, s) => RestoreAccountScreen(scheduledFor: s.uri.queryParameters['scheduled']),
+      ),
       GoRoute(
         path: '/addresses',
         parentNavigatorKey: _rootKey,
@@ -329,11 +345,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/p/cancellations', parentNavigatorKey: _rootKey, builder: (_, _) => const TaskerCancellationsScreen()),
       GoRoute(path: '/p/referrals', parentNavigatorKey: _rootKey, builder: (_, _) => const TaskerReferralsScreen()),
       GoRoute(path: '/p/support', parentNavigatorKey: _rootKey, builder: (_, _) => const TaskerSupportScreen()),
+      GoRoute(path: '/p/settings', parentNavigatorKey: _rootKey, builder: (_, _) => const TaskerSettingsScreen()),
     ],
-    errorBuilder: (context, state) => Scaffold(
-      appBar: AppBar(title: const Text('Kyco')),
-      body: Center(child: Text(AppLocalizations.of(context).pageNotFound(state.uri.toString()))),
-    ),
+    errorBuilder: (context, state) {
+      // The raw URI is for logs only, never for the user.
+      debugPrint('router: no route for ${state.uri}');
+      return const NotFoundScreen();
+    },
   );
 });
 
@@ -351,6 +369,10 @@ void clearUserScopedState(WidgetRef ref) {
   ref.invalidate(addressesProvider);
   ref.invalidate(mySubscriptionsProvider);
   clearCheckoutDrafts(ref);
+  // Pending money idempotency keys are deliberately KEPT across sign-out: they
+  // are scoped per user id (`u<id>|…`), so another account can never reuse
+  // them, and the same tasker signing back in after a forced logout must still
+  // replay — not re-execute — a payout whose response was lost. TTL expires them.
 }
 
 class KycoApp extends ConsumerStatefulWidget {
@@ -385,6 +407,17 @@ class _KycoAppState extends ConsumerState<KycoApp> {
       if (next.status == AuthStatus.signedOut && prev?.status != AuthStatus.signedOut) {
         clearUserScopedState(ref);
       }
+      // Forced sign-out (expired / stale role / locked account): send the user
+      // to sign-in, where the localized notice explains why.
+      if (next.status == AuthStatus.signedOut && next.reason != null && prev?.reason != next.reason) {
+        final router = ref.read(routerProvider);
+        final loc = router.routeInformationProvider.value.uri;
+        final onAuth = loc.path == '/login' || loc.path == '/signup';
+        if (!onAuth) {
+          final from = loc.path == '/' ? '' : '?from=${Uri.encodeQueryComponent(loc.toString())}';
+          router.go('/login$from');
+        }
+      }
       // Explicit logout lands on home, whatever screen it was triggered from.
       if (next.explicitLogout && !(prev?.explicitLogout ?? false)) {
         ref.read(routerProvider).go('/');
@@ -414,6 +447,13 @@ class _KycoAppState extends ConsumerState<KycoApp> {
           }
         }
         return const Locale('vi');
+      },
+      // Release: a failed widget shows a friendly localized fallback, never a
+      // red screen (UX-M63). Strings come from the active locale.
+      builder: (context, child) {
+        final l = AppLocalizations.of(context);
+        installErrorWidget(title: l.errorFallbackTitle, body: l.errorFallbackBody);
+        return child ?? const SizedBox.shrink();
       },
       routerConfig: router,
     );

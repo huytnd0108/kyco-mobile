@@ -7,8 +7,10 @@ import '../../core/format.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
 import 'tasker_growth_providers.dart';
+import 'package:kyco_mobile/core/datetime.dart';
+import 'package:kyco_mobile/core/labels.dart';
 
-/// `/p/bonuses` 💰 — weekly + monthly bonus preview cards + payout history.
+/// `/p/bonuses` — weekly + monthly bonus preview cards + payout history.
 ///
 /// Every VND figure is server-computed (`TaskerBonuses`); this screen only
 /// formats and displays them — it never computes or posts an amount.
@@ -26,14 +28,14 @@ class TaskerBonusesScreen extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(bonusesProvider);
-            await ref.read(bonusesProvider.future);
+            await refreshQuietly(ref.read(bonusesProvider.future));
           },
           child: async.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => ListView(children: [
               const SizedBox(height: 120),
               ErrorRetry(
-                message: l.genericError,
+                error: e,
                 onRetry: () => ref.invalidate(bonusesProvider),
               ),
             ]),
@@ -133,7 +135,7 @@ class _BonusCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(_bonusLabel(l, bonus.kind),
+                child: Text(bonusKindLabel(l, bonus.kind),
                     style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
               ),
               _EarnedBadge(earned: earned),
@@ -200,8 +202,9 @@ class _HistoryTile extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final period = [item.periodStart, item.periodEnd]
         .where((s) => s != null && s.isNotEmpty)
+        .map((s) => vnDateMedium(context, s))
         .join(' → ');
-    final paid = _localDate(item.paidAt);
+    final paid = (item.paidAt == null ? null : vnDate(context, item.paidAt));
     final sub = [period, ?paid].where((s) => s.isNotEmpty).join(' · ');
 
     return Padding(
@@ -212,7 +215,7 @@ class _HistoryTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_bonusLabel(l, item.kind),
+                Text(bonusKindLabel(l, item.kind),
                     style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
                 if (sub.isNotEmpty)
                   Text(sub, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
@@ -229,31 +232,3 @@ class _HistoryTile extends StatelessWidget {
   }
 }
 
-/// Vietnamese bonus labels — mirrors the web `BONUS_LABELS`.
-String _bonusLabel(AppLocalizations l, String? kind) {
-  switch (kind) {
-    case 'weekly_jobs':
-      return l.provBonusKindWeeklyJobs;
-    case 'monthly_revenue':
-      return l.provBonusKindMonthlyRevenue;
-    case 'punctuality':
-      return l.provBonusKindPunctuality;
-    case 'rating':
-      return l.provBonusKindRating;
-    case 'referral':
-      return l.provBonusKindReferral;
-    default:
-      return kind ?? '—';
-  }
-}
-
-/// `paidAt` is a UTC ISO timestamp — show the payout DATE in the device's local
-/// zone (a 23:30 UTC payout is already the next day in Vietnam). Falls back to
-/// the raw yyyy-MM-dd prefix when the string doesn't parse.
-String? _localDate(String? iso) {
-  if (iso == null || iso.isEmpty) return null;
-  final dt = DateTime.tryParse(iso)?.toLocal();
-  if (dt == null) return iso.length >= 10 ? iso.substring(0, 10) : null;
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${dt.year}-${two(dt.month)}-${two(dt.day)}';
-}

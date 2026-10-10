@@ -8,8 +8,10 @@ import '../../core/format.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
 import 'tasker_compliance_providers.dart';
+import 'package:kyco_mobile/core/datetime.dart';
+import 'package:kyco_mobile/core/labels.dart';
 
-/// `/p/fines` (A3 💰) — the tasker's penalty ledger. Three VND summary tiles
+/// `/p/fines` (A3 ) — the tasker's penalty ledger. Three VND summary tiles
 /// (pending / charged / refunded) over a per-fine history list; tapping a
 /// non-refunded fine opens its appeal screen. MONEY IS DISPLAY-ONLY — nothing
 /// on this screen sends a computed amount.
@@ -28,7 +30,7 @@ class TaskerFinesScreen extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(finesProvider);
-            await ref.read(finesProvider.future);
+            await refreshQuietly(ref.read(finesProvider.future));
           },
           child: CenteredMaxWidth(
             maxWidth: 720,
@@ -37,7 +39,7 @@ class TaskerFinesScreen extends ConsumerWidget {
               error: (e, _) => ListView(children: [
                 const SizedBox(height: 120),
                 ErrorRetry(
-                  message: l.homeLoadError(e.toString()),
+                  error: e,
                   onRetry: () => ref.invalidate(finesProvider),
                 ),
               ]),
@@ -189,8 +191,8 @@ class _FineRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // kind / reason are backend enums — shown raw (server-derived).
-                    Text(fine.kind ?? '—',
+                    // kind is a backend enum -> localized label; reason is free text.
+                    Text(fineKindLabel(l, fine.kind),
                         style: Theme.of(context)
                             .textTheme
                             .titleMedium
@@ -202,7 +204,7 @@ class _FineRow extends StatelessWidget {
                     ],
                     if ((fine.createdAt ?? '').isNotEmpty) ...[
                       const SizedBox(height: 4),
-                      Text(_shortDateTime(fine.createdAt!),
+                      Text(vnDateTime(context, fine.createdAt),
                           style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
                     ],
                   ],
@@ -219,7 +221,7 @@ class _FineRow extends StatelessWidget {
                         color: cs.error,
                       )),
                   const SizedBox(height: 6),
-                  _StatusPill(status: fine.status, tone: tone.color(cs)),
+                  _StatusPill(label: fineStatusLabel(l, fine.status), tone: tone.color(cs)),
                   if (canAppeal) ...[
                     const SizedBox(height: 6),
                     Row(
@@ -245,8 +247,8 @@ class _FineRow extends StatelessWidget {
 }
 
 class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this.status, required this.tone});
-  final String? status;
+  const _StatusPill({required this.label, required this.tone});
+  final String label;
   final Color tone;
 
   @override
@@ -257,18 +259,8 @@ class _StatusPill extends StatelessWidget {
         color: tone.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
       ),
-      // status is a backend enum — displayed raw (no localized mapping in ARB).
-      child: Text(status ?? '—',
+      child: Text(label,
           style: TextStyle(color: tone, fontSize: 11, fontWeight: FontWeight.w700)),
     );
   }
-}
-
-/// Best-effort ISO → `dd/MM/yyyy HH:mm`; falls back to the first 16 chars.
-String _shortDateTime(String iso) {
-  // Server timestamps are UTC ISO strings — render in the device's local zone.
-  final dt = DateTime.tryParse(iso)?.toLocal();
-  if (dt == null) return iso.length >= 16 ? iso.substring(0, 16) : iso;
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${two(dt.day)}/${two(dt.month)}/${dt.year} ${two(dt.hour)}:${two(dt.minute)}';
 }

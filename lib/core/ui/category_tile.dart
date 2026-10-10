@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models.dart';
+import 'media_image.dart';
 
 /// A bento category tile (web): rounded-2xl full-bleed image + bottom scrim +
 /// white title. [big] renders the 2x2 lead tile with a larger title.
@@ -13,21 +14,27 @@ class CategoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final hasImage = category.imageUrl != null &&
-        category.imageUrl!.isNotEmpty &&
-        !category.imageUrl!.startsWith('media:');
-    return ClipRRect(
+    // One labelled button per tile: the title Text, the decorative photo and the
+    // InkWell overlay would otherwise be three separate (and unnamed) nodes.
+    return Semantics(
+      button: true,
+      label: category.name,
+      onTap: onTap,
+      excludeSemantics: true,
+      child: ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          if (hasImage)
-            Image.network(category.imageUrl!,
-                fit: BoxFit.cover,
-                semanticLabel: category.name,
-                errorBuilder: (_, _, _) => Container(color: cs.primaryContainer))
-          else
-            Container(color: cs.primaryContainer),
+          ResolvedImageUrl(
+            url: category.imageUrl,
+            builder: (context, resolved, _) => resolved == null
+                ? Container(color: cs.primaryContainer)
+                : Image.network(resolved,
+                    fit: BoxFit.cover,
+                    excludeFromSemantics: true,
+                    errorBuilder: (_, _, _) => Container(color: cs.primaryContainer)),
+          ),
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -60,6 +67,6 @@ class CategoryTile extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }

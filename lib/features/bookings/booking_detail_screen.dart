@@ -12,17 +12,22 @@ import '../../core/models.dart';
 import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import '../home/home_providers.dart';
+import 'booking_money_actions.dart';
 import 'bookings_providers.dart';
 import 'bookings_screen.dart' show BookingStatusChip;
+import 'customer_sos.dart';
+import 'tracking_card.dart';
+import 'package:kyco_mobile/core/labels.dart';
 
 /// Booking detail — written once, used both as a pushed route (compact) and as
 /// the right pane of the iPad two-pane layout (embedded = true, no AppBar).
 /// Loads the owner-scoped `GET /v1/bookings/{id}/page` composite (status,
 /// schedule, address, assigned tasker, job timeline, `hasReview`).
 ///
-/// Read-only for money: the total is the server's `totalVnd` shown verbatim;
-/// payment / confirm-completion / cancel actions are NOT offered here (they
-/// need explicit approval before the mobile client may drive them).
+/// Money: the total is the server's `totalVnd` and the itemisation is the
+/// server's `surchargeBreakdownJson`, both shown verbatim — nothing is computed
+/// here. Cancel / confirm completion / gateway pay are offered per
+/// [BookingActions] (user-approved 2026-10-10) via [BookingMoneySection].
 class BookingDetailScreen extends ConsumerWidget {
   const BookingDetailScreen({super.key, required this.id, this.embedded = false});
   final int? id;
@@ -44,7 +49,7 @@ class BookingDetailScreen extends ConsumerWidget {
     final bid = id;
     final Widget body;
     if (bid == null || bid <= 0) {
-      body = _Message(l.bookingNotFound(id ?? ''));
+      body = _Message(l.bookingNotFoundNoId, showBack: true);
     } else {
       final async = ref.watch(bookingDetailProvider(bid));
       body = async.when(
@@ -52,9 +57,9 @@ class BookingDetailScreen extends ConsumerWidget {
         error: (e, _) => (e is ApiException && (e.code == 'NOT_FOUND' || e.status == 404))
             // Missing OR another user's booking (owner-scoped 404) — a retry
             // would fail identically, so show a plain message.
-            ? _Message(l.bookingNotFound(bid))
+            ? _Message(l.bookingNotFound(bid), showBack: true)
             : ErrorRetry(
-                message: l.cust2BookingsLoadFailed(apiErrorText(l, e)),
+                error: e,
                 onRetry: () => ref.invalidate(bookingDetailProvider(bid)),
               ),
         data: (b) => RefreshIndicator(
@@ -77,38 +82,32 @@ class BookingDetailScreen extends ConsumerWidget {
 }
 
 class _Message extends StatelessWidget {
-  const _Message(this.text);
+  const _Message(this.text, {this.showBack = false});
   final String text;
+
+  /// Offer a way out ("Back to my bookings") instead of a dead end.
+  final bool showBack;
   @override
   Widget build(BuildContext context) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text(text, textAlign: TextAlign.center),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(text, textAlign: TextAlign.center),
+              if (showBack) ...[
+                const SizedBox(height: 16),
+                OutlinedButton(
+                  key: const ValueKey('booking-back'),
+                  onPressed: () => context.go('/bookings'),
+                  child: Text(AppLocalizations.of(context).backToMyBookings),
+                ),
+              ],
+            ],
+          ),
         ),
       );
 }
-
-/// Localized payment-method label (display only).
-String paymentMethodLabel(AppLocalizations l, String? m) => switch ((m ?? '').toLowerCase()) {
-      'cash' => l.cust2PayCash,
-      'vnpay' => 'VNPay',
-      'momo' => 'MoMo',
-      '' => '—',
-      final other => other,
-    };
-
-String timelineLabel(AppLocalizations l, String kind) => switch (kind) {
-      'created' => l.cust2TlCreated,
-      'scheduled' => l.cust2TlScheduled,
-      'claimed' => l.cust2TlClaimed,
-      'started' => l.cust2TlStarted,
-      'finished' => l.cust2TlFinished,
-      'completed' => l.cust2TlCompleted,
-      'customerConfirmed' => l.cust2TlCustomerConfirmed,
-      'cashReceived' => l.cust2TlCashReceived,
-      'settled' => l.cust2TlSettled,
-      _ => kind,
-    };
 
 class _Detail extends ConsumerWidget {
   const _Detail(this.b);
@@ -142,8 +141,13 @@ class _Detail extends ConsumerWidget {
           _row(context, l.cust2DetailScheduled, formatBookingDateTime(context, b.scheduledAt)),
           if (address.isNotEmpty) _row(context, l.cust2DetailAddress, address),
           if (b.notes != null) _row(context, l.cust2DetailNotes, b.notes!),
-          if (b.taskerName != null) _row(context, l.cust2DetailProvider, b.taskerName!),
+          if (b.taskerName != null)
+            _row(context, l.cust2DetailProvider, b.taskerName!,
+                // UX-M17: the assigned tasker opens the public profile.
+                onTap: b.taskerId == null ? null : () => context.push('/taskers/${b.taskerId}'),
+                semanticsLabel: l.openTaskerProfile(b.taskerName!)),
           _row(context, l.totalLabel, vnd),
+          if (b.breakdown != null) _breakdown(context, l, b.breakdown!),
           _row(context, l.cust2DetailPayment, paymentMethodLabel(l, b.paymentMethod)),
           if (b.confirmationCode != null) _row(context, l.cust2DetailCode, b.confirmationCode!),
           _row(context, l.createdLabel, formatBookingDate(context, b.createdAt)),
@@ -167,6 +171,23 @@ class _Detail extends ConsumerWidget {
                 ),
               ),
           ],
+          // UX-M09: follow the tasker while they travel to / work at the address.
+          if (isTrackable(b.status) && b.jobId != null) TrackingCard(jobId: b.jobId!),
+          BookingMoneySection(b),
+          // UX-M11: the booking thread (read via /page, send via /messages).
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            key: const ValueKey('booking-chat'),
+            onPressed: () => context.push('/messages/${b.id}'),
+            icon: const Icon(Icons.chat_bubble_outline),
+            label: Text(l.messagesTitle),
+            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+          ),
+          // UX-M13: customer safety path while the tasker is on the way / on site.
+          if (isTrackable(b.status)) ...[
+            const SizedBox(height: 12),
+            CustomerSosButton(bookingId: b.id),
+          ],
           if (b.canReview) ...[
             const SizedBox(height: 20),
             FilledButton.icon(
@@ -188,6 +209,34 @@ class _Detail extends ConsumerWidget {
     );
   }
 
+  /// The server's itemisation, line by line as received (no arithmetic).
+  Widget _breakdown(BuildContext context, AppLocalizations l, PriceBreakdownView bd) {
+    final cs = Theme.of(context).colorScheme;
+    String money(int v) => NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0).format(v);
+    Widget line(String label, int amount) => Padding(
+          padding: const EdgeInsets.only(left: 120, bottom: 4),
+          child: Row(children: [
+            Expanded(child: Text(label, style: TextStyle(color: cs.onSurfaceVariant))),
+            Text(money(amount), style: TextStyle(color: cs.onSurfaceVariant)),
+          ]),
+        );
+    return Column(
+      key: const ValueKey('booking-breakdown'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (bd.hasSurcharge)
+          line(
+              bd.surchargeReasons.isEmpty
+                  ? l.moneySurchargeLabel
+                  : '${l.moneySurchargeLabel} (${bd.surchargeReasons.join(', ')})',
+              bd.surchargesVnd!),
+        for (final c in bd.compensations) line(c.label, c.amountVnd),
+        if (bd.compensations.isEmpty && (bd.compensationVnd ?? 0) > 0)
+          line(l.moneyCompensationLabel, bd.compensationVnd!),
+      ],
+    );
+  }
+
   Future<void> _review(BuildContext context, WidgetRef ref) async {
     final l = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
@@ -203,9 +252,10 @@ class _Detail extends ConsumerWidget {
     }
   }
 
-  Widget _row(BuildContext context, String label, String value) {
+  Widget _row(BuildContext context, String label, String value,
+      {VoidCallback? onTap, String? semanticsLabel}) {
     final cs = Theme.of(context).colorScheme;
-    return Padding(
+    final content = Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,9 +265,27 @@ class _Detail extends ConsumerWidget {
             child: Text(label, style: TextStyle(color: cs.onSurfaceVariant)),
           ),
           Expanded(
-            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+            child: Text(value,
+                style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: onTap == null ? null : cs.primary,
+                    decoration: onTap == null ? null : TextDecoration.underline)),
           ),
+          if (onTap != null) Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
         ],
+      ),
+    );
+    if (onTap == null) return content;
+    return Semantics(
+      button: true,
+      link: true,
+      label: semanticsLabel ?? '$label: $value',
+      excludeSemantics: true,
+      onTap: onTap,
+      child: InkWell(
+        key: const ValueKey('booking-tasker-row'),
+        onTap: onTap,
+        child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48), child: content),
       ),
     );
   }
@@ -286,10 +354,14 @@ class _ReviewSheetState extends ConsumerState<ReviewSheet> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               for (var i = 1; i <= 5; i++)
-                IconButton(
-                  tooltip: l.cust2RatingStar('$i'),
-                  onPressed: _busy ? null : () => setState(() => _rating = i),
-                  icon: Icon(i <= _rating ? Icons.star : Icons.star_border, color: cs.primary, size: 34),
+                Semantics(
+                  selected: i == _rating,
+                  inMutuallyExclusiveGroup: true,
+                  child: IconButton(
+                    tooltip: l.cust2RatingStar('$i'),
+                    onPressed: _busy ? null : () => setState(() => _rating = i),
+                    icon: Icon(i <= _rating ? Icons.star : Icons.star_border, color: cs.primary, size: 34),
+                  ),
                 ),
             ],
           ),

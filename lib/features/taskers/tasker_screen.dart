@@ -5,9 +5,9 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 import '../../core/adaptive.dart';
 import '../../core/api/problem.dart';
 import '../../core/models.dart';
-import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import 'tasker_providers.dart';
+import 'package:kyco_mobile/core/datetime.dart';
 
 /// `/taskers/:id` — the PUBLIC pre-booking view of a partner. Fully guest-
 /// browsable (`taskerPublic(id)`, anon). A 404 (unknown / inactive /
@@ -33,13 +33,12 @@ class TaskerScreen extends ConsumerWidget {
               return Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
-                  // TODO-i18n: "Partner not found" (no ARB key) — reuse noResults copy
-                  child: EmptyState(icon: '🔍', message: l.partnerNotFound),
+                  child: EmptyState(icon: Icons.search_off, message: l.partnerNotFound),
                 ),
               );
             }
             return ErrorRetry(
-              message: l.cust2LoadFailed(apiErrorText(l, e)),
+              error: e,
               onRetry: () => ref.invalidate(taskerPublicProvider(id)),
             );
           },
@@ -133,7 +132,7 @@ class _ProfileBody extends StatelessWidget {
                   child: _StatCard(
                     icon: Icons.calendar_today_outlined,
                     value: _year(profile.joinedAt!),
-                    label: l.memberSince(_shortDate(profile.joinedAt!)),
+                    label: l.memberSince(_shortDate(context, profile.joinedAt!)),
                   ),
                 ),
               ],
@@ -245,14 +244,9 @@ String _initials(String name) {
 }
 
 String _year(String iso) {
-  final dt = DateTime.tryParse(iso);
-  return dt != null ? '${dt.year}' : (iso.length >= 4 ? iso.substring(0, 4) : iso);
+  final w = vnWall(iso);
+  return w == null ? '—' : '${w.year}';
 }
 
-/// Best-effort ISO to dd/MM/yyyy. Falls back to the first 10 chars.
-String _shortDate(String iso) {
-  final dt = DateTime.tryParse(iso);
-  if (dt == null) return iso.length >= 10 ? iso.substring(0, 10) : iso;
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${two(dt.day)}/${two(dt.month)}/${dt.year}';
-}
+/// Localized date (VN time) of the join instant; '—' when unparseable.
+String _shortDate(BuildContext context, String iso) => vnDate(context, iso);

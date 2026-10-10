@@ -214,7 +214,7 @@ extension KycoApiTasker on KycoApi {
   Future<Map<String, dynamic>> declineJob(int id, {String? reason}) =>
       _postMap('/tasker/jobs/$id/decline', body: {'reason': ?reason});
 
-  /// 💰 May levy a cancellation fine server-side → money POST: requires the
+  /// May levy a cancellation fine server-side → money POST: requires the
   /// action's [idempotencyKey] (IdempotencyLedger, MQA-36).
   Future<Map<String, dynamic>> cancelJob(int id,
           {String reasonCode = 'other', String? reasonText, required String idempotencyKey}) =>
@@ -279,8 +279,7 @@ extension KycoApiTasker on KycoApi {
   Future<Map<String, dynamic>> resubmitCompletion(int bookingId) =>
       _postMap('/tasker/bookings/$bookingId/resubmit-completion');
 
-  /// POST cash-received (20% commission debit is server-side). 💰
-  /// 💰 Charges the commission server-side → requires [idempotencyKey] (MQA-36).
+  /// POST cash-received (20% commission debit is server-side).   /// Charges the commission server-side → requires [idempotencyKey] (MQA-36).
   Future<Map<String, dynamic>> cashReceived(int bookingId, {required String idempotencyKey}) =>
       _postMap('/tasker/bookings/$bookingId/cash-received', idempotencyKey: idempotencyKey);
 
@@ -525,7 +524,7 @@ extension KycoApiTasker on KycoApi {
       });
 
   // ── new routes (Section A — defined now, live when A deploys) ──────────────
-  /// POST /tasker/payouts (A1) 💰 — the only user-supplied amount; validated +
+  /// POST /tasker/payouts (A1) — the only user-supplied amount; validated +
   /// balance-checked server-side. Requires a fresh step-up grant (see [stepUp]).
   /// The user-typed [amountVnd] is sent unchanged; [idempotencyKey] makes a
   /// retried request replay instead of creating a second payout (MQA-36).
@@ -550,7 +549,7 @@ extension KycoApiTasker on KycoApi {
         : {'method': 'otp', 'code': otpCode});
   }
 
-  /// GET /tasker/fines (A3) 💰.
+  /// GET /tasker/fines (A3) .
   Future<FinesView> fines() async {
     final data = await _c.get('/tasker/fines');
     return FinesView.fromJson(data as Map<String, dynamic>);
@@ -562,7 +561,7 @@ extension KycoApiTasker on KycoApi {
     return FineDetailView.fromJson(data as Map<String, dynamic>);
   }
 
-  /// POST /tasker/fines/[id]/appeal (A4) 💰 — body ≥20 chars; 409 if one exists.
+  /// POST /tasker/fines/[id]/appeal (A4) — body ≥20 chars; 409 if one exists.
   Future<Map<String, dynamic>> appealFine(int id, String body) =>
       _postMap('/tasker/fines/$id/appeal', body: {'body': body});
 
@@ -578,7 +577,7 @@ extension KycoApiTasker on KycoApi {
     return CancellationsView.fromJson(data as Map<String, dynamic>);
   }
 
-  /// GET /tasker/wallet/export?year&month (A11) 💰 — raw text/csv bytes for the
+  /// GET /tasker/wallet/export?year&month (A11) — raw text/csv bytes for the
   /// OS share sheet. Bearer-only credentialed ledger read.
   Future<List<int>> walletExportCsv({required int year, required int month}) =>
       _c.getBytes('/tasker/wallet/export', query: {'year': year, 'month': month});

@@ -169,14 +169,14 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
               child: RefreshIndicator(
                 onRefresh: () async {
                   ref.invalidate(servicesFeedProvider(_filter));
-                  await ref.read(servicesFeedProvider(_filter).future);
+                  await refreshQuietly(ref.read(servicesFeedProvider(_filter).future));
                 },
                 child: feed.when(
                   loading: () => const _ScrollableCenter(child: CircularProgressIndicator()),
                   error: (e, _) => _ScrollableCenter(
                     child: ErrorRetry(
                       // Never leak raw `ApiException(...)` text to the user.
-                      message: l.genericError,
+                      error: e,
                       onRetry: () => ref.invalidate(servicesFeedProvider(_filter)),
                     ),
                   ),
@@ -258,11 +258,10 @@ class _ServicesGrid extends StatelessWidget {
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
             sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: ServiceCardGridDelegate(
                 crossAxisCount: cols,
-                mainAxisSpacing: 12,
+                textScaler: MediaQuery.textScalerOf(context),
                 crossAxisSpacing: 10,
-                childAspectRatio: 0.68,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, i) {
@@ -326,11 +325,12 @@ class _ChipRows extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: 44,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+        // Height comes from the chips (>= 48dp tap target, grows with the text
+        // scale) - no fixed SizedBox that would clip at large font sizes.
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
             children: [
               _Chip(
                 label: l.allCategories,
@@ -347,11 +347,10 @@ class _ChipRows extends StatelessWidget {
           ),
         ),
         if (subs.isNotEmpty)
-          SizedBox(
-            height: 40,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
               children: [
                 _Chip(
                   label: l.allCategories,
@@ -395,8 +394,8 @@ class _Chip extends StatelessWidget {
           label: Text(label),
           selected: selected,
           onSelected: (_) => onSelected(),
-          visualDensity: small ? VisualDensity.compact : VisualDensity.standard,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          // Standard density + padded tap target: the touch area is >= 48dp.
+          materialTapTargetSize: MaterialTapTargetSize.padded,
         ),
       ),
     );

@@ -21,6 +21,10 @@ String apiErrorText(AppLocalizations l, Object? error, {String? authText}) {
   final e = error;
   final status = e.status ?? 0;
   if (e.isNetwork) return l.cust2ErrNetwork;
+  // The daily cancel cap is a 429 too, but a different message than "slow down".
+  if (e.code == 'CANCEL_RATE_LIMIT_EXCEEDED') return l.moneyErrCancelRateLimit;
+  if (e.code == 'PAYMENT_NOT_ALLOWED_IN_STATUS') return l.moneyErrPaymentNotAllowed;
+  if (e.code == 'PAYMENT_GATEWAY_UNAVAILABLE') return l.moneyErrGatewayUnavailable;
   if (e.isRateLimited) return l.cust2ErrRateLimit;
   if (e.isMaintenance) return l.cust2ErrMaintenance;
   switch (e.code) {
@@ -37,6 +41,10 @@ String apiErrorText(AppLocalizations l, Object? error, {String? authText}) {
       return l.cust2ErrNotFound;
     case 'VALIDATION':
       return l.cust2ErrValidation;
+    case 'IDEMPOTENCY_STALE':
+      return l.moneyErrCheckTransaction;
+    case 'IDEMPOTENCY_IN_PROGRESS':
+      return l.moneyErrInProgress;
     case 'INTERNAL':
     case 'UPSTREAM':
       return l.cust2ErrServer;
@@ -53,4 +61,17 @@ String apiErrorText(AppLocalizations l, Object? error, {String? authText}) {
   final msg = e.message.trim();
   if (msg.isNotEmpty && msg != 'Request failed') return msg;
   return e.code == 'CONFLICT' ? l.cust2ErrConflict : l.genericError;
+}
+
+/// Localized copy for a failed OTP *send* (`/auth/otp/request`): the specific
+/// phone reason or rate limit when known, offline / maintenance copy for
+/// transport failures, else the generic "could not send the code".
+String otpSendErrorText(AppLocalizations l, Object? error) {
+  if (error is ApiException) {
+    final reason = error.fields?['phone'];
+    if (error.isRateLimited || reason == 'rate_limited') return l.provOtpRateLimited;
+    if (reason == 'invalid_phone' || reason == 'invalid') return l.provOtpInvalidPhone;
+    if (error.isNetwork || error.isMaintenance) return apiErrorText(l, error);
+  }
+  return l.provOtpSendFailed;
 }

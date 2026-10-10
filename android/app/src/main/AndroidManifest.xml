@@ -9,10 +9,22 @@
          CAMERA / READ_MEDIA permission is required. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Security hardening (MASVS-STORAGE / -NETWORK):
+         - allowBackup=false: no adb/cloud backup of app data (tokens live in the
+           Keystore-backed secure storage; checkout drafts in SharedPreferences).
+         - dataExtractionRules: Android 12+ device-to-device transfer also excludes
+           everything (allowBackup alone does not cover it).
+         - networkSecurityConfig: cleartext HTTP is OFF for release; only the
+           debug source set re-allows 127.0.0.1 / localhost / 10.0.2.2. -->
     <application
         android:label="Kyco"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:usesCleartextTraffic="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -47,6 +59,11 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <!-- url_launcher: open https links (maps, kyco.vn) in the browser / maps app. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

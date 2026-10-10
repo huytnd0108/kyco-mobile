@@ -11,7 +11,7 @@ import '../../core/models.dart';
 /// enter it (customer / pending_tasker / unknown) — they go home instead of
 /// bouncing through the role gate into onboarding.
 String resumeAfterLogin(String? from, String? role) {
-  if (from == null || from.isEmpty) return '/';
+  if (from == null || from.isEmpty) return role == 'tasker' ? '/p' : '/';
   final isTasker = from == '/p' || from.startsWith('/p/') || from.startsWith('/p?');
   if (isTasker && role != 'tasker' && role != 'admin') return '/';
   return from;
@@ -29,6 +29,18 @@ final authUserIdProvider = Provider<int?>((ref) {
 
 enum AuthStatus { unknown, signedIn, signedOut }
 
+/// Why the session ended without an explicit logout (login screen banner).
+enum SignOutReason {
+  /// A refresh / authed call was definitively rejected (401).
+  sessionExpired,
+
+  /// A stale pre-rename, unknown or missing role: re-login required.
+  staleSession,
+
+  /// The account is locked (role `banned`).
+  accountLocked,
+}
+
 class AuthState {
   const AuthState({
     required this.status,
@@ -37,6 +49,7 @@ class AuthState {
     this.error,
     this.failure,
     this.explicitLogout = false,
+    this.reason,
   });
   final AuthStatus status;
   final AuthUser? user;
@@ -53,6 +66,10 @@ class AuthState {
   /// (not a refresh-lost sign-out) — the app routes home on it.
   final bool explicitLogout;
 
+  /// Set on a forced sign-out; shown as a notice on the login screen until the
+  /// next login attempt. Not an error: [AuthController.clearError] keeps it.
+  final SignOutReason? reason;
+
   AuthState copyWith({AuthStatus? status, AuthUser? user, bool? busy, String? error, ApiException? failure}) =>
       AuthState(
         status: status ?? this.status,
@@ -60,6 +77,7 @@ class AuthState {
         busy: busy ?? this.busy,
         error: error,
         failure: failure,
+        reason: reason,
       );
 
   static const unknown = AuthState(status: AuthStatus.unknown);
@@ -88,13 +106,12 @@ class AuthController extends Notifier<AuthState> {
     }
     try {
       final user = await _api.me();
-      state = AuthState(status: AuthStatus.signedIn, user: user);
+      await _accept(user);
     } on ApiException catch (e) {
       if (e.isUnauthorized) {
         // The token is genuinely rejected (and the client's own refresh already
         // failed) — only NOW drop the stored session.
-        await _tokens.clear();
-        state = const AuthState(status: AuthStatus.signedOut);
+        await _signOut(SignOutReason.sessionExpired);
       } else {
         // Offline / timeout / 503 MAINTENANCE / 5xx — the session may still be
         // valid. Keep the tokens and enter optimistically; any later authed call
@@ -121,7 +138,7 @@ class AuthController extends Notifier<AuthState> {
       // Re-check: only apply if we're still signed-in with no user (never race
       // a logout / sign-out that happened while /me was in flight).
       if (state.status == AuthStatus.signedIn && state.user == null) {
-        state = AuthState(status: AuthStatus.signedIn, user: user);
+        await _accept(user);
       }
     } catch (_) {
       // Still offline / dark-launched — keep the optimistic session as-is.
@@ -155,10 +172,15 @@ class AuthController extends Notifier<AuthState> {
       _run(() => _api.signup(email: email, password: password, name: name));
 
   Future<bool> _run(Future<AuthResult> Function() action) async {
-    state = state.copyWith(busy: true, error: null);
+    state = AuthState(status: state.status, user: state.user, busy: true);
     try {
       final res = await action();
-      state = AuthState(status: AuthStatus.signedIn, user: res.user);
+      final user = res.user;
+      if (user != null && user.roleValidity != SessionValidity.ok) {
+        await _accept(user);
+        return false;
+      }
+      state = AuthState(status: AuthStatus.signedIn, user: user);
       return true;
     } on ApiException catch (e) {
       state = state.copyWith(busy: false, failure: e);
@@ -180,6 +202,28 @@ class AuthController extends Notifier<AuthState> {
 
   /// Called by the API client when a refresh fails (session unrecoverable).
   void markSignedOut() {
-    state = const AuthState(status: AuthStatus.signedOut);
+    state = const AuthState(status: AuthStatus.signedOut, reason: SignOutReason.sessionExpired);
+  }
+
+  /// Accept [user] as the session user, unless the role says the session must
+  /// end: banned → account-locked sign-out; stale / unknown / missing role →
+  /// forced re-login. Never maps a bad role to customer or guest.
+  Future<void> _accept(AuthUser user) async {
+    switch (user.roleValidity) {
+      case SessionValidity.ok:
+        state = AuthState(status: AuthStatus.signedIn, user: user);
+      case SessionValidity.banned:
+        await _signOut(SignOutReason.accountLocked);
+      case SessionValidity.stale:
+        await _signOut(SignOutReason.staleSession);
+    }
+  }
+
+  Future<void> _signOut(SignOutReason reason) async {
+    try {
+      await _tokens.clear();
+    } finally {
+      state = AuthState(status: AuthStatus.signedOut, reason: reason);
+    }
   }
 }

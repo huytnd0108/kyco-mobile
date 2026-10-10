@@ -5,6 +5,7 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/api/problem.dart';
 import '../../core/ui/error_text.dart';
+import '../../core/ui/resend_cooldown.dart';
 import '../../core/widgets.dart';
 import 'auth_controller.dart';
 
@@ -17,6 +18,19 @@ String? authFromParam(BuildContext context) => GoRouter.maybeOf(context) == null
 /// Localized banner text for the auth screens' last failure (null = none).
 /// Typed failures go through [apiErrorText]; [authText] overrides the 401 copy
 /// (a login 401 means "wrong credentials", not "session expired").
+/// Notice for a FORCED sign-out (stale role, locked account, expired session);
+/// null when the user simply is not signed in. Not an error — it stays until
+/// the next login attempt.
+String? signOutNoticeText(AppLocalizations l, AuthState auth) {
+  if (auth.status != AuthStatus.signedOut) return null;
+  return switch (auth.reason) {
+    SignOutReason.staleSession => l.authSessionStale,
+    SignOutReason.accountLocked => l.authAccountLocked,
+    SignOutReason.sessionExpired => l.cust2ErrSessionExpired,
+    null => null,
+  };
+}
+
 String? authErrorText(AppLocalizations l, AuthState auth, {String? authText}) {
   if (auth.failure != null) return apiErrorText(l, auth.failure, authText: authText);
   if (auth.error == null) return null;
@@ -49,8 +63,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// Shown once the server answers TOTP_REQUIRED (or TOTP_INVALID).
   bool _needTotp = false;
 
+  /// Gates the OTP resend button (60 s, or the server's Retry-After on a 429).
+  final _cooldown = ResendCooldown();
+
+  @override
+  void initState() {
+    super.initState();
+    // A failure from a previous visit (or from the sign-up screen) must not
+    // greet the user on re-entry.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(authControllerProvider.notifier).clearError();
+    });
+  }
+
+  /// Editing a field dismisses the stale failure banner.
+  void _onEdited([String? _]) => ref.read(authControllerProvider.notifier).clearError();
+
   @override
   void dispose() {
+    _cooldown.dispose();
     _email.dispose();
     _password.dispose();
     _phone.dispose();
@@ -73,6 +104,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   static final _phoneRe = RegExp(r'^\+?[0-9 .-]{8,16}$');
   static final _otpRe = RegExp(r'^[0-9]{4,8}$');
 
+  /// Back out of the login screen: pop when it was pushed, else go home.
+  void _leave() => context.canPop() ? context.pop() : context.go('/');
+
   Future<void> _sendOtp() async {
     final l = AppLocalizations.of(context);
     final phone = _phone.text.trim();
@@ -90,7 +124,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _sending = false;
       if (failure == null) {
         _otpSentTo = phone;
+        _cooldown.start();
       } else {
+        _cooldown.startAfterFailure(failure);
         _sendError = (failure is ApiException && failure.code == 'VALIDATION')
             ? l.cust2PhoneInvalid
             : apiErrorText(l, failure);
@@ -127,9 +163,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final auth = ref.watch(authControllerProvider);
     final errorText = authErrorText(l, auth,
         authText: _mode == _LoginMode.email ? l.cust2ErrLoginInvalid : l.cust2ErrOtpLoginInvalid);
+    final noticeText = signOutNoticeText(l, auth);
     final phoneMode = _mode == _LoginMode.phone;
     final canSubmit = !auth.busy && (!phoneMode || _otpSentTo != null);
     return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          key: const ValueKey('login-close'),
+          tooltip: l.closeAction,
+          icon: const Icon(Icons.close),
+          onPressed: _leave,
+        ),
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -145,6 +191,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 28),
                     Text(l.login, style: Theme.of(context).textTheme.headlineSmall),
                     const SizedBox(height: 16),
+                    if (noticeText != null) ...[
+                      ErrorBanner(noticeText),
+                      const SizedBox(height: 16),
+                    ],
                     // Wrap (not SegmentedButton) so it never overflows at 320dp.
                     Wrap(
                       spacing: 8,
@@ -172,6 +222,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         autofillHints: const [AutofillHints.email],
                         textInputAction: TextInputAction.next,
                         decoration: InputDecoration(labelText: l.email),
+                        onChanged: _onEdited,
                         validator: (v) => (v == null || !v.contains('@')) ? l.emailInvalid : null,
                       ),
                       const SizedBox(height: 14),
@@ -180,6 +231,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         obscureText: _obscure,
                         autofillHints: const [AutofillHints.password],
                         onFieldSubmitted: (_) => _submit(),
+                        onChanged: _onEdited,
                         decoration: InputDecoration(
                           labelText: l.password,
                           suffixIcon: IconButton(
@@ -188,7 +240,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             onPressed: () => setState(() => _obscure = !_obscure),
                           ),
                         ),
-                        validator: (v) => (v == null || v.length < 8) ? l.passwordMin8 : null,
+                        // Login only needs a non-empty password: the 8-char rule is signup-only
+                        // (a legacy account may have a shorter one); the server decides.
+                        validator: (v) => (v == null || v.isEmpty) ? l.cust2Required : null,
                       ),
                     ] else ...[
                       TextFormField(
@@ -199,18 +253,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         enabled: !_sending && !auth.busy,
                         decoration: InputDecoration(labelText: l.cust2PhoneLabel),
                         onChanged: (_) {
+                          _onEdited();
                           // Editing the number invalidates a code sent to the old one.
                           if (_otpSentTo != null) setState(() => _otpSentTo = null);
                         },
                         validator: (v) => (v == null || !_phoneRe.hasMatch(v.trim())) ? l.cust2PhoneInvalid : null,
                       ),
                       const SizedBox(height: 10),
-                      OutlinedButton(
-                        key: const ValueKey('login-send-otp'),
-                        onPressed: (_sending || auth.busy) ? null : _sendOtp,
-                        child: _sending
-                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                            : Text(_otpSentTo == null ? l.cust2SendCode : l.cust2ResendCode),
+                      ListenableBuilder(
+                        listenable: _cooldown,
+                        builder: (context, _) => OutlinedButton(
+                          key: const ValueKey('login-send-otp'),
+                          onPressed: (_sending || auth.busy || _cooldown.active) ? null : _sendOtp,
+                          child: _sending
+                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                              : Text(_cooldown.active
+                                  ? l.otpResendIn(_cooldown.remaining)
+                                  : (_otpSentTo == null ? l.cust2SendCode : l.cust2ResendCode)),
+                        ),
                       ),
                       if (_sendError != null) ...[
                         const SizedBox(height: 10),
@@ -227,6 +287,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           keyboardType: TextInputType.number,
                           autofillHints: const [AutofillHints.oneTimeCode],
                           onFieldSubmitted: (_) => _submit(),
+                          onChanged: _onEdited,
                           decoration: InputDecoration(labelText: l.cust2OtpLabel),
                           validator: (v) => (v == null || !_otpRe.hasMatch(v.trim())) ? l.cust2OtpFormat : null,
                         ),
@@ -262,8 +323,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: Text(l.noAccountSignup),
                     ),
                     TextButton(
-                      onPressed: () => context.go('/'),
+                      onPressed: _leave,
                       child: Text(l.browseWithoutLogin),
+                    ),
+                    // Account pending deletion (30-day grace): restore it.
+                    TextButton(
+                      key: const ValueKey('login-restore-link'),
+                      onPressed: auth.busy ? null : () => context.push('/restore-account'),
+                      child: Text(l.loginRestoreLink),
                     ),
                   ],
                 ),

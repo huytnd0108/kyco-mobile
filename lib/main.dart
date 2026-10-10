@@ -4,10 +4,12 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/error_reporter.dart';
 import 'core/prefs.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  installGlobalErrorHandling();
   final prefs = await SharedPreferences.getInstance();
   await initializeDateFormatting(); // vi_VN date symbols
   runApp(ProviderScope(

@@ -5,7 +5,6 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 import '../../core/adaptive.dart';
 import '../../core/api/problem.dart';
 import '../../core/models.dart';
-import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import 'account_providers.dart';
 
@@ -25,11 +24,11 @@ class HelpScreen extends ConsumerWidget {
           child: async.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => ErrorRetry(
-              message: apiErrorText(l, e),
+              error: e,
               onRetry: () => ref.invalidate(helpFaqProvider),
             ),
             data: (items) => items.isEmpty
-                ? EmptyState(icon: '❔', message: l.cust2HelpEmpty)
+                ? EmptyState(icon: Icons.help_outline, message: l.cust2HelpEmpty)
                 : ListView.separated(
                     padding: const EdgeInsets.all(12),
                     itemCount: items.length,
@@ -74,9 +73,9 @@ class LegalDocScreen extends ConsumerWidget {
           child: async.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => (e is ApiException && (e.code == 'NOT_FOUND' || e.status == 404))
-                ? EmptyState(icon: '📄', message: l.cust2DocUnavailable)
+                ? EmptyState(icon: Icons.description_outlined, message: l.cust2DocUnavailable)
                 : ErrorRetry(
-                    message: apiErrorText(l, e),
+                    error: e,
                     onRetry: () => ref.invalidate(legalDocProvider(doc)),
                   ),
             data: (ContentSection s) => ListView(

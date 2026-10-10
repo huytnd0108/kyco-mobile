@@ -5,12 +5,14 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/adaptive.dart';
 import '../../core/api/kyco_api.dart';
+import '../../core/ui/error_text.dart';
 import '../../core/api/problem.dart';
 import '../../core/di.dart';
 import '../../core/format.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
 import 'tasker_compliance_providers.dart';
+import 'package:kyco_mobile/core/labels.dart';
 
 /// Minimum appeal body length the backend enforces (422 below this).
 const int _kMinAppealChars = 20;
@@ -38,13 +40,13 @@ class TaskerFineAppealScreen extends ConsumerWidget {
           child: detail.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => ErrorRetry(
-              message: l.homeLoadError(e.toString()),
+              error: e,
               onRetry: () => ref.invalidate(fineDetailProvider(id)),
             ),
             data: (view) {
               final fine = view.fine;
               if (fine == null) {
-                return EmptyState(message: l.provAppealNotFound, icon: '🔍');
+                return EmptyState(message: l.provAppealNotFound, icon: Icons.search_off);
               }
               return ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -73,6 +75,7 @@ class _FineCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -84,8 +87,8 @@ class _FineCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // kind / reason are backend enums — shown raw (server-derived display).
-          Text(fine.kind ?? '—',
+          // kind is a backend enum -> localized label; reason is free text.
+          Text(fineKindLabel(l, fine.kind),
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
@@ -131,8 +134,7 @@ class _ExistingAppeal extends StatelessWidget {
               children: [
                 Text(l.provAppealStatusLabel,
                     style: TextStyle(color: cs.onSurfaceVariant)),
-                // status is a backend enum — shown raw.
-                Text(appeal.status ?? '—',
+                Text(appealStatusLabel(l, appeal.status),
                     style: const TextStyle(fontWeight: FontWeight.w700)),
               ],
             ),
@@ -197,9 +199,9 @@ class _AppealFormState extends ConsumerState<_AppealForm> {
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _error = _messageFor(e));
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      setState(() => _error = e.toString());
+      setState(() => _error = AppLocalizations.of(context).genericError);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -213,7 +215,7 @@ class _AppealFormState extends ConsumerState<_AppealForm> {
     if (e.status == 422) {
       return AppLocalizations.of(context).provAppealMinChars(_kMinAppealChars);
     }
-    return e.message;
+    return apiErrorText(AppLocalizations.of(context), e);
   }
 
   @override

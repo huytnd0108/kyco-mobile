@@ -88,31 +88,3 @@ class TaskerScaffold extends StatelessWidget {
     );
   }
 }
-
-/// Shared compiling placeholder for the tasker screens the parallel D-units
-/// will flesh out. Renders a titled scaffold with a "coming soon" body — NEVER
-/// invokes an API or a money call.
-class TaskerStubScreen extends StatelessWidget {
-  const TaskerStubScreen({super.key, required this.title, this.icon = Icons.construction});
-  final String title;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    final cs = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 48, color: cs.onSurfaceVariant),
-            const SizedBox(height: 12),
-            Text(l.provComingSoon, style: TextStyle(color: cs.onSurfaceVariant)),
-          ],
-        ),
-      ),
-    );
-  }
-}

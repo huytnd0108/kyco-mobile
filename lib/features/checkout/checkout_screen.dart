@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:kyco_mobile/core/datetime.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/di.dart';
 import '../../core/models.dart';
 import '../../core/ui/error_text.dart';
+import '../../core/ui/not_found_screen.dart';
 import '../../core/widgets.dart';
 import '../auth/auth_controller.dart';
 import '../home/home_providers.dart';
@@ -30,6 +31,7 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool _seeded = false;
   bool _submitting = false;
+  final _keys = CheckoutFieldKeys();
 
   int get _id => widget.serviceId;
 
@@ -55,6 +57,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    // A malformed deep link (/checkout/abc) parses to 0: not found, no request.
+    if (_id <= 0) return const NotFoundScreen();
     final serviceAsync = ref.watch(checkoutServiceProvider(_id));
 
     return Scaffold(
@@ -62,12 +66,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       body: serviceAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ErrorRetry(
-          message: l.genericError,
+          error: e,
           onRetry: () => ref.invalidate(checkoutServiceProvider(_id)),
         ),
         data: (service) {
           _seedOnce(service);
-          return _CheckoutBody(serviceId: _id, service: service);
+          return _CheckoutBody(serviceId: _id, service: service, keys: _keys);
         },
       ),
       bottomNavigationBar: serviceAsync.maybeWhen(
@@ -87,16 +91,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final draft = ref.read(draftControllerProvider(_id));
     if (draft == null) return;
     // Light client guard — the server is authoritative, but empty required
-    // fields shouldn't cost a round-trip.
-    final missing = (draft.scheduledDate ?? '').isEmpty ||
-        (draft.scheduledTime ?? '').isEmpty ||
-        (draft.wardName ?? '').isEmpty ||
-        draft.addressLine.trim().isEmpty;
-    if (missing) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        // TODO-i18n: no "complete required fields" key in the ARB yet.
-        SnackBar(content: Text(AppLocalizations.of(context).completeRequiredFields)),
-      );
+    // fields shouldn't cost a round-trip. Missing fields get an inline error
+    // each (readable by a screen reader) and the first one is scrolled to.
+    final firstMissing = _firstMissingField(draft);
+    if (firstMissing != null) {
+      ref.read(checkoutShowErrorsProvider(_id).notifier).state = true;
+      final ctx = firstMissing.currentContext;
+      if (ctx != null) {
+        await Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 250), alignment: 0.2);
+      }
       return;
     }
 
@@ -109,6 +112,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ref.invalidate(conversationsProvider);
       ref.invalidate(bookingDetailProvider(result.bookingId));
       if (!mounted) return;
+      if (result.bookingId <= 0) {
+        // The response carried no usable booking id: never navigate to
+        // /bookings/0. Keep the draft and point the user at the list.
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.bookingCreateUnconfirmed)));
+        return;
+      }
       if (result.kind == 'dedup') {
         // Idempotent replay — the booking already exists; jump straight to it.
         await _draftCtrl.clear();
@@ -132,6 +141,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
+  /// The key of the first required field that is empty (page order), else null.
+  GlobalKey? _firstMissingField(BookingDraft draft) {
+    if ((draft.scheduledDate ?? '').isEmpty) return _keys.date;
+    if ((draft.scheduledTime ?? '').isEmpty) return _keys.time;
+    if ((draft.wardName ?? '').isEmpty) return _keys.ward;
+    if (draft.addressLine.trim().isEmpty) return _keys.street;
+    return null;
+  }
+
   Future<void> _showSuccess(CreateBookingResult r) {
     return showModalBottomSheet<void>(
       context: context,
@@ -143,9 +161,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 }
 
 class _CheckoutBody extends ConsumerWidget {
-  const _CheckoutBody({required this.serviceId, required this.service});
+  const _CheckoutBody({required this.serviceId, required this.service, required this.keys});
   final int serviceId;
   final ServiceDetail service;
+  final CheckoutFieldKeys keys;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -161,11 +180,11 @@ class _CheckoutBody extends ConsumerWidget {
         ],
         _ServiceHero(service: service),
         const SizedBox(height: 20),
-        _SlotSection(serviceId: serviceId),
+        _SlotSection(serviceId: serviceId, keys: keys),
         const SizedBox(height: 20),
         Text(l.addressLineLabel, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 12),
-        CheckoutAddressFields(serviceId: serviceId),
+        CheckoutAddressFields(serviceId: serviceId, keys: keys),
         const SizedBox(height: 20),
         const _DeferredPaymentNotice(),
       ],
@@ -242,16 +261,22 @@ class _ServiceHero extends StatelessWidget {
         Text(service.name,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
-        Row(
+        // Wrap, not Row: price + duration wrap onto two lines at large font sizes.
+        Wrap(
+          spacing: 8,
+          runSpacing: 2,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            PriceText(service.basePriceVnd),
-            if (service.durationMinutes != null) ...[
-              const SizedBox(width: 8),
+            PriceText(service.basePriceVnd, from: true),
+            if (service.durationMinutes != null)
               Text('· ${l.minutesShort(service.durationMinutes!)}',
                   style: TextStyle(color: cs.onSurfaceVariant)),
-            ],
           ],
         ),
+        const SizedBox(height: 4),
+        Text(l.moneyEstimateNote,
+            key: const ValueKey('checkout-estimate-note'),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
         if (service.description != null && service.description!.isNotEmpty) ...[
           const SizedBox(height: 8),
           Text(service.description!, style: TextStyle(color: cs.onSurfaceVariant)),
@@ -263,24 +288,34 @@ class _ServiceHero extends StatelessWidget {
 
 /// Free-form date + time (native pickers, no availability call — web parity).
 class _SlotSection extends ConsumerWidget {
-  const _SlotSection({required this.serviceId});
+  const _SlotSection({required this.serviceId, required this.keys});
   final int serviceId;
+  final CheckoutFieldKeys keys;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final draft = ref.watch(draftControllerProvider(serviceId));
     final ctrl = ref.read(draftControllerProvider(serviceId).notifier);
+    final showErrors = ref.watch(checkoutShowErrorsProvider(serviceId));
+    String? errorFor(String? v) => showErrors && (v ?? '').isEmpty ? l.cust2Required : null;
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: _PickerTile(
+            key: keys.date,
+            errorText: errorFor(draft?.scheduledDate),
             label: l.dateLabel,
             value: draft?.scheduledDate,
+            display: (draft?.scheduledDate ?? '').isEmpty
+                ? null
+                : vnDateKeyLabel(context, draft!.scheduledDate),
             icon: Icons.calendar_today,
             onTap: () async {
-              final now = DateTime.now();
+              // "Today" is the Vietnam calendar date, not the device's.
+              final now = vnToday();
               final initial = _parseDate(draft?.scheduledDate) ?? now;
               final picked = await showDatePicker(
                 context: context,
@@ -288,15 +323,21 @@ class _SlotSection extends ConsumerWidget {
                 firstDate: now,
                 lastDate: now.add(const Duration(days: 365)),
               );
-              if (picked != null) ctrl.setDate(DateFormat('yyyy-MM-dd').format(picked));
+              if (picked != null) ctrl.setDate(vnDateKey(picked));
             },
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _PickerTile(
+            key: keys.time,
+            errorText: errorFor(draft?.scheduledTime),
             label: l.timeLabel,
             value: draft?.scheduledTime,
+            display: _parseTime(draft?.scheduledTime) == null
+                ? null
+                : MaterialLocalizations.of(context)
+                    .formatTimeOfDay(_parseTime(draft?.scheduledTime)!),
             icon: Icons.schedule,
             onTap: () async {
               final t = _parseTime(draft?.scheduledTime) ?? const TimeOfDay(hour: 9, minute: 0);
@@ -324,9 +365,14 @@ class _SlotSection extends ConsumerWidget {
 }
 
 class _PickerTile extends StatelessWidget {
-  const _PickerTile({required this.label, required this.value, required this.icon, required this.onTap});
+  const _PickerTile(
+      {super.key, required this.label, required this.value, required this.icon, required this.onTap, this.display, this.errorText});
+  final String? errorText;
   final String label;
   final String? value;
+
+  /// Localized text shown for [value] (the wire value stays `yyyy-MM-dd` / `HH:mm`).
+  final String? display;
   final IconData icon;
   final VoidCallback onTap;
 
@@ -334,21 +380,28 @@ class _PickerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final hasValue = value != null && value!.isNotEmpty;
-    return InkWell(
+    return Semantics(
+      button: true,
+      label: label,
+      value: hasValue ? (display ?? value) : null,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,
+          errorText: errorText,
           border: const OutlineInputBorder(),
           prefixIcon: Icon(icon, size: 18),
         ),
         child: Text(
-          hasValue ? value! : '—',
+          hasValue ? (display ?? value!) : '—',
           style: TextStyle(color: hasValue ? cs.onSurface : cs.onSurfaceVariant),
         ),
       ),
-    );
+    ));
   }
 }
 
@@ -398,6 +451,11 @@ class _SubmitBar extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final anon = ref.watch(authControllerProvider).status != AuthStatus.signedIn;
     final from = Uri.encodeQueryComponent('/checkout/$serviceId');
+    // Server quote (new backend) once the draft is complete; else the estimate.
+    final draft = ref.watch(draftControllerProvider(serviceId));
+    final quote = isDraftQuotable(draft)
+        ? ref.watch(checkoutQuoteProvider((serviceId: serviceId, sig: quoteSignature(draft!)))).valueOrNull
+        : null;
 
     return StickyBottomCta(
       child: Row(
@@ -406,9 +464,12 @@ class _SubmitBar extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(l.subtotalLabel,
+              // Before the booking exists only the service BASE price is known;
+              // the server adds surcharges / compensation fees at create time.
+              Text(quote != null ? l.moneyQuoteLabel : l.moneyEstimateLabel,
+                  key: const ValueKey('checkout-total-label'),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
-              PriceText(service.basePriceVnd, style: Theme.of(context).textTheme.titleLarge),
+              PriceText(quote?.totalVnd ?? service.basePriceVnd, style: Theme.of(context).textTheme.titleLarge),
             ],
           ),
           const SizedBox(width: 16),
@@ -461,7 +522,6 @@ class _SuccessSheet extends StatelessWidget {
           if (r.confirmationCode != null && r.confirmationCode!.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
-              // TODO-i18n: no "confirmation code" label key in the ARB yet.
               '${l.confirmationCode}: ${r.confirmationCode}',
               textAlign: TextAlign.center,
               style: TextStyle(color: cs.onSurfaceVariant, fontFeatures: const []),
@@ -481,8 +541,7 @@ class _SuccessSheet extends StatelessWidget {
           if (hasPayInfo) ...[
             const SizedBox(height: 8),
             Text(
-              // TODO-i18n: online-payment info line (out of scope — display only).
-              'Thanh toán trực tuyến khả dụng trên website.',
+              l.onlinePaymentOnWeb,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
             ),
           ],

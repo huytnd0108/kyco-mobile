@@ -61,7 +61,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String helloGreeting(String name) {
-    return 'Hello, $name 👋';
+    return 'Hello, $name';
   }
 
   @override
@@ -421,9 +421,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provWorkspace => 'Tasker workspace';
 
   @override
-  String get provComingSoon => 'Coming soon';
-
-  @override
   String get provTabHome => 'Home';
 
   @override
@@ -716,8 +713,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provHomeToday => 'Today';
 
   @override
-  String get provHomeTodayEmpty =>
-      'Nothing scheduled today. Enjoy the break ☕.';
+  String get provHomeTodayEmpty => 'Nothing scheduled today. Enjoy the break.';
 
   @override
   String get provHomeUpcoming => 'Upcoming';
@@ -1228,7 +1224,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provJdCheckOut => 'Check out (GPS)';
 
   @override
-  String get provJdCashReceivedAction => '✅ Cash received from customer';
+  String get provJdCashReceivedAction => 'Cash received from customer';
 
   @override
   String get provJdCashCommissionNote =>
@@ -1236,14 +1232,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get provJdAwaitingCustomerInfo =>
-      '⏳ Awaiting customer confirmation (auto-confirms in 2h).';
+      'Awaiting customer confirmation (auto-confirms in 2h).';
 
   @override
   String get provJdAwaitingPaymentInfo =>
-      '⏳ Customer is paying — Kyco transfers 80% on confirmation.';
+      'Customer is paying — Kyco transfers 80% on confirmation.';
 
   @override
-  String get provJdClosedInfo => '🔒 This job is closed. No further actions.';
+  String get provJdClosedInfo => 'This job is closed. No further actions.';
 
   @override
   String get provJdCancelledInfo => 'This job was cancelled.';
@@ -1261,7 +1257,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get provJdSettledThanks =>
-      '✅ Kyco has paid you 80% of the booking total. Thank you for working with us!';
+      'Kyco has paid you 80% of the booking total. Thank you for working with us!';
 
   @override
   String get provJdJobPhotos => 'Job photos (camera)';
@@ -1276,7 +1272,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provJdSendSos => 'Send emergency SOS';
 
   @override
-  String get provJdShareLocation => '📍 Share location with the customer';
+  String get provJdShareLocation => 'Share location with the customer';
 
   @override
   String get provJdShareLiveTitle => 'Share my live location — coming soon';
@@ -1331,19 +1327,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provBonusNotEarned => 'Not earned';
 
   @override
-  String get provBonusKindWeeklyJobs => '🏆 Weekly bonus (jobs)';
+  String get provBonusKindWeeklyJobs => 'Weekly bonus (jobs)';
 
   @override
-  String get provBonusKindMonthlyRevenue => '🏅 Monthly bonus (revenue)';
+  String get provBonusKindMonthlyRevenue => 'Monthly bonus (revenue)';
 
   @override
-  String get provBonusKindPunctuality => '📅 Punctuality bonus';
+  String get provBonusKindPunctuality => 'Punctuality bonus';
 
   @override
-  String get provBonusKindRating => '⭐ High-rating bonus';
+  String get provBonusKindRating => 'High-rating bonus';
 
   @override
-  String get provBonusKindReferral => '👥 Referral bonus';
+  String get provBonusKindReferral => 'Referral bonus';
 
   @override
   String get provGoalsThisWeek => 'This week';
@@ -1449,7 +1445,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'A higher bonus multiplier for the same performance.';
 
   @override
-  String get provVipWelcome => 'Welcome, VIP partner 💎';
+  String get provVipWelcome => 'Welcome, VIP partner';
 
   @override
   String get provVipPerksTitle => 'VIP perks';
@@ -2187,4 +2183,611 @@ class AppLocalizationsEn extends AppLocalizations {
   String provWalletPayoutRequestReason(String reason) {
     return 'Reason: $reason';
   }
+
+  @override
+  String get authSessionStale =>
+      'Your session is out of date. Please sign in again.';
+
+  @override
+  String get authAccountLocked =>
+      'Your account has been locked. Please contact support.';
+
+  @override
+  String otpResendIn(int seconds) {
+    return 'Resend code in ${seconds}s';
+  }
+
+  @override
+  String get closeAction => 'Close';
+
+  @override
+  String get notFoundTitle => 'Page not found';
+
+  @override
+  String get notFoundBody =>
+      'The page you are looking for does not exist or has moved.';
+
+  @override
+  String get goHomeAction => 'Go to home';
+
+  @override
+  String get bookingNotFoundNoId => 'Booking not found.';
+
+  @override
+  String get backToMyBookings => 'Back to my bookings';
+
+  @override
+  String get bookingCreateUnconfirmed =>
+      'We could not confirm your booking. Please check My bookings before trying again.';
+
+  @override
+  String prov2LiveShareReconnecting(String time) {
+    return 'Connection lost, retrying… Last sent at $time';
+  }
+
+  @override
+  String get goalNumberPositive => 'Enter a number greater than 0.';
+
+  @override
+  String goalJobsMax(int max) {
+    return 'At most $max jobs.';
+  }
+
+  @override
+  String get moneyEstimateLabel => 'Estimated price';
+
+  @override
+  String get moneyEstimateNote =>
+      'The final total is calculated by the system after you book and may include surcharges or compensation fees.';
+
+  @override
+  String get moneySurchargeLabel => 'Surcharge';
+
+  @override
+  String get moneyCompensationLabel => 'Compensation fee';
+
+  @override
+  String get moneyManualSettlementNote =>
+      'This booking is awaiting payment reconciliation. We will update it soon.';
+
+  @override
+  String get moneyCashAwaitingNote =>
+      'Waiting for the tasker to confirm the cash was received.';
+
+  @override
+  String get moneyDialogClose => 'Close';
+
+  @override
+  String get moneyCancelAction => 'Cancel booking';
+
+  @override
+  String get moneyCancelTitle => 'Cancel this booking?';
+
+  @override
+  String get moneyCancelPolicy =>
+      'Cancelling before the scheduled time is free. Cancelling after it may incur a cancellation fee under Kyco\'s policy.';
+
+  @override
+  String get moneyCancelReasonLabel => 'Reason for cancelling';
+
+  @override
+  String get moneyCancelReasonPlanChanged => 'My plans changed';
+
+  @override
+  String get moneyCancelReasonFoundOther => 'I chose another service';
+
+  @override
+  String get moneyCancelReasonWrongTime => 'Wrong time booked';
+
+  @override
+  String get moneyCancelReasonOther => 'Other reason';
+
+  @override
+  String get moneyCancelNoteLabel => 'Additional note (optional)';
+
+  @override
+  String get moneyCancelKeep => 'Keep booking';
+
+  @override
+  String get moneyCancelConfirm => 'Confirm cancellation';
+
+  @override
+  String get moneyCancelDone => 'Booking cancelled.';
+
+  @override
+  String get moneyErrCancelRateLimit =>
+      'You have reached the daily cancellation limit. Please try again tomorrow.';
+
+  @override
+  String get moneyErrCheckTransaction =>
+      'The result of the transaction is unclear. Please check its status before trying again.';
+
+  @override
+  String get moneyErrInProgress =>
+      'Your request is still being processed. Please wait a moment and try again.';
+
+  @override
+  String get moneyConfirmAction => 'Confirm completion';
+
+  @override
+  String get moneyConfirmTitle => 'Confirm the work is complete';
+
+  @override
+  String get moneyConfirmMethodLabel => 'Payment method';
+
+  @override
+  String get moneyConfirmOnlineNote =>
+      'With VNPay or MoMo you will pay in the next step.';
+
+  @override
+  String get moneyConfirmSubmit => 'Confirm';
+
+  @override
+  String get moneyConfirmDone => 'Completion confirmed.';
+
+  @override
+  String get moneyDisputeAction => 'Report a problem';
+
+  @override
+  String get moneyDisputeTitle => 'Report a problem with this booking';
+
+  @override
+  String moneyDisputeHint(int min, int max) {
+    return 'Describe the problem ($min-$max characters)';
+  }
+
+  @override
+  String moneyDisputeTooShort(int min) {
+    return 'Please enter at least $min characters.';
+  }
+
+  @override
+  String moneyDisputeTooLong(int max) {
+    return 'At most $max characters.';
+  }
+
+  @override
+  String get moneyDisputeSubmit => 'Send report';
+
+  @override
+  String get moneyDisputeSent => 'Your report was sent to the tasker.';
+
+  @override
+  String get moneyDisputeWaiting =>
+      'The tasker is handling your previous report.';
+
+  @override
+  String moneyPayAction(String method) {
+    return 'Pay with $method';
+  }
+
+  @override
+  String get moneyPayConfirming => 'Confirming payment…';
+
+  @override
+  String get moneyPayWaitNote =>
+      'Finish paying in the browser or payment app, then come back. The booking is only recorded as paid once the system receives the money.';
+
+  @override
+  String get moneyPayIPaid => 'I have paid';
+
+  @override
+  String get moneyPayReopen => 'Reopen payment page';
+
+  @override
+  String get moneyPayCheckAgain => 'Check again';
+
+  @override
+  String get moneyPayPaid => 'The system has confirmed your payment.';
+
+  @override
+  String get moneyPayFailed =>
+      'The payment did not go through. You can try again.';
+
+  @override
+  String get moneyPayTimeout =>
+      'We could not confirm the payment yet. If you have paid, please check again in a few minutes.';
+
+  @override
+  String get moneyPayCash =>
+      'This booking is paid in cash, no online payment is needed.';
+
+  @override
+  String get moneyPayAlready => 'This booking is already paid.';
+
+  @override
+  String get moneyPayNoRail =>
+      'This payment method is not available right now. Please try again later or contact support.';
+
+  @override
+  String get moneyPayOpenFailed =>
+      'Could not open the payment page. Please try again.';
+
+  @override
+  String get provWalletWithdrawInvalidAmount =>
+      'The withdrawal amount is invalid or exceeds your available balance. Please check the amount.';
+
+  @override
+  String get moneyCancelReasonPrice => 'Price is too high';
+
+  @override
+  String get moneyCancelReasonSick => 'I am sick or unwell';
+
+  @override
+  String get moneyCancelReasonAddressUnreach => 'Cannot reach the address';
+
+  @override
+  String get moneyCancelReasonWrongScope => 'Job differs from the description';
+
+  @override
+  String get moneyCancelReasonSafety => 'Safety concern';
+
+  @override
+  String get moneyRefundStatusNone => 'No refund applies.';
+
+  @override
+  String get moneyRefundStatusSucceeded => 'Your refund has been paid out.';
+
+  @override
+  String get moneyRefundStatusPending => 'Your refund is being processed.';
+
+  @override
+  String get moneyRefundStatusManual =>
+      'Your refund will be handled manually by our team.';
+
+  @override
+  String get provJdCancelReasonPick => 'Reason for cancelling';
+
+  @override
+  String get provJdCancelNoteLabel => 'Additional note (optional)';
+
+  @override
+  String moneyCancelFeeLine(String amount) {
+    return 'Cancellation fee: $amount';
+  }
+
+  @override
+  String moneyCancelRefundLine(String amount) {
+    return 'Refund: $amount';
+  }
+
+  @override
+  String get moneyQuoteLabel => 'Total to pay';
+
+  @override
+  String get moneyErrPaymentNotAllowed =>
+      'This booking can\'t be paid right now. Please refresh and check its status.';
+
+  @override
+  String get moneyErrGatewayUnavailable =>
+      'The payment gateway is unavailable. Please try again in a few minutes.';
+
+  @override
+  String get labelOther => 'Other';
+
+  @override
+  String get fineKindCancelLate => 'Late cancellation';
+
+  @override
+  String get fineKindLate => 'Late arrival';
+
+  @override
+  String get fineKindExtraCharge => 'Off-platform extra charge';
+
+  @override
+  String get fineKindPrivateClient => 'Private client';
+
+  @override
+  String get fineKindBadAttitude => 'Inappropriate conduct';
+
+  @override
+  String get fineKindFraud => 'Fraud';
+
+  @override
+  String get fineKindDamage => 'Damage';
+
+  @override
+  String get appealStatusPending => 'Under review';
+
+  @override
+  String get appealStatusAccepted => 'Accepted';
+
+  @override
+  String get appealStatusRejected => 'Rejected';
+
+  @override
+  String get referralStatusPendingKyc => 'Awaiting verification';
+
+  @override
+  String get referralStatusActive => 'Active';
+
+  @override
+  String get referralStatusCompleted => 'Completed';
+
+  @override
+  String get subFrequencyWeekly => 'Weekly';
+
+  @override
+  String get subFrequencyBiweekly => 'Every two weeks';
+
+  @override
+  String get subFrequencyMonthly => 'Monthly';
+
+  @override
+  String get subStatusActive => 'Active';
+
+  @override
+  String get subStatusPaused => 'Paused';
+
+  @override
+  String get subStatusExpired => 'Expired';
+
+  @override
+  String get roleCustomer => 'Customer';
+
+  @override
+  String get roleTasker => 'Tasker';
+
+  @override
+  String get rolePendingTasker => 'Tasker (pending approval)';
+
+  @override
+  String get roleAdmin => 'Administrator';
+
+  @override
+  String get roleStaff => 'Staff';
+
+  @override
+  String periodWeekLabel(int week, int year) {
+    return 'Week $week, $year';
+  }
+
+  @override
+  String periodMonthLabel(int month, int year) {
+    return 'Month $month/$year';
+  }
+
+  @override
+  String provWalletExportSubject(String period) {
+    return 'Kyco wallet $period';
+  }
+
+  @override
+  String get onlinePaymentOnWeb =>
+      'Online payment is available on the website.';
+
+  @override
+  String get serviceNoDescription =>
+      'No detailed description for this service yet.';
+
+  @override
+  String get reviewAnonymous => 'Customer';
+
+  @override
+  String get copyAction => 'Copy';
+
+  @override
+  String get copiedAction => 'Copied';
+
+  @override
+  String get deleteAction => 'Delete';
+
+  @override
+  String ratingOutOf(double rating) {
+    final intl.NumberFormat ratingNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String ratingString = ratingNumberFormat.format(rating);
+
+    return '$ratingString out of 5 stars';
+  }
+
+  @override
+  String get unreadLabel => 'Unread';
+
+  @override
+  String get bookAServiceCta => 'Book a service';
+
+  @override
+  String get deleteAccountTitle => 'Delete account';
+
+  @override
+  String get deleteAccountIntro =>
+      'When you request deletion your account is locked at once and signed out of every device. You have 30 days to change your mind.';
+
+  @override
+  String get deleteConseq1 =>
+      'For 30 days you can cancel the request with your email and password.';
+
+  @override
+  String get deleteConseq2 =>
+      'After 30 days your personal data (name, phone, addresses, notifications) is permanently erased.';
+
+  @override
+  String get deleteConseq3 =>
+      'Bookings, payments and invoices are kept as legal records and no longer linked to your identity.';
+
+  @override
+  String get deleteConseq4 =>
+      'You must finish or cancel open bookings and active subscriptions first.';
+
+  @override
+  String get deleteExportCta => 'Request a copy of my data first';
+
+  @override
+  String get deleteExportHint =>
+      'Kyco will prepare a copy of your personal data and notify you when it is ready. Ask before deleting, because you cannot sign in afterwards.';
+
+  @override
+  String get deleteExportRequested => 'Your data export request was sent.';
+
+  @override
+  String get deleteConfirmWord => 'DELETE';
+
+  @override
+  String deleteTypeToConfirm(String word) {
+    return 'Type \"$word\" to confirm';
+  }
+
+  @override
+  String get deleteConfirmButton => 'Delete my account';
+
+  @override
+  String get deleteSupportOnly =>
+      'Tasker and admin accounts cannot be self-deleted. Please contact support.';
+
+  @override
+  String get deleteContactSupport => 'Contact support';
+
+  @override
+  String get deletePendingTitle => 'Account deletion requested';
+
+  @override
+  String deletePendingBody(String date) {
+    return 'Your account will be permanently deleted on $date. You can cancel the request before then.';
+  }
+
+  @override
+  String get deletePendingBodyNoDate =>
+      'Your account is pending deletion. You can cancel the request during the waiting period.';
+
+  @override
+  String get deleteCancelRequest => 'Cancel deletion request';
+
+  @override
+  String get restoreTitle => 'Restore account';
+
+  @override
+  String get restoreBody =>
+      'Enter the email and password of the account you asked to delete to restore it. Only possible during the 30-day wait.';
+
+  @override
+  String get restoreTotpLabel => 'Two-step code (if enabled)';
+
+  @override
+  String get restoreButton => 'Restore account';
+
+  @override
+  String get restoreSuccess => 'Account restored. Please sign in again.';
+
+  @override
+  String get restoreFailed =>
+      'Could not restore. Check your email, password and the 30-day window.';
+
+  @override
+  String get loginRestoreLink => 'Asked to delete your account? Restore it';
+
+  @override
+  String get goHome => 'Back to home';
+
+  @override
+  String get trackCardTitle => 'Tasker location';
+
+  @override
+  String trackUpdatedAt(String time) {
+    return 'Updated at $time';
+  }
+
+  @override
+  String trackDistanceM(int meters) {
+    return 'About $meters m away';
+  }
+
+  @override
+  String trackDistanceKm(String km) {
+    return 'About $km km away';
+  }
+
+  @override
+  String trackEta(int minutes) {
+    return 'Arriving in about $minutes min';
+  }
+
+  @override
+  String trackCoords(String lat, String lng) {
+    return 'Coordinates: $lat, $lng';
+  }
+
+  @override
+  String get trackNoPosition =>
+      'No position yet. It appears once the tasker starts moving.';
+
+  @override
+  String get trackStale => 'This position is old and may be inaccurate.';
+
+  @override
+  String get trackOpenMap => 'Open map';
+
+  @override
+  String get trackOpenMapLabel => 'Open the tasker\'s position in a maps app';
+
+  @override
+  String get trackLoadFailed =>
+      'Could not load the position. Will retry automatically.';
+
+  @override
+  String get openLinkFailed => 'Could not open the link.';
+
+  @override
+  String get chatEmpty => 'No messages yet. Send the tasker a message.';
+
+  @override
+  String get chatInputHint => 'Type a message';
+
+  @override
+  String get chatSend => 'Send';
+
+  @override
+  String get chatFromYou => 'You';
+
+  @override
+  String get chatFromTasker => 'Tasker';
+
+  @override
+  String get chatNoConversations =>
+      'No conversations yet. Book a service to message your tasker.';
+
+  @override
+  String get sosCustomerCta => 'Report an emergency';
+
+  @override
+  String get sosCustomerTitle => 'Send an emergency alert?';
+
+  @override
+  String get sosCustomerBody =>
+      'Kyco will send an alert with your current location (if you allow it) to the safety team. Use it only if you feel unsafe.';
+
+  @override
+  String get checkoutUseSaved => 'Use a saved address';
+
+  @override
+  String get checkoutSavedTitle => 'Choose a saved address';
+
+  @override
+  String get checkoutSavedDefault => 'Default';
+
+  @override
+  String openTaskerProfile(String name) {
+    return 'View $name\'s profile';
+  }
+
+  @override
+  String get inviteShare => 'Share';
+
+  @override
+  String inviteShareText(String code, String url) {
+    return 'Join Kyco with my invite code $code: $url';
+  }
+
+  @override
+  String get manageOnWebOpenLabel => 'Open kyco.vn in the browser';
+
+  @override
+  String get settingsAndAccountTitle => 'Settings and account';
+
+  @override
+  String get errorFallbackTitle => 'Something went wrong';
+
+  @override
+  String get errorFallbackBody =>
+      'This part hit a problem. Go back and try again.';
 }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- RELEASE network policy: HTTPS only. No cleartext, user-installed CAs are not
+     trusted for app traffic (system CAs only). The debug source set overrides
+     this file to allow the local lab hosts. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>

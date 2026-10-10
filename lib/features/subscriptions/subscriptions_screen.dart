@@ -3,12 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/adaptive.dart';
+import '../../core/config.dart';
+import '../../core/launch.dart';
 import '../../core/format.dart';
 import '../../core/models.dart';
 import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import '../auth/auth_controller.dart';
 import 'subscriptions_providers.dart';
+import 'package:kyco_mobile/core/datetime.dart';
+import 'package:kyco_mobile/core/labels.dart';
 
 /// `/subscriptions` — GUEST-FIRST. Everyone browses the public marketing plan
 /// cards (`plans()`); signed-in customers additionally see their own recurring
@@ -32,7 +36,7 @@ class SubscriptionsScreen extends ConsumerWidget {
           onRefresh: () async {
             ref.invalidate(plansProvider);
             if (signedIn) ref.invalidate(mySubscriptionsProvider);
-            await ref.read(plansProvider.future);
+            await refreshQuietly(ref.read(plansProvider.future));
           },
           child: CenteredMaxWidth(
             maxWidth: 720,
@@ -41,7 +45,7 @@ class SubscriptionsScreen extends ConsumerWidget {
               error: (e, _) => ListView(children: [
                 const SizedBox(height: 120),
                 ErrorRetry(
-                  message: l.cust2LoadFailed(apiErrorText(l, e)),
+                  error: e,
                   onRetry: () => ref.invalidate(plansProvider),
                 ),
               ]),
@@ -71,13 +75,11 @@ class _Body extends ConsumerWidget {
       children: [
         // Own subscriptions (signed-in only)
         if (signedIn) ...[
-          // TODO-i18n: "My subscriptions" section header (no ARB key)
           SectionHeader(l.mySubscriptions),
           const _MySubscriptions(),
         ],
 
         // Public marketing plans (guest-browsable)
-        // TODO-i18n: "Plans" section header (no ARB key)
         SectionHeader(l.plansTitle),
         if (plans.isEmpty)
           Padding(
@@ -145,7 +147,6 @@ class _PlanCardTile extends StatelessWidget {
                   ),
                 const Spacer(),
                 if (plan.durationMonths != null)
-                  // TODO-i18n: "{n} months" (no ARB key)
                   _Pill(l.monthsCount(plan.durationMonths ?? 0)),
               ],
             ),
@@ -177,7 +178,6 @@ class _MySubscriptions extends ConsumerWidget {
         if (items.isEmpty) {
           return Padding(
             padding: const EdgeInsets.all(16),
-            // TODO-i18n: "No active subscriptions" (no ARB key) — reuse noResults
             child: EmptyState(message: l.noResults),
           );
         }
@@ -212,8 +212,9 @@ class _SubscriptionTile extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    // frequency is a backend enum (e.g. weekly) — shown raw.
-                    sub.frequency.isEmpty ? '#${sub.id}' : sub.frequency,
+                    sub.frequency.isEmpty
+                        ? '#${sub.id}'
+                        : subscriptionFrequencyLabel(l, sub.frequency),
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
@@ -238,7 +239,6 @@ class _SubscriptionTile extends StatelessWidget {
               children: [
                 Icon(Icons.event_available, size: 16, color: cs.onSurfaceVariant),
                 const SizedBox(width: 6),
-                // TODO-i18n: "Sessions {done}/{total}" (no ARB key)
                 Text(l.sessionsProgress(sub.sessionsCompleted, sub.sessionsTotal),
                     style: TextStyle(color: cs.onSurfaceVariant)),
               ],
@@ -260,8 +260,7 @@ class _SubscriptionTile extends StatelessWidget {
                 children: [
                   Icon(Icons.schedule, size: 16, color: cs.onSurfaceVariant),
                   const SizedBox(width: 6),
-                  // TODO-i18n: "Next charge {date}" (no ARB key)
-                  Text(l.nextChargeLabel(_shortDate(sub.nextChargeAt!)),
+                  Text(l.nextChargeLabel(vnDate(context, sub.nextChargeAt)),
                       style: TextStyle(color: cs.onSurfaceVariant)),
                 ],
               ),
@@ -285,8 +284,7 @@ class _StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-      // status is a backend enum — displayed raw (no localized mapping).
-      child: Text(status.isEmpty ? '—' : status,
+      child: Text(subscriptionStatusLabel(AppLocalizations.of(context), status),
           style: TextStyle(color: fg, fontWeight: FontWeight.w600, fontSize: 12)),
     );
   }
@@ -310,40 +308,49 @@ class _Pill extends StatelessWidget {
   }
 }
 
-class _ManageOnWebNote extends StatelessWidget {
+class _ManageOnWebNote extends ConsumerWidget {
   const _ManageOnWebNote();
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
+      child: Semantics(
+        button: true,
+        link: true,
+        label: '${l.manageOnWeb}. ${l.manageOnWebOpenLabel}',
+        excludeSemantics: true,
+        child: Material(
           color: cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.open_in_new, size: 20, color: cs.onSurfaceVariant),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                AppLocalizations.of(context).manageOnWeb,
-                style: TextStyle(color: cs.onSurfaceVariant),
+          child: InkWell(
+            key: const ValueKey('manage-on-web'),
+            borderRadius: BorderRadius.circular(12),
+            onTap: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final ok = await ref
+                  .read(urlOpenerProvider)(Uri.parse('${AppConfig.webBase}/subscriptions'));
+              if (!ok) messenger.showSnackBar(SnackBar(content: Text(l.openLinkFailed)));
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 20),
+                child: Row(
+                  children: [
+                    Icon(Icons.open_in_new, size: 20, color: cs.primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(l.manageOnWeb, style: TextStyle(color: cs.primary)),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
-}
-
-/// Best-effort ISO to dd/MM/yyyy. Falls back to the first 10 chars.
-String _shortDate(String iso) {
-  final dt = DateTime.tryParse(iso);
-  if (dt == null) return iso.length >= 10 ? iso.substring(0, 10) : iso;
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${two(dt.day)}/${two(dt.month)}/${dt.year}';
 }

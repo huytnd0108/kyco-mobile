@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kyco_mobile/core/datetime.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/adaptive.dart';
@@ -65,7 +66,6 @@ class TaskerAvailabilityScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final s = AppLocalizations.of(context);
     final async = ref.watch(availabilityProvider);
 
     return Scaffold(
@@ -84,7 +84,7 @@ class TaskerAvailabilityScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           // §A10: GET pending → the API throws; show a friendly retryable state.
           error: (e, _) => ErrorRetry(
-            message: s.provAvailLoadError,
+            error: e,
             onRetry: () => ref.invalidate(availabilityProvider),
           ),
           data: (week) => _Editor(week: week),
@@ -244,10 +244,11 @@ class _EditorState extends ConsumerState<_Editor> {
   }
 
   Future<void> _addOverride() async {
-    final now = DateTime.now();
+    // Bounds are the Vietnam calendar date, not the device's.
+    final now = vnToday();
     final date = await showDatePicker(
       context: context,
-      firstDate: DateTime(now.year, now.month, now.day),
+      firstDate: now,
       lastDate: DateTime(now.year + 1, now.month, now.day),
       initialDate: now,
     );
@@ -474,7 +475,8 @@ class _OverrideRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.date, style: const TextStyle(fontWeight: FontWeight.w700)),
+                    Text(vnDateKeyLabel(context, item.date),
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
                     if (off)
                       Text(s.provAvailUnavailableFull, style: TextStyle(color: cs.onSurfaceVariant))
@@ -610,6 +612,7 @@ class _SlotSheetState extends State<_SlotSheet> {
                     ),
                   ),
                   IconButton(
+                    tooltip: s.deleteAction,
                     onPressed: () => setState(() => _slots.removeAt(i)),
                     icon: Icon(Icons.delete_outline, color: cs.error),
                   ),

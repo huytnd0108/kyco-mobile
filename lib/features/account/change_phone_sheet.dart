@@ -7,6 +7,8 @@ import '../../core/api/kyco_api.dart';
 import '../../core/api/problem.dart';
 import '../../core/di.dart';
 import '../../core/models.dart';
+import '../../core/ui/error_text.dart';
+import '../../core/ui/resend_cooldown.dart';
 import '../../core/widgets.dart';
 import '../tasker_wallet/step_up_sheet.dart';
 
@@ -14,8 +16,7 @@ import '../tasker_wallet/step_up_sheet.dart';
 ///
 /// Two phases, mirroring the become-tasker / step-up OTP grammar:
 ///   1. collect the NEW phone → `POST /auth/otp/request` with
-///      `purpose: 'phone_change'` (public; same client path the step-up sheet
-///      uses for its own OTP),
+///      `purpose: 'phone_change'` (via [KycoApi.requestOtp]),
 ///   2. enter the 6-digit code → `POST /me/phone { phone, code }`.
 ///
 /// The change is step-up-gated server-side. We prove freshness BEFORE the POST
@@ -41,12 +42,14 @@ class _ChangePhoneSheetState extends ConsumerState<ChangePhoneSheet> {
   bool _otpSent = false; // false → collect phone, true → enter code
   String? _error;
   String? _info; // e.g. "Đã gửi mã OTP tới …"
+  final _cooldown = ResendCooldown(); // OTP resend gate (60 s / Retry-After)
 
   // Same acceptance the become-tasker signup + step-up sheet use.
   static final _phoneRe = RegExp(r'^(0|\+84)\d{9}$');
 
   @override
   void dispose() {
+    _cooldown.dispose();
     _phoneController.dispose();
     _codeController.dispose();
     super.dispose();
@@ -69,30 +72,17 @@ class _ChangePhoneSheetState extends ConsumerState<ChangePhoneSheet> {
       _info = null;
     });
     try {
-      // Bearer-free public OTP issue — same client path as become_tasker.
-      await ref.read(apiClientProvider).post(
-        '/auth/otp/request',
-        auth: false,
-        body: {'phone': phone, 'purpose': 'phone_change'},
-      );
+      await ref.read(kycoApiProvider).requestOtp(phone: phone, purpose: 'phone_change');
       if (!mounted) return;
       setState(() {
         _otpSent = true;
         _info = AppLocalizations.of(context).provOtpSentTo(phone);
       });
-    } on ApiException catch (e) {
+      _cooldown.start();
+    } catch (e) {
       if (!mounted) return;
-      final l = AppLocalizations.of(context);
-      final reason = e.fields?['phone'];
-      setState(() => _error = switch (reason) {
-            'rate_limited' => l.provOtpRateLimited,
-            'invalid_phone' || 'invalid' => l.provOtpInvalidPhone,
-            _ => l.provOtpSendFailed,
-          });
-    } catch (_) {
-      if (mounted) {
-        setState(() => _error = AppLocalizations.of(context).provOtpSendFailed);
-      }
+      _cooldown.startAfterFailure(e);
+      setState(() => _error = otpSendErrorText(AppLocalizations.of(context), e));
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -171,20 +161,14 @@ class _ChangePhoneSheetState extends ConsumerState<ChangePhoneSheet> {
   }
 
   String _messageFor(ApiException e, AppLocalizations l) {
-    switch (e.status) {
-      case 409:
-        return l.changePhoneConflict;
-      case 422:
-        if (e.fields?['code'] != null) return l.changePhoneInvalidCode;
-        if (e.fields?['phone'] != null) return l.provOtpInvalidPhone;
-        return e.message;
-      case 403:
-        // A non-STEP_UP forbidden (e.g. banned) surfaces the server reason.
-        return e.message;
-      default:
-        // Network / maintenance / unexpected — the server (or transport) reason.
-        return e.message;
+    if (e.status == 409) return l.changePhoneConflict;
+    if (e.status == 422) {
+      if (e.fields?['code'] != null) return l.changePhoneInvalidCode;
+      if (e.fields?['phone'] != null) return l.provOtpInvalidPhone;
     }
+    // Everything else (403, network, maintenance, rate limit, …) is localized
+    // centrally — never the raw transport / server text.
+    return apiErrorText(l, e);
   }
 
   @override
@@ -298,9 +282,14 @@ class _ChangePhoneSheetState extends ConsumerState<ChangePhoneSheet> {
               : Text(l.changePhoneSubmit),
         ),
         const SizedBox(height: 4),
-        TextButton(
-          onPressed: (_sending || _submitting) ? null : _requestOtp,
-          child: Text(_sending ? l.provWalletResendSending : l.provWalletResend),
+        ListenableBuilder(
+          listenable: _cooldown,
+          builder: (context, _) => TextButton(
+            onPressed: (_sending || _submitting || _cooldown.active) ? null : _requestOtp,
+            child: Text(_sending
+                ? l.provWalletResendSending
+                : (_cooldown.active ? l.otpResendIn(_cooldown.remaining) : l.provWalletResend)),
+          ),
         ),
       ],
     );

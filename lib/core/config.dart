@@ -14,4 +14,11 @@ class AppConfig {
   /// The kyco mobile API is dark-launchable behind the api_mobile_v1_enabled
   /// flag; when OFF the backend returns 503 MAINTENANCE on every /v1 route.
   static const Duration requestTimeout = Duration(seconds: 20);
+
+  /// The public website origin (scheme + host[:port]) derived from [apiBase],
+  /// used for "open on the web" links (invite link, manage subscriptions).
+  static String get webBase {
+    final u = Uri.parse(apiBase);
+    return Uri(scheme: u.scheme, host: u.host, port: u.hasPort ? u.port : null).toString();
+  }
 }

@@ -8,7 +8,7 @@ import '../../core/models.dart';
 import '../../core/widgets.dart';
 import 'tasker_growth_providers.dart';
 
-/// `/p/leaderboard` 💰 — ranked partners by server-provided revenue, scoped to
+/// `/p/leaderboard` — ranked partners by server-provided revenue, scoped to
 /// week/month + an optional district filter, with the signed-in tasker's row
 /// highlighted and their rank surfaced. Revenue is display-only.
 class TaskerLeaderboardScreen extends ConsumerWidget {
@@ -25,7 +25,7 @@ class TaskerLeaderboardScreen extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(leaderboardProvider);
-            await ref.read(leaderboardProvider.future);
+            await refreshQuietly(ref.read(leaderboardProvider.future));
           },
           child: async.when(
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -33,7 +33,7 @@ class TaskerLeaderboardScreen extends ConsumerWidget {
               const _FilterBar(),
               const SizedBox(height: 80),
               ErrorRetry(
-                message: l.genericError,
+                error: e,
                 onRetry: () => ref.invalidate(leaderboardProvider),
               ),
             ]),
@@ -145,7 +145,12 @@ class _RankRow extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final isSelf = myRank > 0 && row.rank == myRank;
-    final medal = switch (position) { 1 => '🥇', 2 => '🥈', 3 => '🥉', _ => null };
+    final medal = switch (position) {
+      1 => const Color(0xFFB45309), // gold (amber-700, >=3:1 on card)
+      2 => const Color(0xFF64748B), // silver (slate-500)
+      3 => const Color(0xFF9A3412), // bronze (orange-800)
+      _ => null,
+    };
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -160,7 +165,8 @@ class _RankRow extends StatelessWidget {
           SizedBox(
             width: 34,
             child: medal != null
-                ? Text(medal, style: const TextStyle(fontSize: 22))
+                ? Icon(Icons.military_tech,
+                    size: 26, color: medal, semanticLabel: '$position')
                 : Text('$position',
                     textAlign: TextAlign.center,
                     style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
@@ -194,9 +200,21 @@ class _RankRow extends StatelessWidget {
                     ],
                   ],
                 ),
-                Text(
-                  '${_tierIcon(row.tier)} ${row.district ?? '—'}',
-                  style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                Row(
+                  children: [
+                    if (_tierColor(row.tier) != null) ...[
+                      Icon(Icons.workspace_premium,
+                          size: 14, color: _tierColor(row.tier)),
+                      const SizedBox(width: 4),
+                    ],
+                    Flexible(
+                      child: Text(
+                        row.district ?? '—',
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -227,17 +245,18 @@ class _RankRow extends StatelessWidget {
   }
 }
 
-String _tierIcon(String? tier) {
+/// Tier badge colour (decorative glyph; the tier name is on the VIP screen).
+Color? _tierColor(String? tier) {
   switch (tier) {
     case 'platinum':
-      return '💎';
+      return const Color(0xFF0369A1);
     case 'gold':
-      return '🥇';
+      return const Color(0xFFB45309);
     case 'silver':
-      return '🥈';
+      return const Color(0xFF64748B);
     case 'bronze':
-      return '🥉';
+      return const Color(0xFF9A3412);
     default:
-      return '•';
+      return null;
   }
 }

@@ -1,12 +1,15 @@
 /// Typed error from the kyco API envelope: `{ ok:false, code, message, fields? }`.
 /// Also used for transport/HTTP failures (code = http_STATUS / network).
 class ApiException implements Exception {
-  ApiException(this.code, this.message, {this.status, this.fields});
+  ApiException(this.code, this.message, {this.status, this.fields, this.retryAfter});
 
   final String code;
   final String message;
   final int? status;
   final Map<String, String>? fields;
+
+  /// Server `Retry-After` (429 / 503) when present. Drives cooldown UI only.
+  final Duration? retryAfter;
 
   bool get isMaintenance => code == 'MAINTENANCE' || status == 503;
   bool get isUnauthorized => code == 'AUTH_REQUIRED' || status == 401;
@@ -19,7 +22,7 @@ class ApiException implements Exception {
   /// bug MQA-1: the middleware limiter answers 429 `{"error":"Too many requests"}`
   /// with no `code`): any 429 without an envelope code is typed `RATE_LIMIT`, and
   /// a bare `{"error": "..."}` string is kept as the (non-UI) message.
-  factory ApiException.fromEnvelope(Map<String, dynamic>? body, int? status) {
+  factory ApiException.fromEnvelope(Map<String, dynamic>? body, int? status, {Duration? retryAfter}) {
     final envCode = body?['code'];
     final bareError = body?['error'];
     final code = envCode is String && envCode.isNotEmpty
@@ -35,7 +38,7 @@ class ApiException implements Exception {
     final fields = rawFields is Map
         ? rawFields.map((k, v) => MapEntry(k.toString(), v.toString()))
         : null;
-    return ApiException(code, message, status: status, fields: fields);
+    return ApiException(code, message, status: status, fields: fields, retryAfter: retryAfter);
   }
 
   @override

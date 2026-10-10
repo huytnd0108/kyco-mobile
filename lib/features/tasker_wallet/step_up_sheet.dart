@@ -6,6 +6,8 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 import '../../core/api/problem.dart';
 import '../../core/api/kyco_api.dart';
 import '../../core/di.dart';
+import '../../core/ui/error_text.dart';
+import '../../core/ui/resend_cooldown.dart';
 import '../../core/widgets.dart';
 
 /// Re-authentication sheet for the payout step-up gate (`POST /v1/auth/step-up`).
@@ -53,6 +55,7 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
   bool _obscure = true;
   String? _error;
   String? _info; // e.g. "Đã gửi mã OTP tới …"
+  final _cooldown = ResendCooldown(); // OTP resend gate (60 s / Retry-After)
 
   @override
   void initState() {
@@ -62,6 +65,7 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
 
   @override
   void dispose() {
+    _cooldown.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -104,31 +108,19 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
       _info = null;
     });
     try {
-      // The public OTP issue takes a phone; we send ONLY the account's own
-      // verified number, which is the one the server step-up verifies against.
-      await ref.read(apiClientProvider).post(
-        '/auth/otp/request',
-        auth: false,
-        body: {'phone': phone, 'purpose': 'phone_verification'},
-      );
+      // Send ONLY the account's own verified number, which is the one the
+      // server step-up verifies against.
+      await ref.read(kycoApiProvider).requestOtp(phone: phone, purpose: 'phone_verification');
       if (!mounted) return;
       setState(() {
         _otpSent = true;
         _info = AppLocalizations.of(context).provOtpSentTo(maskPhone(phone));
       });
-    } on ApiException catch (e) {
+      _cooldown.start();
+    } catch (e) {
       if (!mounted) return;
-      final l = AppLocalizations.of(context);
-      final reason = e.fields?['phone'];
-      setState(() => _error = switch (reason) {
-            'rate_limited' => l.provOtpRateLimited,
-            'invalid_phone' || 'invalid' => l.provOtpInvalidPhone,
-            _ => l.provOtpSendFailed,
-          });
-    } catch (_) {
-      if (mounted) {
-        setState(() => _error = AppLocalizations.of(context).provOtpSendFailed);
-      }
+      _cooldown.startAfterFailure(e);
+      setState(() => _error = otpSendErrorText(AppLocalizations.of(context), e));
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -153,7 +145,7 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
       if (mounted) {
         setState(() {
           _submitting = false;
-          _error = e.message;
+          _error = apiErrorText(AppLocalizations.of(context), e);
         });
       }
     } catch (_) {
@@ -296,9 +288,14 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
         ),
         if (!usePassword) ...[
           const SizedBox(height: 4),
-          TextButton(
-            onPressed: (_sending || _submitting) ? null : _requestOtp,
-            child: Text(_sending ? l.provWalletResendSending : l.provWalletResend),
+          ListenableBuilder(
+            listenable: _cooldown,
+            builder: (context, _) => TextButton(
+              onPressed: (_sending || _submitting || _cooldown.active) ? null : _requestOtp,
+              child: Text(_sending
+                  ? l.provWalletResendSending
+                  : (_cooldown.active ? l.otpResendIn(_cooldown.remaining) : l.provWalletResend)),
+            ),
           ),
         ],
       ],

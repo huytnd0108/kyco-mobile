@@ -9,8 +9,9 @@ import '../../core/format.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
 import 'tasker_compliance_providers.dart';
+import 'package:kyco_mobile/core/labels.dart';
 
-/// `/p/referrals` (A5 💰) — the tasker's own referral code, a share affordance
+/// `/p/referrals` (A5 ) — the tasker's own referral code, a share affordance
 /// (share_plus), the approximate earned-extra total, and a table of referred
 /// partners. Money is DISPLAY-ONLY and, per the web + model docstring, the
 /// earnedExtra figure is a documented APPROXIMATION (labelled as such).
@@ -29,7 +30,7 @@ class TaskerReferralsScreen extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(referralsProvider);
-            await ref.read(referralsProvider.future);
+            await refreshQuietly(ref.read(referralsProvider.future));
           },
           child: CenteredMaxWidth(
             maxWidth: 720,
@@ -38,7 +39,7 @@ class TaskerReferralsScreen extends ConsumerWidget {
               error: (e, _) => ListView(children: [
                 const SizedBox(height: 120),
                 ErrorRetry(
-                  message: l.homeLoadError(e.toString()),
+                  error: e,
                   onRetry: () => ref.invalidate(referralsProvider),
                 ),
               ]),
@@ -71,7 +72,7 @@ class _Body extends StatelessWidget {
         if (code == null || code.isEmpty)
           Padding(
             padding: const EdgeInsets.all(8),
-            child: EmptyState(message: l.provReferralsNoCode, icon: '🎁'),
+            child: EmptyState(message: l.provReferralsNoCode, icon: Icons.card_giftcard),
           )
         else ...[
           _CodeCard(code: code, shareUrl: _shareUrl(code)),
@@ -174,10 +175,15 @@ class _CodeCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  tooltip: 'Copy',
+                  tooltip: l.copyAction,
                   icon: const Icon(Icons.copy),
-                  onPressed: () =>
-                      Clipboard.setData(ClipboardData(text: shareUrl)),
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    await Clipboard.setData(ClipboardData(text: shareUrl));
+                    messenger
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(SnackBar(content: Text(l.copiedAction)));
+                  },
                 ),
               ],
             ),
@@ -300,8 +306,7 @@ class _ReferralStatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-      // status is a backend enum — displayed raw (no localized mapping).
-      child: Text(status ?? '—',
+      child: Text(referralStatusLabel(AppLocalizations.of(context), status),
           style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w700)),
     );
   }

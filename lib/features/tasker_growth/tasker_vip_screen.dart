@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/adaptive.dart';
+import '../../core/widgets.dart';
 import 'tasker_growth_providers.dart';
 
 /// `/p/vip` — VIP perks board. When the tasker's tier is known and below
@@ -23,8 +24,17 @@ class TaskerVipScreen extends ConsumerWidget {
       body: SafeArea(
         child: async.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          // Tier read failing is non-fatal — fall back to the perks list.
-          error: (_, _) => const _PerksView(isPlatinum: false),
+          // The perks stay readable, but a failed tier read is shown (with Retry)
+          // instead of silently presenting the non-platinum view as known.
+          error: (e, _) => Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: InlineErrorRow(error: e, onRetry: () => ref.invalidate(taskerTierProvider)),
+              ),
+              const Expanded(child: _PerksView(isPlatinum: false)),
+            ],
+          ),
           data: (tier) {
             // Known, below platinum → upsell. Platinum / unknown → perks.
             if (tier != null && tier != 'platinum') {
@@ -39,19 +49,19 @@ class TaskerVipScreen extends ConsumerWidget {
 }
 
 class _Perk {
-  const _Perk(this.emoji, this.title, this.body);
-  final String emoji;
+  const _Perk(this.icon, this.title, this.body);
+  final IconData icon;
   final String title;
   final String body;
 }
 
 List<_Perk> _perks(AppLocalizations l) => <_Perk>[
-      _Perk('🎯', l.provVipPerkPriorityTitle, l.provVipPerkPriorityBody),
-      _Perk('📍', l.provVipPerkAreaTitle, l.provVipPerkAreaBody),
-      _Perk('📞', l.provVipPerkSupportTitle, l.provVipPerkSupportBody),
-      _Perk('🏆', l.provVipPerkBadgeTitle, l.provVipPerkBadgeBody),
-      _Perk('🎁', l.provVipPerkGiftTitle, l.provVipPerkGiftBody),
-      _Perk('🚀', l.provVipPerkBonusTitle, l.provVipPerkBonusBody),
+      _Perk(Icons.my_location, l.provVipPerkPriorityTitle, l.provVipPerkPriorityBody),
+      _Perk(Icons.place_outlined, l.provVipPerkAreaTitle, l.provVipPerkAreaBody),
+      _Perk(Icons.support_agent, l.provVipPerkSupportTitle, l.provVipPerkSupportBody),
+      _Perk(Icons.emoji_events_outlined, l.provVipPerkBadgeTitle, l.provVipPerkBadgeBody),
+      _Perk(Icons.card_giftcard, l.provVipPerkGiftTitle, l.provVipPerkGiftBody),
+      _Perk(Icons.trending_up, l.provVipPerkBonusTitle, l.provVipPerkBonusBody),
     ];
 
 class _PerksView extends StatelessWidget {
@@ -95,7 +105,7 @@ class _PerksView extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Text('💎', style: TextStyle(fontSize: 44)),
+                Icon(Icons.workspace_premium, size: 48, color: cs.primary),
               ],
             ),
           ),
@@ -139,7 +149,7 @@ class _PerkCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(perk.emoji, style: const TextStyle(fontSize: 28)),
+          Icon(perk.icon, size: 30, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 8),
           Text(perk.title,
               style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
@@ -172,7 +182,8 @@ class _UpsellView extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          const Center(child: Text('💎', style: TextStyle(fontSize: 64))),
+          Center(
+              child: Icon(Icons.workspace_premium, size: 64, color: cs.primary)),
           const SizedBox(height: 12),
           Text(
             l.provVipUnlockTitle,
@@ -240,6 +251,6 @@ String _tierLabel(AppLocalizations l, String tier) {
     case 'bronze':
       return l.provVipTierBronze;
     default:
-      return tier;
+      return l.labelOther;
   }
 }

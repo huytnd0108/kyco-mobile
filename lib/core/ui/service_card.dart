@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SliverConstraints, SliverGridLayout;
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../models.dart';
 import 'price_text.dart';
+import 'media_image.dart';
 
 /// Service card mirroring the web services grid card: rounded-2xl, image,
 /// category pill, title, optional 2-line description, footer (duration + price).
@@ -109,15 +111,18 @@ class _ServiceImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    if (url == null || url!.isEmpty || url!.startsWith('media:')) {
-      return _placeholder(cs);
-    }
-    return Image.network(
-      url!,
-      fit: BoxFit.cover,
-      semanticLabel: label,
-      errorBuilder: (_, _, _) => _placeholder(cs),
-      loadingBuilder: (c, child, p) => p == null ? child : _placeholder(cs, loading: true),
+    return ResolvedImageUrl(
+      url: url,
+      builder: (context, resolved, resolving) {
+        if (resolved == null) return _placeholder(cs, loading: resolving);
+        return Image.network(
+          resolved,
+          fit: BoxFit.cover,
+          excludeFromSemantics: true,
+          errorBuilder: (_, _, _) => _placeholder(cs),
+          loadingBuilder: (c, child, p) => p == null ? child : _placeholder(cs, loading: true),
+        );
+      },
     );
   }
 
@@ -129,4 +134,47 @@ class _ServiceImage extends StatelessWidget {
               : Icon(Icons.cleaning_services, color: cs.onPrimaryContainer, size: 30),
         ),
       );
+}
+
+/// Grid delegate for [ServiceCard]s. Same shape as a fixed-aspect-ratio grid at
+/// 1.0x text, but the row height grows with the text scale so the card's text
+/// block is never clipped at 1.6x-2.0x (UX-M46).
+class ServiceCardGridDelegate extends SliverGridDelegate {
+  const ServiceCardGridDelegate({
+    required this.crossAxisCount,
+    required this.textScaler,
+    this.aspectRatio = 0.68,
+    this.mainAxisSpacing = 12,
+    this.crossAxisSpacing = 12,
+  });
+  final int crossAxisCount;
+  final TextScaler textScaler;
+  final double aspectRatio;
+  final double mainAxisSpacing;
+  final double crossAxisSpacing;
+
+  /// Height (at 1.0x) of the card's text block: pill + title + description +
+  /// footer.
+  static const double textBlock = 168;
+
+  @override
+  SliverGridLayout getLayout(SliverConstraints constraints) {
+    final usable = constraints.crossAxisExtent - crossAxisSpacing * (crossAxisCount - 1);
+    final width = usable / crossAxisCount;
+    final extra = textScaler.scale(textBlock) - textBlock;
+    return SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: crossAxisCount,
+      mainAxisSpacing: mainAxisSpacing,
+      crossAxisSpacing: crossAxisSpacing,
+      mainAxisExtent: width / aspectRatio + (extra > 0 ? extra : 0),
+    ).getLayout(constraints);
+  }
+
+  @override
+  bool shouldRelayout(covariant ServiceCardGridDelegate old) =>
+      old.crossAxisCount != crossAxisCount ||
+      old.textScaler != textScaler ||
+      old.aspectRatio != aspectRatio ||
+      old.mainAxisSpacing != mainAxisSpacing ||
+      old.crossAxisSpacing != crossAxisSpacing;
 }

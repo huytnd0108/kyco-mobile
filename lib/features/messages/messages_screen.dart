@@ -10,9 +10,11 @@ import '../auth/auth_controller.dart';
 // Re-export so app.dart (which imports only messages_screen.dart) resolves the
 // thread route target alongside the list.
 export 'message_thread_screen.dart';
+import 'package:kyco_mobile/core/labels.dart';
 
-/// One conversation row. v1 is booking-derived (Risk R1: no customer-messages
-/// API yet), so a "conversation" is a booking: its id, service name, status.
+/// One conversation row. A booking IS the conversation (the backend threads
+/// messages per booking: `/bookings/{id}/messages`), so a row is a booking: its
+/// id, service name and status.
 class MessageConversation {
   const MessageConversation({
     required this.bookingId,
@@ -24,14 +26,13 @@ class MessageConversation {
   final String status;
 }
 
-/// The conversations source. v1 derives them from `bookings()`; a future
-/// `GET /v1/messages` drops in as a second impl behind this same interface —
-/// the screen never changes.
+/// The conversations source: one per booking. There is no cross-booking inbox
+/// endpoint, so the list is the bookings list.
 abstract class MessagesRepo {
   Future<List<MessageConversation>> conversations();
 }
 
-/// v1 implementation: one conversation per booking (Bearer read).
+/// One conversation per booking (Bearer read).
 class BookingsDerivedMessagesRepo implements MessagesRepo {
   BookingsDerivedMessagesRepo(this._api);
   final KycoApi _api;
@@ -65,9 +66,8 @@ final conversationsProvider =
   },
 );
 
-/// `/messages` — route-gated (anon is redirected to login before reaching it).
-/// v1 shows a booking-derived conversation list; each row opens a thread that
-/// links to the booking detail.
+/// `/messages` - route-gated (anon is redirected to login before reaching it).
+/// One row per booking; each opens that booking's real chat thread.
 class MessagesScreen extends ConsumerWidget {
   const MessagesScreen({super.key});
 
@@ -89,14 +89,14 @@ class MessagesScreen extends ConsumerWidget {
             error: (e, _) => ListView(children: [
               const SizedBox(height: 120),
               ErrorRetry(
-                message: l.genericError,
+                error: e,
                 onRetry: () => ref.invalidate(conversationsProvider),
               ),
             ]),
             data: (items) => items.isEmpty
                 ? ListView(children: [
                     const SizedBox(height: 80),
-                    EmptyState(icon: '💬', message: l.noMessages),
+                    EmptyState(icon: Icons.chat_bubble_outline, message: l.chatNoConversations),
                   ])
                 : ListView.separated(
                     padding: const EdgeInsets.all(12),
@@ -128,22 +128,9 @@ class _ConversationTile extends StatelessWidget {
           ),
         ),
         title: Text(c.serviceName ?? l.bookingNumber(c.bookingId)),
-        subtitle: Text(_statusLabel(l, c.status)),
+        subtitle: Text(bookingStatusLabel(l, c.status)),
         trailing: const Icon(Icons.chevron_right),
       ),
     );
   }
-
-  /// Local status label (no cross-unit import). Falls back to the raw value for
-  /// statuses the app doesn't know, so it keeps working if the backend adds one.
-  static String _statusLabel(AppLocalizations l, String status) =>
-      switch (status.toUpperCase()) {
-        'PENDING' => l.statusPending,
-        'CONFIRMED' => l.statusConfirmed,
-        'COMPLETED' => l.statusCompleted,
-        'SETTLED' => l.statusSettled,
-        'CANCELLED' => l.statusCancelled,
-        'BAD_DEBT' => l.statusBadDebt,
-        _ => status,
-      };
 }

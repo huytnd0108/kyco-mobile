@@ -7,6 +7,8 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/api/problem.dart';
 import '../../core/api/kyco_api.dart';
+import '../../core/datetime.dart';
+import '../../core/ui/error_text.dart';
 import '../../core/di.dart';
 
 /// Fetch the current month's wallet ledger as CSV bytes
@@ -15,7 +17,8 @@ import '../../core/di.dart';
 /// caller shows it in a snackbar. Bytes are never written anywhere persistent.
 Future<String?> exportWalletCsv(BuildContext context, WidgetRef ref) async {
   final l = AppLocalizations.of(context);
-  final now = DateTime.now();
+  // The ledger month is the Vietnam calendar month.
+  final now = vnNow();
   try {
     final bytes = await ref
         .read(kycoApiProvider)
@@ -31,12 +34,13 @@ Future<String?> exportWalletCsv(BuildContext context, WidgetRef ref) async {
           ),
         ],
         fileNameOverrides: [fileName],
-        subject: 'Kyco wallet ${now.year}-${now.month.toString().padLeft(2, '0')}',
+        subject: l.provWalletExportSubject(
+            '${now.year}-${now.month.toString().padLeft(2, '0')}'),
       ),
     );
     return null;
   } on ApiException catch (e) {
-    return e.isMaintenance ? l.provWalletExportMaintenance : e.message;
+    return e.isMaintenance ? l.provWalletExportMaintenance : apiErrorText(l, e);
   } catch (_) {
     return l.genericError;
   }

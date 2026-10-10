@@ -15,6 +15,14 @@ class KycoApi {
   final KycoApiClient _c;
   final TokenStore _tokens;
 
+  /// Persist the token pair AND the access expiry (`expiresIn` seconds from now)
+  /// so the client can refresh proactively (UX-M65). expiresIn <= 0 = unknown.
+  Future<void> _saveSession(AuthResult r) async {
+    await _tokens.save(access: r.accessToken, refresh: r.refreshToken);
+    await _tokens.setAccessExpiresAt(
+        r.expiresIn > 0 ? DateTime.now().toUtc().add(Duration(seconds: r.expiresIn)) : null);
+  }
+
   // ── auth ────────────────────────────────────────────────────────────────
   Future<AuthResult> login({required String email, required String password, String? totpCode}) async {
     final data = await _c.post('/auth/login', auth: false, body: {
@@ -23,7 +31,7 @@ class KycoApi {
       if (totpCode != null && totpCode.isNotEmpty) 'totpCode': totpCode,
     });
     final result = AuthResult.fromJson(data as Map<String, dynamic>);
-    await _tokens.save(access: result.accessToken, refresh: result.refreshToken);
+    await _saveSession(result);
     return result;
   }
 
@@ -41,7 +49,7 @@ class KycoApi {
       if (totpCode != null && totpCode.isNotEmpty) 'totpCode': totpCode,
     });
     final result = AuthResult.fromJson(data as Map<String, dynamic>);
-    await _tokens.save(access: result.accessToken, refresh: result.refreshToken);
+    await _saveSession(result);
     return result;
   }
 
@@ -53,7 +61,7 @@ class KycoApi {
       if (refCode != null && refCode.isNotEmpty) 'refCode': refCode,
     });
     final result = AuthResult.fromJson(data as Map<String, dynamic>);
-    await _tokens.save(access: result.accessToken, refresh: result.refreshToken);
+    await _saveSession(result);
     return result;
   }
 
@@ -113,6 +121,58 @@ class KycoApi {
   Future<BookingDetail> bookingDetail(int id) async {
     final data = await _c.get('/bookings/$id/page');
     return BookingDetail.fromPage(data as Map<String, dynamic>);
+  }
+
+  // ── customer money lifecycle (MONEY-CONTRACT, backend 920563d) ────────────
+  // Every POST below is a money action: the caller supplies the action's
+  // [idempotencyKey] (IdempotencyLedger) which goes out ONLY as the
+  // `Idempotency-Key` header. No amount is ever sent; the server computes all.
+
+  /// `POST /bookings/{id}/cancel`. `reasonCode` is free text server-side.
+  Future<CancelResult> cancelBooking(int id,
+      {required String reasonCode, String? reasonText, required String idempotencyKey}) async {
+    final data = await _c.post('/bookings/$id/cancel',
+        body: {
+          'reasonCode': reasonCode,
+          if (reasonText != null && reasonText.trim().isNotEmpty) 'reasonText': reasonText.trim(),
+        },
+        idempotencyKey: idempotencyKey);
+    return CancelResult.fromJson(data);
+  }
+
+  /// `POST /bookings/quote` — read-only, same body as create (minus the
+  /// idempotency key: nothing is created). Returns the server total, or null
+  /// when the backend answers without one. A 404 (older backend) is thrown as
+  /// [ApiException] for the caller to treat as "no quote available".
+  Future<BookingQuote?> quoteBooking(BookingDraft draft) async {
+    final body = draft.toCreateBody()..remove('idempotencyKey');
+    return BookingQuote.tryParse(await _c.post('/bookings/quote', body: body));
+  }
+
+  /// `POST /bookings/{id}/confirm-completion`. `action: 'confirm'` carries the
+  /// chosen `paymentMethod` (cash|momo|vnpay); `action: 'dispute'` carries a
+  /// 10..2000 char `note`. Moves no money by itself.
+  Future<void> confirmCompletion(int id,
+      {required String action, String? paymentMethod, String? note, required String idempotencyKey}) {
+    assert(action == 'confirm' || action == 'dispute');
+    return _c.post('/bookings/$id/confirm-completion',
+        body: action == 'confirm'
+            ? {'action': 'confirm', 'paymentMethod': paymentMethod}
+            : {'action': 'dispute', 'note': note?.trim()},
+        idempotencyKey: idempotencyKey);
+  }
+
+  /// `POST /payment/initiate {bookingId}` — the rail is the booking's own
+  /// payment method; P6 returns the same intent on a repeat within 30 minutes.
+  Future<PaymentInitiateResult> initiatePayment(int bookingId, {required String idempotencyKey}) async {
+    final data = await _c.post('/payment/initiate', body: {'bookingId': bookingId}, idempotencyKey: idempotencyKey);
+    return PaymentInitiateResult.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// `GET /bookings/{id}/payment-status` (poll target; read-only).
+  Future<PaymentStatusResult> paymentStatus(int bookingId) async {
+    final data = await _c.get('/bookings/$bookingId/payment-status');
+    return PaymentStatusResult.fromJson(data as Map<String, dynamic>);
   }
 
   /// Customer review of a completed booking (non-money). 409 CONFLICT when the
@@ -341,5 +401,59 @@ class KycoApi {
       'note': ?note,
     });
     return (data as Map?)?.cast<String, dynamic>() ?? const {};
+  }
+
+  // ── account deletion / data export (UX-M08) ───────────────────────────────
+  /// `GET /me/account/deletion` -> `{state: active|pending, requestedAt, scheduledFor}`.
+  Future<DeletionStatus> deletionStatus() async {
+    final data = await _c.get('/me/account/deletion');
+    return DeletionStatus.fromJson(data is Map<String, dynamic> ? data : const {});
+  }
+
+  /// `POST /me/account/deletion {confirm: true}`. Needs a FRESH step-up grant
+  /// (403 STEP_UP_REQUIRED otherwise); 409 while bookings / subscriptions are
+  /// open or for a non-customer role. The server revokes every session.
+  Future<DeletionStatus> requestAccountDeletion() async {
+    final data = await _c.post('/me/account/deletion', body: {'confirm': true});
+    return DeletionStatus.fromJson(data is Map<String, dynamic> ? data : const {});
+  }
+
+  /// `POST /auth/account-deletion/cancel` (PUBLIC: the account is deactivated,
+  /// so ownership is proven with email + password [+ TOTP]). Every failure is
+  /// the same generic 401.
+  Future<void> cancelAccountDeletion(
+          {required String email, required String password, String? totpCode}) =>
+      _c.post('/auth/account-deletion/cancel', auth: false, body: {
+        'email': email,
+        'password': password,
+        if (totpCode != null && totpCode.isNotEmpty) 'totpCode': totpCode,
+      });
+
+  /// `POST /data-export {notes?}` -> 201 `{id}`. Fulfilled asynchronously by ops.
+  Future<void> requestDataExport({String? notes}) => _c.post('/data-export',
+      body: {if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim()});
+
+  // ── live tracking (UX-M09) ────────────────────────────────────────────────
+  /// `GET /jobs/{id}/location` (booking customer, assigned tasker or admin). A
+  /// foreign / missing job is 404 (MQA-60); outside the live window the server
+  /// answers 200 with `position: null`.
+  Future<JobTracking> jobLocation(int jobId) async {
+    final data = await _c.get('/jobs/$jobId/location');
+    return JobTracking.fromJson(data is Map<String, dynamic> ? data : const {});
+  }
+
+  // ── booking chat (UX-M11) ─────────────────────────────────────────────────
+  /// `POST /bookings/{id}/messages {body}` (participant only; <= 4000 chars).
+  /// The thread itself is READ from the `/bookings/{id}/page` composite.
+  Future<void> sendBookingMessage(int bookingId, String body) =>
+      _c.post('/bookings/$bookingId/messages', body: {'body': body});
+
+  // ── media (UX-M15) ────────────────────────────────────────────────────────
+  /// `GET /media/{id}` -> a short-lived signed read URL. Signed-in callers use
+  /// the Bearer call; with [anonymous] no token is sent (release-e: public
+  /// catalogue media is readable unauthenticated, everything else is 404).
+  Future<MediaReadUrl> mediaReadUrl(int mediaId, {bool anonymous = false}) async {
+    final data = await _c.get('/media/$mediaId', auth: !anonymous);
+    return MediaReadUrl.fromJson(data is Map<String, dynamic> ? data : const {});
   }
 }

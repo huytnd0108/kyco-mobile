@@ -25,8 +25,9 @@ class AppSemantics extends ThemeExtension<AppSemantics> {
     successContainer: Color(0xFFDCFCE7), onSuccessContainer: Color(0xFF166534),
     infoContainer: Color(0xFFE0F2FE), onInfoContainer: Color(0xFF075985),
     warningContainer: Color(0xFFFEF3C7), onWarningContainer: Color(0xFF92400E),
-    // Pure sky (sky-500 → sky-600) to match the web's sky brand — no blue-600.
-    brandGradient: [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+    // Sky-700 → sky-800: white text on the gradient is 5.9:1 / 7.6:1 (the
+    // old sky-500 → sky-600 gave 2.8:1 / 4.1:1, below WCAG AA).
+    brandGradient: [Color(0xFF0369A1), Color(0xFF075985)],
   );
 
   static const dark = AppSemantics(

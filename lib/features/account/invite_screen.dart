@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/adaptive.dart';
+import '../../core/config.dart';
+import '../../core/launch.dart';
 import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import '../auth/auth_controller.dart';
@@ -19,7 +21,7 @@ class SignInGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return EmptyState(
-      icon: '🔒',
+      icon: Icons.lock_outline,
       message: l.signInToView,
       action: FilledButton(
         onPressed: () => context.push('/login?from=${Uri.encodeQueryComponent(from)}'),
@@ -60,8 +62,17 @@ class _InviteBody extends ConsumerWidget {
       onRefresh: () async {
         ref.invalidate(inviteStatsProvider);
         ref.invalidate(inviteCodeProvider);
+        // Await the reloads so the spinner lasts as long as the fetch.
+        try {
+          await Future.wait([
+            ref.read(inviteStatsProvider.future),
+            ref.read(inviteCodeProvider.future),
+          ]);
+        } catch (_) {/* the cards show their own error state */}
       },
       child: ListView(
+        // Short content must still allow the pull gesture.
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(20),
         children: [
           Text(l.cust2InviteBody, style: TextStyle(color: cs.onSurfaceVariant)),
@@ -72,34 +83,45 @@ class _InviteBody extends ConsumerWidget {
               child: code.when(
                 loading: () => const SizedBox(height: 56, child: Center(child: CircularProgressIndicator())),
                 error: (e, _) => ErrorRetry(
-                  message: apiErrorText(l, e),
+                  error: e,
                   onRetry: () => ref.invalidate(inviteCodeProvider),
                 ),
-                data: (c) => Row(
+                data: (c) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(l.cust2InviteYourCode, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
-                          const SizedBox(height: 4),
-                          SelectableText(c,
-                              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: 2)),
-                        ],
-                      ),
-                    ),
-                    FilledButton.tonalIcon(
-                      onPressed: c.isEmpty
-                          ? null
-                          : () async {
-                              await Clipboard.setData(ClipboardData(text: c));
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(SnackBar(content: Text(l.cust2InviteCopied)));
-                              }
-                            },
-                      icon: const Icon(Icons.copy, size: 18),
-                      label: Text(l.cust2InviteCopy),
+                    Text(l.cust2InviteYourCode, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    SelectableText(c,
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: 2)),
+                    const SizedBox(height: 12),
+                    // Wrap: two actions never overflow at 320dp / large text.
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilledButton.icon(
+                          key: const ValueKey('invite-share'),
+                          onPressed: c.isEmpty
+                              ? null
+                              : () => ref.read(textSharerProvider)(
+                                  l.inviteShareText(c, '${AppConfig.webBase}/r/$c')),
+                          icon: const Icon(Icons.ios_share, size: 18),
+                          label: Text(l.inviteShare),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: c.isEmpty
+                              ? null
+                              : () async {
+                                  await Clipboard.setData(ClipboardData(text: c));
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(SnackBar(content: Text(l.cust2InviteCopied)));
+                                  }
+                                },
+                          icon: const Icon(Icons.copy, size: 18),
+                          label: Text(l.cust2InviteCopy),
+                        ),
+                      ],
                     ),
                   ],
                 ),

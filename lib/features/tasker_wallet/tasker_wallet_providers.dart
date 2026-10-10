@@ -1,14 +1,14 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/api/kyco_api.dart';
 import '../../core/di.dart';
 import '../../core/models.dart';
+import 'package:kyco_mobile/core/datetime.dart';
 
 // Tasker wallet data plumbing — every read is a frozen kycoApiProvider money
-// method (💰 server-derived). Nothing here computes a fee, net, or balance; the
+// method (server-derived). Nothing here computes a fee, net, or balance; the
 // app only DISPLAYS server figures. The one user-supplied number is the payout
 // amount, and even that is validated + balance-checked server-side.
 
@@ -19,7 +19,7 @@ const int kPayoutMinVnd = 100000;
 const int kPayoutMaxVnd = 50000000;
 
 /// Wallet summary (`GET /v1/tasker/wallet`) — balance + lifetime/month/fee
-/// aggregates. All figures server-derived. 💰
+/// aggregates. All figures server-derived.
 final walletSummaryProvider = FutureProvider.autoDispose<WalletSummary>((ref) {
   return ref.watch(kycoApiProvider).taskerWallet();
 });
@@ -61,7 +61,7 @@ class WalletTxnsData {
 }
 
 /// Transaction ledger (`GET /v1/tasker/wallet/transactions`) with opaque
-/// forward-cursor paging. 💰
+/// forward-cursor paging.
 final walletTxnsControllerProvider =
     AsyncNotifierProvider.autoDispose<WalletTxnsController, WalletTxnsData>(
         WalletTxnsController.new);
@@ -149,7 +149,7 @@ class PayoutsData {
 }
 
 /// Payout history (`GET /v1/tasker/payouts`) — held / released / withdrawn
-/// rows with cursor paging. 💰
+/// rows with cursor paging.
 final payoutsControllerProvider =
     AsyncNotifierProvider.autoDispose<PayoutsController, PayoutsData>(
         PayoutsController.new);
@@ -226,7 +226,7 @@ class PayoutRequestsData {
 }
 
 /// Withdrawal requests (`GET /v1/tasker/payout-requests`, MQA-69) with cursor
-/// paging. 💰 display-only.
+/// paging. display-only.
 final payoutRequestsControllerProvider = AsyncNotifierProvider.autoDispose<
     PayoutRequestsController, PayoutRequestsData>(PayoutRequestsController.new);
 
@@ -286,7 +286,7 @@ String walletReasonLabel(AppLocalizations l, String? reason) => switch (reason) 
       'commission_due' => l.provWalletReasonCommission,
       'clawback' => l.provWalletReasonClawback,
       'adjustment' => l.provWalletReasonAdjustment,
-      _ => (reason == null || reason.isEmpty) ? l.provWalletReasonDefault : reason,
+      _ => l.provWalletReasonDefault,
     };
 
 /// Vietnamese label + a semantic tone key for a payout status (mirrors the
@@ -298,13 +298,6 @@ String walletReasonLabel(AppLocalizations l, String? reason) => switch (reason) 
       _ => (label: l.provWalletPayoutHeld, tone: 'warning'),
     };
 
-/// Localized date-time for a raw ISO-8601 timestamp; falls back to the raw
-/// string, then to an em dash — never leaks an ISO blob or "null".
-String formatWalletDate(BuildContext context, String? raw) {
-  if (raw == null || raw.isEmpty) return '—';
-  final dt = DateTime.tryParse(raw);
-  if (dt == null) return raw;
-  return DateFormat.yMd(Localizations.localeOf(context).toString())
-      .add_Hm()
-      .format(dt.toLocal());
-}
+/// Localized date-time (VN time) for a raw timestamp; '—' when missing or
+/// unparseable — never leaks an ISO blob or "null".
+String formatWalletDate(BuildContext context, String? raw) => vnDateTime(context, raw);

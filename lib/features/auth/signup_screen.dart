@@ -21,6 +21,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _obscure = true;
 
   @override
+  void initState() {
+    super.initState();
+    // Don't greet the form with the login screen's failure banner.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(authControllerProvider.notifier).clearError();
+    });
+  }
+
+  void _onEdited([String? _]) => ref.read(authControllerProvider.notifier).clearError();
+
+  @override
   void dispose() {
     _name.dispose();
     _email.dispose();
@@ -67,6 +78,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       controller: _name,
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.name],
+                      onChanged: _onEdited,
                       decoration: InputDecoration(labelText: l.fullName),
                     ),
                     const SizedBox(height: 14),
@@ -75,6 +87,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.email],
+                      onChanged: _onEdited,
                       decoration: InputDecoration(labelText: l.email),
                       validator: (v) => (v == null || !v.contains('@')) ? l.emailInvalid : null,
                     ),
@@ -84,6 +97,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       obscureText: _obscure,
                       autofillHints: const [AutofillHints.newPassword],
                       onFieldSubmitted: (_) => _submit(),
+                      onChanged: _onEdited,
                       decoration: InputDecoration(
                         labelText: l.password,
                         helperText: l.passwordMin8,

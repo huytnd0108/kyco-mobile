@@ -7,6 +7,12 @@ abstract class TokenStore {
   Future<String?> get refreshToken;
   Future<void> save({required String access, required String refresh});
   Future<void> setAccess(String access);
+
+  /// When the stored access token expires (persisted from the auth response's
+  /// `expiresIn`), or null when unknown — the client then falls back to the
+  /// reactive 401 → refresh path only.
+  Future<DateTime?> get accessExpiresAt;
+  Future<void> setAccessExpiresAt(DateTime? at);
   Future<void> clear();
   Future<bool> get hasSession;
 }
@@ -25,6 +31,7 @@ class SecureTokenStore implements TokenStore {
   final FlutterSecureStorage _s;
   static const _kAccess = 'kyco.accessToken';
   static const _kRefresh = 'kyco.refreshToken';
+  static const _kAccessExp = 'kyco.accessExpiresAt';
 
   @override
   Future<String?> get accessToken => _s.read(key: _kAccess);
@@ -41,9 +48,22 @@ class SecureTokenStore implements TokenStore {
   Future<void> setAccess(String access) => _s.write(key: _kAccess, value: access);
 
   @override
+  Future<DateTime?> get accessExpiresAt async {
+    final raw = await _s.read(key: _kAccessExp);
+    final ms = raw == null ? null : int.tryParse(raw);
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true);
+  }
+
+  @override
+  Future<void> setAccessExpiresAt(DateTime? at) => at == null
+      ? _s.delete(key: _kAccessExp)
+      : _s.write(key: _kAccessExp, value: '${at.toUtc().millisecondsSinceEpoch}');
+
+  @override
   Future<void> clear() async {
     await _s.delete(key: _kAccess);
     await _s.delete(key: _kRefresh);
+    await _s.delete(key: _kAccessExp);
   }
 
   @override

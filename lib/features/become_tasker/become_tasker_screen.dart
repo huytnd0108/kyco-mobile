@@ -7,6 +7,7 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 import '../../core/api/kyco_api.dart';
 import '../../core/api/problem.dart';
 import '../../core/di.dart';
+import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import '../auth/auth_controller.dart';
 
@@ -112,30 +113,11 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
     if (_otpSending) return;
     setState(() => _otpSending = true);
     try {
-      // Bearer-free public OTP issue — same path the web signup form uses.
-      await ref
-          .read(apiClientProvider)
-          .post(
-            '/auth/otp/request',
-            auth: false,
-            body: {'phone': phone, 'purpose': 'register'},
-          );
+      await ref.read(kycoApiProvider).requestOtp(phone: phone, purpose: 'register');
       if (!mounted) return;
       setState(() => _step = _Step.verify);
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      final reason = e.fields?['phone'];
-      setState(
-        () => _error = switch (reason) {
-          'rate_limited' => l.provOtpRateLimited,
-          'invalid_phone' || 'invalid' => l.provOtpInvalidPhone,
-          _ => l.provOtpSendFailed,
-        },
-      );
-    } catch (_) {
-      if (mounted) {
-        setState(() => _error = l.provOtpSendFailed);
-      }
+    } catch (e) {
+      if (mounted) setState(() => _error = otpSendErrorText(l, e));
     } finally {
       if (mounted) setState(() => _otpSending = false);
     }
@@ -264,10 +246,8 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
     if (e.isMaintenance || e.code == 'network') {
       return l.prov2TaskerSubmitFailed;
     }
-    final msg = e.message.trim();
-    return msg.isEmpty || msg == 'Request failed'
-        ? l.prov2TaskerSubmitFailed
-        : msg;
+    final text = apiErrorText(l, e);
+    return text == l.genericError ? l.prov2TaskerSubmitFailed : text;
   }
 
   @override

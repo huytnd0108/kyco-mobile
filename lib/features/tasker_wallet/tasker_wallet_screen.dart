@@ -4,7 +4,6 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/format.dart';
 import '../../core/api/problem.dart';
-import '../../core/ui/error_text.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
 import '../../theme/app_semantics.dart';
@@ -12,11 +11,12 @@ import '../auth/auth_controller.dart';
 import 'tasker_wallet_providers.dart';
 import 'wallet_export.dart';
 import 'withdraw_sheet.dart';
+import 'package:kyco_mobile/core/labels.dart';
 
 /// `/p/wallet` — the tasker wallet. Balance + lifetime/month/fee tiles, the
 /// transaction ledger and payout history (both cursor-paged), a step-up-gated
 /// withdraw flow, and a monthly CSV export. Every figure shown is server-derived
-/// (💰); the app computes no fee, net, or balance and sends only the one
+/// (); the app computes no fee, net, or balance and sends only the one
 /// user-supplied payout amount, which the server validates + balance-checks.
 class TaskerWalletScreen extends ConsumerWidget {
   const TaskerWalletScreen({super.key});
@@ -50,7 +50,7 @@ class _WalletBody extends ConsumerWidget {
     ref.invalidate(walletTxnsControllerProvider);
     ref.invalidate(payoutsControllerProvider);
     ref.invalidate(payoutRequestsControllerProvider);
-    await ref.read(walletSummaryProvider.future);
+    await refreshQuietly(ref.read(walletSummaryProvider.future));
   }
 
   void _snack(ScaffoldMessengerState messenger, String? message) {
@@ -87,7 +87,7 @@ class _WalletBody extends ConsumerWidget {
             error: (e, _) => ListView(children: [
               const SizedBox(height: 120),
               ErrorRetry(
-                message: l.genericError,
+                error: e,
                 onRetry: () => ref.invalidate(walletSummaryProvider),
               ),
             ]),
@@ -143,7 +143,7 @@ class _WalletBody extends ConsumerWidget {
   }
 }
 
-/// Gradient balance hero — available balance + payout-schedule hint. 💰
+/// Gradient balance hero — available balance + payout-schedule hint.
 class _BalanceCard extends StatelessWidget {
   const _BalanceCard({required this.summary});
   final WalletSummary summary;
@@ -168,7 +168,7 @@ class _BalanceCard extends StatelessWidget {
         children: [
           Text(l.provWalletAvailableBalance,
               style: const TextStyle(
-                  color: Colors.white70,
+                  color: Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.2)),
@@ -181,11 +181,11 @@ class _BalanceCard extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              const Icon(Icons.schedule, color: Colors.white70, size: 16),
+              const Icon(Icons.schedule, color: Colors.white, size: 16),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(l.provWalletBalanceSchedule,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                    style: const TextStyle(color: Colors.white, fontSize: 12)),
               ),
             ],
           ),
@@ -195,7 +195,7 @@ class _BalanceCard extends StatelessWidget {
   }
 }
 
-/// Total-revenue / this-month / jobs / fee tiles — all server-derived. 💰
+/// Total-revenue / this-month / jobs / fee tiles — all server-derived.
 class _StatTiles extends StatelessWidget {
   const _StatTiles({required this.summary});
   final WalletSummary summary;
@@ -290,7 +290,7 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-/// Withdraw CTA — opens the step-up-gated payout flow. 💰
+/// Withdraw CTA — opens the step-up-gated payout flow.
 class _WithdrawCard extends StatelessWidget {
   const _WithdrawCard({required this.balanceVnd, required this.onWithdraw});
   final int balanceVnd;
@@ -341,7 +341,7 @@ class _WithdrawCard extends StatelessWidget {
   }
 }
 
-/// Transaction ledger — cursor-paged, with an inline load-more footer. 💰
+/// Transaction ledger — cursor-paged, with an inline load-more footer.
 class _TxnList extends ConsumerWidget {
   const _TxnList();
 
@@ -359,7 +359,7 @@ class _TxnList extends ConsumerWidget {
       ),
       data: (data) {
         if (data.items.isEmpty) {
-          return EmptyState(icon: '🧾', message: l.noResults);
+          return EmptyState(icon: Icons.receipt_long_outlined, message: l.noResults);
         }
         return Column(
           children: [
@@ -424,7 +424,7 @@ class _TxnTile extends StatelessWidget {
   }
 }
 
-/// Payout history — held / released / withdrawn with status chips. 💰
+/// Payout history — held / released / withdrawn with status chips.
 class _PayoutList extends ConsumerWidget {
   const _PayoutList();
 
@@ -442,7 +442,7 @@ class _PayoutList extends ConsumerWidget {
       ),
       data: (data) {
         if (data.items.isEmpty) {
-          return EmptyState(icon: '💸', message: l.noResults);
+          return EmptyState(icon: Icons.payments_outlined, message: l.noResults);
         }
         return Column(
           children: [
@@ -506,7 +506,7 @@ class _PayoutTile extends StatelessWidget {
   }
 }
 
-/// Withdrawal requests — pending / paid / rejected, cursor-paged. 💰
+/// Withdrawal requests — pending / paid / rejected, cursor-paged.
 class _PayoutRequestList extends ConsumerWidget {
   const _PayoutRequestList();
 
@@ -524,12 +524,12 @@ class _PayoutRequestList extends ConsumerWidget {
       error: (e, _) => (e is ApiException && e.status == 404)
           ? const SizedBox.shrink()
           : ErrorRetry(
-              message: apiErrorText(l, e),
+              error: e,
               onRetry: () => ref.invalidate(payoutRequestsControllerProvider),
             ),
       data: (data) {
         if (data.items.isEmpty) {
-          return EmptyState(icon: '🏦', message: l.provWalletPayoutRequestsEmpty);
+          return EmptyState(icon: Icons.account_balance_outlined, message: l.provWalletPayoutRequestsEmpty);
         }
         return Column(
           children: [
@@ -563,12 +563,7 @@ class _PayoutRequestTile extends StatelessWidget {
     };
     final label = (request.statusLabel?.isNotEmpty ?? false)
         ? request.statusLabel!
-        : switch (request.status) {
-            'paid' => l.provWalletPayoutRequestPaid,
-            'rejected' => l.provWalletPayoutRequestRejected,
-            'pending' => l.provWalletPayoutRequestPending,
-            _ => request.status ?? '—',
-          };
+        : payoutRequestStatusLabel(l, request.status);
     final mutedStyle = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     final reason = request.rejectReason;
     return Padding(

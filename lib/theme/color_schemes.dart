@@ -3,27 +3,29 @@ import 'package:flutter/material.dart';
 import 'app_semantics.dart';
 
 /// Kyco brand seed = webapp "Sky Branding" primary (sky-600, hsl(200 98% 39%)).
+/// Filled roles use sky-700 (0369A1): white on sky-600 is only 4.10:1, below
+/// the WCAG AA 4.5:1 floor for button labels; sky-700 gives 5.93:1 (UX-M47).
 /// Both schemes come from ColorScheme.fromSeed; .copyWith pins the roles the
 /// webapp defines so light AND dark match kyco.vn exactly, while the seed fills
 /// everything the web doesn't specify (tertiary, inverse*, shadow, …).
 const kSeed = Color(0xFF0284C7); // sky-600
 
 final ColorScheme lightColorScheme = ColorScheme.fromSeed(seedColor: kSeed).copyWith(
-  primary: const Color(0xFF0284C7),
+  primary: const Color(0xFF0369A1), // sky-700 — white on it = 5.93:1
   onPrimary: Colors.white,
   primaryContainer: const Color(0xFFE0F2FE), // web accent (sky-100)
   onPrimaryContainer: const Color(0xFF0369A1), // web accent-fg (sky-700)
-  secondary: const Color(0xFF0EA5E9),
+  secondary: const Color(0xFF0369A1), // sky-700 (white on sky-500 was 2.77:1)
   onSecondary: Colors.white,
   secondaryContainer: const Color(0xFFE0F2FE), // sky-100 (keep sky family)
   onSecondaryContainer: const Color(0xFF0369A1), // sky-700
   // Pin tertiary to the sky family so fromSeed's algorithmic off-hue never
   // leaks into chips/containers — the whole palette stays sky/slate like web.
-  tertiary: const Color(0xFF0EA5E9),
+  tertiary: const Color(0xFF0369A1),
   onTertiary: Colors.white,
   tertiaryContainer: const Color(0xFFE0F2FE),
   onTertiaryContainer: const Color(0xFF0369A1),
-  surfaceTint: const Color(0xFF0284C7), // elevation tint = sky primary
+  surfaceTint: const Color(0xFF0369A1), // elevation tint = sky primary
   error: const Color(0xFFC52020),
   onError: const Color(0xFFFAFAFA),
   errorContainer: const Color(0xFFFEE2E2), // red-100
@@ -34,7 +36,7 @@ final ColorScheme lightColorScheme = ColorScheme.fromSeed(seedColor: kSeed).copy
   surfaceContainerLow: Colors.white,
   surfaceContainer: const Color(0xFFF1F5F9), // NavigationBar bg — web muted
   surfaceContainerHighest: const Color(0xFFF1F5F9), // web muted (slate-100)
-  onSurfaceVariant: const Color(0xFF64748B), // web muted-fg (slate-500)
+  onSurfaceVariant: const Color(0xFF475569), // slate-600: 6.9:1 on muted (slate-500 was 4.34)
   outlineVariant: const Color(0xFFD7E0EA), // web border (slate-200)
 );
 
@@ -53,8 +55,8 @@ final ColorScheme darkColorScheme =
   tertiaryContainer: const Color(0xFF204A60),
   onTertiaryContainer: const Color(0xFFE0F2FE),
   surfaceTint: const Color(0xFF3EBAF4),
-  error: const Color(0xFFD02F2F),
-  onError: const Color(0xFFFAFAFA),
+  error: const Color(0xFFF87171), // red-400: 6.7:1 on the dark card (D02F2F was 3.65:1)
+  onError: const Color(0xFF080C17),
   errorContainer: const Color(0xFF7F1D1D), // red-900
   onErrorContainer: const Color(0xFFFECACA), // red-200 — ≥4.5:1 on red-900
   surface: const Color(0xFF080C17), // web dark background

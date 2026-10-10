@@ -4,6 +4,8 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 import '../../core/api/kyco_api.dart';
 import '../../core/di.dart';
 import '../../core/models.dart';
+import 'package:kyco_mobile/core/datetime.dart';
+import 'package:intl/intl.dart';
 
 /// The lifecycle-hub read (A8). `.family` on the job id; `.autoDispose` so a
 /// pushed-then-popped detail doesn't keep a stale payload alive. Backend route
@@ -183,14 +185,10 @@ String moneyFieldLabel(String key, AppLocalizations l) {
 }
 
 /// Localized date/time for an ISO string (dd/MM · HH:mm), matching the web
-/// `fmtMs`. Falls back to the raw string / em-dash.
+/// `fmtMs`, in Vietnam time. Em-dash when missing / unparseable.
 String fmtJobTime(String? raw) {
-  if (raw == null || raw.isEmpty) return '—';
-  final d = DateTime.tryParse(raw);
-  if (d == null) return raw;
-  final l = d.toLocal();
-  String p2(int n) => n.toString().padLeft(2, '0');
-  return '${p2(l.day)}/${p2(l.month)} · ${p2(l.hour)}:${p2(l.minute)}';
+  final w = vnWall(raw);
+  return w == null ? '—' : DateFormat('dd/MM · HH:mm').format(w);
 }
 
 /// The customer pushed back on completion ("dispute" on the confirm screen only
@@ -207,3 +205,8 @@ bool awaitingResubmit(TaskerJobDetail d) {
   final resubmitted = DateTime.tryParse(_s(b['taskerResubmittedAt']));
   return resubmitted == null || resubmitted.isBefore(disputed);
 }
+
+/// Tasker job-cancel reason codes the server enforces (`reasonCode` enum);
+/// `reasonText` is at most [kJobCancelNoteMax] characters.
+const kJobCancelReasonCodes = <String>['sick', 'address_unreach', 'wrong_scope', 'safety', 'other'];
+const kJobCancelNoteMax = 500;

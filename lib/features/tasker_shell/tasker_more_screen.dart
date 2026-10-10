@@ -25,6 +25,7 @@ class TaskerMoreScreen extends ConsumerWidget {
       (Icons.event_busy_outlined, l.provCancellationsTitle, '/p/cancellations'),
       (Icons.share_outlined, l.provReferralsTitle, '/p/referrals'),
       (Icons.support_agent_outlined, l.provSupportTitle, '/p/support'),
+      (Icons.settings_outlined, l.settingsAndAccountTitle, '/p/settings'),
     ];
 
     return Scaffold(

@@ -6,10 +6,12 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 import '../../core/adaptive.dart';
 import '../../core/api/problem.dart';
 import '../../core/models.dart';
-import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import 'review_list.dart';
 import 'service_detail_providers.dart';
+import '../../theme/app_semantics.dart';
+import '../../core/text_scale.dart';
+import '../../core/ui/media_image.dart';
 
 /// Public service-detail screen (mirrors web services/[id]/page.tsx): hero,
 /// pills, price + duration, description, rating + reviews, related rail, and a
@@ -21,7 +23,6 @@ class ServiceDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l = AppLocalizations.of(context);
     final detail = ref.watch(serviceDetailProvider(id));
 
     return detail.when(
@@ -38,7 +39,7 @@ class ServiceDetailScreen extends ConsumerWidget {
               : ListView(children: [
                   const SizedBox(height: 100),
                   ErrorRetry(
-                    message: l.cust2LoadFailed(apiErrorText(l, e)),
+                    error: e,
                     onRetry: () => ref.invalidate(serviceDetailProvider(id)),
                   ),
                 ]),
@@ -58,7 +59,7 @@ class _DetailBody extends ConsumerWidget {
     ref.invalidate(serviceDetailProvider(id));
     ref.invalidate(relatedServicesProvider(id));
     ref.invalidate(reviewsControllerProvider(id));
-    await ref.read(serviceDetailProvider(id).future);
+    await refreshQuietly(ref.read(serviceDetailProvider(id).future));
   }
 
   @override
@@ -124,7 +125,7 @@ class _Hero extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     return SizedBox(
-      height: 240,
+      height: 240 + scaledExtra(context, 100),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -134,7 +135,7 @@ class _Hero extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
-                colors: [Color(0x99000000), Color(0x33000000), Color(0x00000000)],
+                colors: [Color(0xB3000000), Color(0x4D000000), Color(0x00000000)],
               ),
             ),
           ),
@@ -199,21 +200,30 @@ class _HeroImage extends StatelessWidget {
   final String label;
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    // The hero text is white, so the photo-less placeholder is the dark brand
+    // gradient (white on it >= 5.9:1), not the pale primaryContainer.
     Widget placeholder() => Container(
-          color: cs.primaryContainer,
-          child: Icon(Icons.cleaning_services,
-              color: cs.onPrimaryContainer, size: 44),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: context.semantics.brandGradient,
+            ),
+          ),
+          child: const Icon(Icons.cleaning_services,
+              color: Colors.white70, size: 44),
         );
-    if (url == null || url!.isEmpty || url!.startsWith('media:')) {
-      return placeholder();
-    }
-    return Image.network(
-      url!,
-      fit: BoxFit.cover,
-      semanticLabel: label,
-      errorBuilder: (_, _, _) => placeholder(),
-      loadingBuilder: (c, child, p) => p == null ? child : placeholder(),
+    return ResolvedImageUrl(
+      url: url,
+      builder: (context, resolved, _) => resolved == null
+          ? placeholder()
+          : Image.network(
+              resolved,
+              fit: BoxFit.cover,
+              excludeFromSemantics: true,
+              errorBuilder: (_, _, _) => placeholder(),
+              loadingBuilder: (c, child, p) => p == null ? child : placeholder(),
+            ),
     );
   }
 }
@@ -225,7 +235,7 @@ class _GlassPill extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.22),
+          color: Colors.black.withValues(alpha: 0.38),
           borderRadius: BorderRadius.circular(999),
         ),
         child: Text(text,
@@ -283,7 +293,7 @@ class _Overview extends StatelessWidget {
           Text(
             (detail.description?.trim().isNotEmpty ?? false)
                 ? detail.description!
-                : _noDescription,
+                : AppLocalizations.of(context).serviceNoDescription,
             style: TextStyle(color: cs.onSurfaceVariant, height: 1.5),
           ),
           const SizedBox(height: 14),
@@ -302,8 +312,6 @@ class _Overview extends StatelessWidget {
     );
   }
 
-  // TODO-i18n: no `noDescription` key in ARB — reported.
-  static const _noDescription = 'Chưa có mô tả chi tiết cho dịch vụ này.';
 }
 
 enum _ChipTone { primary, muted }
@@ -362,7 +370,7 @@ class _RelatedRail extends ConsumerWidget {
             SizedBox(
               // A 240px-wide ServiceCard needs ~262px when the title wraps to
               // 2 lines with a category pill; 290 clears it (Home's rail = 296).
-              height: 290,
+              height: 290 + scaledExtra(context, 168),
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -399,7 +407,6 @@ class _NotFound extends StatelessWidget {
           children: [
             Icon(Icons.search_off, size: 48, color: cs.onSurfaceVariant),
             const SizedBox(height: 12),
-            // TODO-i18n: no `serviceNotFound` key in ARB — reported.
             Text(l.serviceNotFound, textAlign: TextAlign.center),
             const SizedBox(height: 16),
             FilledButton(onPressed: onExplore, child: Text(l.exploreServices)),

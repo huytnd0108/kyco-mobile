@@ -109,7 +109,7 @@ final poolProvider = FutureProvider.autoDispose<PoolView>((ref) {
 /// THAT instead of a generic "try again". Transport failures / maintenance /
 /// an empty message fall back to [fallback].
 String claimErrorMessage(Object error, String fallback) {
-  if (error is ApiException && !error.isMaintenance && error.code != 'network') {
+  if (error is ApiException && !error.isMaintenance && !error.isRateLimited && error.code != 'network') {
     final msg = error.message.trim();
     if (msg.isNotEmpty && msg != 'Request failed') return msg;
   }

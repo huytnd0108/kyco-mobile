@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/format.dart';
@@ -12,6 +11,9 @@ import '../../core/widgets.dart';
 import '../../theme/app_semantics.dart';
 import '../auth/auth_controller.dart';
 import 'tasker_jobs_providers.dart';
+import 'package:kyco_mobile/core/datetime.dart';
+import 'package:kyco_mobile/core/labels.dart';
+import '../../theme/color_schemes.dart' show kRadius;
 
 /// `/p/jobs` — the tasker's jobs surface: two tabs, each API-backed with
 /// pull-to-refresh. "Assigned" is the tasker's own pipeline (`taskerJobs()`,
@@ -116,21 +118,21 @@ class _AssignedTabState extends ConsumerState<_AssignedTab> {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(assignedJobsControllerProvider);
-        await ref.read(assignedJobsControllerProvider.future);
+        await refreshQuietly(ref.read(assignedJobsControllerProvider.future));
       },
       child: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ListView(children: [
           const SizedBox(height: 120),
           ErrorRetry(
-            message: AppLocalizations.of(context).provJobsLoadError,
+            error: e,
             onRetry: () => ref.invalidate(assignedJobsControllerProvider),
           ),
         ]),
         data: (data) => data.items.isEmpty
             ? ListView(children: [
                 const SizedBox(height: 80),
-                EmptyState(icon: '🧹', message: AppLocalizations.of(context).provJobsAssignedEmpty),
+                EmptyState(icon: Icons.cleaning_services_outlined, message: AppLocalizations.of(context).provJobsAssignedEmpty),
               ])
             : ListView.separated(
                 controller: _scroll,
@@ -157,16 +159,11 @@ class _AssignedTabState extends ConsumerState<_AssignedTab> {
   }
 }
 
-/// Locale-driven, local-time date/time for an ISO `scheduledAt`, mirroring the
-/// wallet/bookings screens (`DateFormat.yMd(locale).add_Hm()`) and resolving to
-/// local time like job-detail's `fmtJobTime`. Never leaks a raw ISO blob.
+/// Locale-driven date/time for an ISO `scheduledAt`, in Vietnam time (same
+/// formatter as wallet / bookings). Empty when missing; never leaks raw ISO.
 String _fmtJobWhen(BuildContext context, String? raw) {
   if (raw == null || raw.isEmpty) return '';
-  final dt = DateTime.tryParse(raw);
-  if (dt == null) return raw;
-  return DateFormat.yMd(Localizations.localeOf(context).toString())
-      .add_Hm()
-      .format(dt.toLocal());
+  return vnDateTime(context, raw);
 }
 
 class _AssignedJobTile extends StatelessWidget {
@@ -181,23 +178,48 @@ class _AssignedJobTile extends StatelessWidget {
     final where = [job.addressLine, job.ward, job.district].whereType<String>().where((s) => s.isNotEmpty).join(', ');
     final when = _fmtJobWhen(context, job.scheduledAt);
     final subtitle = [if (when.isNotEmpty) when, if (where.isNotEmpty) where].join('\n');
+    // A Row (not ListTile): the ListTile trailing is capped at 56dp and the
+    // status chip + price column overflowed at large font sizes.
     return Card(
-      child: ListTile(
+      child: InkWell(
         onTap: onTap,
-        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-        subtitle: subtitle.isEmpty ? null : Text(subtitle),
-        isThreeLine: subtitle.contains('\n'),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            _JobStatusChip(job.jobStatus),
-            const SizedBox(height: 6),
-            _MoneyValue(job.totalVnd),
-          ],
+        borderRadius: BorderRadius.circular(kRadius),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyLarge),
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(subtitle,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: cs.onSurfaceVariant)),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _JobStatusChip(job.jobStatus),
+                  const SizedBox(height: 6),
+                  _MoneyValue(job.totalVnd),
+                ],
+              ),
+            ],
+          ),
         ),
-        contentPadding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
-        iconColor: cs.onSurfaceVariant,
       ),
     );
   }
@@ -217,12 +239,7 @@ class _JobStatusChip extends StatelessWidget {
       'closed' => (cs.surfaceContainerHighest, cs.onSurfaceVariant),
       _ => (cs.errorContainer, cs.onErrorContainer),
     };
-    final label = switch (status) {
-      'pending' => l.provJobStatusPending,
-      'active' => l.provJobStatusActive,
-      'closed' => l.provJobStatusClosed,
-      _ => status ?? '',
-    };
+    final label = jobStatusLabel(l, status);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
@@ -232,7 +249,7 @@ class _JobStatusChip extends StatelessWidget {
   }
 }
 
-/// 💰 + server-derived VND total. Display-only — no amount is ever computed.
+/// + server-derived VND total. Display-only — no amount is ever computed.
 class _MoneyValue extends StatelessWidget {
   const _MoneyValue(this.vnd);
   final int? vnd;
@@ -242,7 +259,9 @@ class _MoneyValue extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text('💰', style: TextStyle(fontSize: 13)),
+        ExcludeSemantics(
+            child: Icon(Icons.payments_outlined,
+                size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(width: 4),
         PriceText(vnd!, style: Theme.of(context).textTheme.titleSmall),
       ],
@@ -305,20 +324,20 @@ class _AvailableTabState extends ConsumerState<_AvailableTab> {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(poolProvider);
-        await ref.read(poolProvider.future);
+        await refreshQuietly(ref.read(poolProvider.future));
       },
       child: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ListView(children: [
           const SizedBox(height: 120),
-          ErrorRetry(message: l.provJobsLoadError, onRetry: () => ref.invalidate(poolProvider)),
+          ErrorRetry(error: e, onRetry: () => ref.invalidate(poolProvider)),
         ]),
         data: (view) {
           final empty = view.pool.isEmpty && view.assigned.isEmpty;
           if (empty && view.canClaim) {
             return ListView(children: [
               const SizedBox(height: 80),
-              EmptyState(icon: '🧺', message: l.provPoolEmpty),
+              EmptyState(icon: Icons.shopping_basket_outlined, message: l.provPoolEmpty),
             ]);
           }
           return ListView(
@@ -340,7 +359,7 @@ class _AvailableTabState extends ConsumerState<_AvailableTab> {
               if (view.pool.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: EmptyState(icon: '🧺', message: l.provPoolEmpty),
+                  child: EmptyState(icon: Icons.shopping_basket_outlined, message: l.provPoolEmpty),
                 )
               else
                 for (final job in view.pool)
@@ -437,7 +456,7 @@ class _AssignedPoolTile extends StatelessWidget {
 }
 
 /// Quick-claim card. Shows the service, when/where, the server-derived VND
-/// total (💰) and the server's net estimate `taskerNetVnd` (`≈ 720.000₫ về bạn`)
+/// total () and the server's net estimate `taskerNetVnd` (`≈ 720.000₫ về bạn`)
 /// — the net is never computed in the app. "Claim" calls `claimJob(id)` (no amount) and is disabled when the
 /// server gate (`canClaim`) is closed.
 class _ClaimCard extends StatefulWidget {

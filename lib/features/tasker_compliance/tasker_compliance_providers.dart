@@ -11,7 +11,7 @@ import '../../core/models.dart';
 /// MONEY IS DISPLAY-ONLY here. The single write in this folder is the fine
 /// appeal text (`appealFine`), fired imperatively from the appeal screen.
 
-/// GET /tasker/fines (A3) 💰 — pending/charged/refunded totals + per-fine rows.
+/// GET /tasker/fines (A3) — pending/charged/refunded totals + per-fine rows.
 final finesProvider =
     FutureProvider.autoDispose<FinesView>((ref) => ref.watch(kycoApiProvider).fines());
 
@@ -23,6 +23,6 @@ final fineDetailProvider = FutureProvider.autoDispose
 final cancellationsProvider = FutureProvider.autoDispose<CancellationsView>(
     (ref) => ref.watch(kycoApiProvider).cancellations());
 
-/// GET /tasker/referrals (A5) 💰 — own code + program + referrals + earnedExtra.
+/// GET /tasker/referrals (A5) — own code + program + referrals + earnedExtra.
 final referralsProvider = FutureProvider.autoDispose<ReferralsView>(
     (ref) => ref.watch(kycoApiProvider).referrals());

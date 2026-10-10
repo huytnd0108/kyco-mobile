@@ -77,7 +77,7 @@ class _CategoryChips extends ConsumerWidget {
 
     return catsAsync.when(
       loading: () => const SizedBox(height: 40, child: Center(child: CircularProgressIndicator())),
-      error: (_, _) => const SizedBox.shrink(),
+      error: (e, _) => InlineErrorRow(error: e, onRetry: () => ref.invalidate(bookNowCategoriesProvider)),
       data: (cats) => Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -115,8 +115,8 @@ class _ServiceGrid extends ConsumerWidget {
         padding: EdgeInsets.only(top: 40),
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (_, _) => ErrorRetry(
-        message: l.genericError,
+      error: (e, _) => ErrorRetry(
+        error: e,
         onRetry: () => ref.invalidate(bookNowServicesProvider(category)),
       ),
       data: (all) {
@@ -137,11 +137,9 @@ class _ServiceGrid extends ConsumerWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: EdgeInsets.zero,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: ServiceCardGridDelegate(
             crossAxisCount: cols,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.68,
+            textScaler: MediaQuery.textScalerOf(context),
           ),
           itemCount: filtered.length,
           itemBuilder: (context, i) {

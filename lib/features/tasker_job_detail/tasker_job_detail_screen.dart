@@ -9,6 +9,7 @@ import '../../core/api/kyco_api.dart';
 import '../../core/api/problem.dart';
 import '../../core/di.dart';
 import '../../core/format.dart';
+import '../../core/labels.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
 import '../tasker_home/tasker_home_providers.dart';
@@ -17,6 +18,7 @@ import '../tasker_wallet/tasker_wallet_providers.dart';
 import 'job_detail_body.dart';
 import 'native_capture.dart';
 import 'tasker_job_detail_data.dart';
+import '../../theme/app_semantics.dart';
 
 /// `/p/jobs/:id` — the tasker lifecycle hub. API-backed via
 /// [taskerJobDetailProvider] (A8, dark-launched → the AsyncValue loading/error
@@ -74,9 +76,8 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
         child: async.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => ErrorRetry(
-            message: e is ApiException && e.isMaintenance
-                ? l.provJdFeatureEnabling
-                : l.genericError,
+            error: e,
+            message: e is ApiException && e.isMaintenance ? l.provJdFeatureEnabling : null,
             onRetry: () => ref.invalidate(taskerJobDetailProvider(id)),
           ),
           data: (d) => RefreshIndicator(
@@ -204,22 +205,20 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
 
   Future<void> _cancel(int id) async {
     final l = AppLocalizations.of(context);
-    final reason = await _reasonDialog(
-      title: l.provJdCancelTitle,
-      warning: l.provJdCancelWarning,
-      hint: l.provJdCancelReason,
-      confirmLabel: l.provJdCancelJob,
+    final picked = await showDialog<({String code, String text})>(
+      context: context,
+      builder: (_) => const JobCancelDialog(),
     );
-    if (reason == null) return;
-    // One idempotency key per (job, reason): a retry of the same cancel replays
-    // instead of re-running it (fines are server-side, MQA-36).
-    final reasonText = reason.isEmpty ? null : reason;
+    if (picked == null) return;
+    // One idempotency key per (job, code, text): a retry of the same cancel
+    // replays instead of re-running it (fines are server-side, MQA-36).
+    final reasonText = picked.text.isEmpty ? null : picked.text;
     final ledger = ref.read(idempotencyLedgerProvider);
     final resp = await _runMap(
         'cancel',
         id,
-        (api) => ledger.run('job-cancel:$id:${IdempotencyLedger.textTag(reasonText)}',
-            (key) => api.cancelJob(id, reasonCode: 'other', reasonText: reasonText, idempotencyKey: key)));
+        (api) => ledger.run('job-cancel:$id:${picked.code}.${IdempotencyLedger.textTag(reasonText)}',
+            (key) => api.cancelJob(id, reasonCode: picked.code, reasonText: reasonText, idempotencyKey: key)));
     if (resp != null) _showFineOutcome(l, resp, l.provJdCancelled);
   }
 
@@ -382,24 +381,35 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
   /// One opt-in live-location ping (job_detail_body's LiveShareToggle drives the
   /// cadence). Real GPS only — a failed fix or a refused POST returns false so
   /// the toggle switches itself off, with the reason surfaced once.
-  Future<bool> _livePing(int id) async {
+  Future<LivePingResult> _livePing(int id) async {
     final l = AppLocalizations.of(context);
     final gps = await const LocationService().currentPosition();
-    if (!mounted) return false;
+    if (!mounted) return LivePingResult.stop;
     if (!gps.isOk) {
       _snack(_gpsFailureMessage(l, gps.failure!));
-      return false;
+      // A permission / service refusal will not fix itself; a missed fix may.
+      return switch (gps.failure!) {
+        CaptureFailure.locationServiceOff ||
+        CaptureFailure.permissionDenied ||
+        CaptureFailure.permissionDeniedForever =>
+          LivePingResult.stop,
+        _ => LivePingResult.retry,
+      };
     }
     try {
       await ref.read(kycoApiProvider).pingJobLocation(id,
           lat: gps.fix!.lat, lng: gps.fix!.lon, accuracy: gps.fix!.accuracyM);
-      return true;
+      return LivePingResult.ok;
     } on ApiException catch (e) {
-      _snack(e.message.isEmpty ? l.prov2LiveShareStopped : e.message);
-      return false;
+      // Offline / timeout / 5xx / 429 / 408 are transient; any other 4xx is a
+      // definitive refusal (job moved on, forbidden …) → stop and say why.
+      final status = e.status ?? 0;
+      final transient = e.isNetwork || e.isRateLimited || status == 0 || status >= 500 || status == 408;
+      if (transient) return LivePingResult.retry;
+      _snack(apiErrorText(l, e));
+      return LivePingResult.stop;
     } catch (_) {
-      _snack(l.prov2LiveShareStopped);
-      return false;
+      return LivePingResult.retry;
     }
   }
 
@@ -426,7 +436,8 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
   Future<void> _sos(int id) async {
     final l = AppLocalizations.of(context);
     final ok = await _confirmDialog(
-      title: '🆘 SOS',
+      title: l.provJdSendSos,
+      icon: Icons.emergency,
       body: l.provJdSosBody,
       confirmLabel: l.provJdSosConfirm,
       danger: true,
@@ -561,12 +572,16 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
     required String body,
     required String confirmLabel,
     bool danger = false,
+    IconData? icon,
   }) {
     return showDialog<bool>(
       context: context,
       builder: (ctx) {
         final cs = Theme.of(ctx).colorScheme;
         return AlertDialog(
+          icon: icon == null
+              ? null
+              : Icon(icon, color: danger ? cs.error : null),
           title: Text(title),
           content: Text(body),
           actions: [
@@ -653,12 +668,12 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
               child: Row(
                 children: [
                   Icon(have >= need ? Icons.check_circle : Icons.radio_button_unchecked,
-                      size: 16, color: have >= need ? Colors.green : Colors.orange),
+                      size: 16, color: have >= need ? ctx.semantics.onSuccessContainer : ctx.semantics.onWarningContainer),
                   const SizedBox(width: 8),
                   Expanded(child: Text('$label  $have/$need')),
                   if (missing > 0)
                     Text(l.provJdNeedMore(missing),
-                        style: const TextStyle(fontSize: 12, color: Colors.orange)),
+                        style: TextStyle(fontSize: 12, color: ctx.semantics.onWarningContainer)),
                 ],
               ),
             );
@@ -687,6 +702,87 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
           ],
         );
       },
+    );
+  }
+}
+
+/// Tasker job cancel: pick one of the server reason codes (localized) and add
+/// an optional note (at most [kJobCancelNoteMax]). Pops `(code, trimmed text)`.
+class JobCancelDialog extends StatefulWidget {
+  const JobCancelDialog({super.key});
+  @override
+  State<JobCancelDialog> createState() => _JobCancelDialogState();
+}
+
+class _JobCancelDialogState extends State<JobCancelDialog> {
+  String? _code;
+  final _note = TextEditingController();
+
+  @override
+  void dispose() {
+    _note.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
+    return AlertDialog(
+      title: Text(l.provJdCancelTitle),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: cs.errorContainer.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(l.provJdCancelWarning, style: TextStyle(fontSize: 12, color: cs.onSurface)),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              key: const ValueKey('job-cancel-reason'),
+              initialValue: _code,
+              isExpanded: true,
+              decoration: InputDecoration(labelText: l.provJdCancelReasonPick),
+              items: [
+                for (final c in kJobCancelReasonCodes)
+                  DropdownMenuItem(value: c, child: Text(cancelReasonLabel(l, c))),
+              ],
+              onChanged: (v) => setState(() => _code = v),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              key: const ValueKey('job-cancel-note'),
+              controller: _note,
+              maxLines: 3,
+              minLines: 1,
+              maxLength: kJobCancelNoteMax,
+              decoration: InputDecoration(
+                labelText: l.provJdCancelNoteLabel,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l.provJdDialogCancel),
+        ),
+        FilledButton(
+          key: const ValueKey('job-cancel-submit'),
+          onPressed: _code == null
+              ? null
+              : () => Navigator.of(context).pop((code: _code!, text: _note.text.trim())),
+          child: Text(l.provJdCancelJob),
+        ),
+      ],
     );
   }
 }

@@ -7,6 +7,7 @@ import '../../core/api/problem.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
 import 'locations_providers.dart';
+import '../../core/ui/media_image.dart';
 
 /// `/locations/:city/:service` — a city-scoped service intro. Mirrors the web
 /// `locations/[city]/[service]/page.tsx` leaf: a simple info block for the
@@ -76,7 +77,7 @@ class CityServiceScreen extends ConsumerWidget {
           onRefresh: () async {
             ref.invalidate(cityProvider(citySlug));
             if (serviceId != null) ref.invalidate(serviceByIdProvider(serviceId));
-            await ref.read(cityProvider(citySlug).future);
+            await refreshQuietly(ref.read(cityProvider(citySlug).future));
           },
           child: landing.when(
             loading: () =>
@@ -86,7 +87,7 @@ class CityServiceScreen extends ConsumerWidget {
                   ? _NotFound(uri: '/locations/$citySlug/$service')
                   : Center(
                       child: ErrorRetry(
-                        message: l.genericError,
+                        error: e,
                         onRetry: () => ref.invalidate(cityProvider(citySlug)),
                       ),
                     ),
@@ -110,7 +111,7 @@ class CityServiceScreen extends ConsumerWidget {
                       ? _NotFound(uri: '/locations/$citySlug/$service')
                       : Center(
                           child: ErrorRetry(
-                            message: l.genericError,
+                            error: e,
                             onRetry: () =>
                                 ref.invalidate(serviceByIdProvider(serviceId)),
                           ),
@@ -232,16 +233,18 @@ class _HeroImage extends StatelessWidget {
                     color: cs.onPrimaryContainer, size: 34),
           ),
         );
-    if (url == null || url!.isEmpty || url!.startsWith('media:')) {
-      return placeholder();
-    }
-    return Image.network(
-      url!,
-      fit: BoxFit.cover,
-      semanticLabel: label,
-      errorBuilder: (_, _, _) => placeholder(),
-      loadingBuilder: (c, child, p) =>
-          p == null ? child : placeholder(loading: true),
+    return ResolvedImageUrl(
+      url: url,
+      builder: (context, resolved, resolving) => resolved == null
+          ? placeholder(loading: resolving)
+          : Image.network(
+              resolved,
+              fit: BoxFit.cover,
+              semanticLabel: label,
+              errorBuilder: (_, _, _) => placeholder(),
+              loadingBuilder: (c, child, p) =>
+                  p == null ? child : placeholder(loading: true),
+            ),
     );
   }
 }
@@ -256,7 +259,7 @@ class _NotFound extends StatelessWidget {
     return Center(
       child: EmptyState(
         message: l.pageNotFound(uri),
-        icon: '🧭',
+        icon: Icons.explore_outlined,
         action: FilledButton(
           onPressed: () => context.go('/locations'),
           child: Text(l.locationsTitle),

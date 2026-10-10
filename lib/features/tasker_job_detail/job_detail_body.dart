@@ -6,6 +6,14 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 import '../../core/format.dart';
 import '../../core/models.dart';
 import 'tasker_job_detail_data.dart';
+import 'package:kyco_mobile/core/labels.dart';
+import '../../theme/app_semantics.dart';
+
+/// Outcome of one live-location ping. A TRANSIENT failure (no GPS fix yet,
+/// offline, timeout, 5xx, 429) is retried with backoff; the share only stops
+/// after [LiveShareToggle.maxConsecutiveFailures] in a row, or at once on a
+/// definitive refusal (4xx other than 408/429).
+enum LivePingResult { ok, retry, stop }
 
 /// The scrolling lifecycle-hub body. Pure presentation: it reads the payload and
 /// the derived [JobPhase] and calls back up to the screen for every mutation.
@@ -46,7 +54,7 @@ class JobDetailBody extends StatelessWidget {
   /// One live-location ping (GPS fix + POST). Resolves `true` when the server
   /// accepted it; `false` stops sharing (the screen surfaces the reason). Null
   /// keeps the switch disabled.
-  final Future<bool> Function()? onLivePing;
+  final Future<LivePingResult> Function()? onLivePing;
 
   bool get _anyBusy => busy != null;
 
@@ -142,7 +150,7 @@ class _PhaseBanner extends StatelessWidget {
       JobPhase.awaitingCustomer => (l.provJdPhaseAwaitingCustomer, Icons.schedule, cs.tertiary),
       JobPhase.awaitingCash => (l.provJdPhaseAwaitingCash, Icons.payments, cs.tertiary),
       JobPhase.awaitingPayment => (l.provJdPhaseAwaitingPayment, Icons.account_balance, cs.tertiary),
-      JobPhase.settled => (l.provJdPhaseSettled, Icons.verified, Colors.green),
+      JobPhase.settled => (l.provJdPhaseSettled, Icons.verified, context.semantics.onSuccessContainer),
       JobPhase.closed => (l.provJdPhaseClosed, Icons.lock_outline, cs.onSurfaceVariant),
       JobPhase.cancelled => (l.provJdPhaseCancelled, Icons.cancel_outlined, cs.error),
       JobPhase.unknown => (l.provJdPhaseUnknown, Icons.info_outline, cs.onSurfaceVariant),
@@ -228,7 +236,7 @@ class _PaymentCard extends StatelessWidget {
     final total = detail.totalVnd;
     final earnings = detail.job['earningsVnd'];
     final l = AppLocalizations.of(context);
-    final method = _payLabel(context, _s(b['paymentMethod']));
+    final method = paymentMethodLabel(l, _s(b['paymentMethod']));
     return _Card(
       title: l.provJdPayment,
       child: Column(
@@ -257,16 +265,6 @@ class _PaymentCard extends StatelessWidget {
       ),
     );
   }
-
-  String _payLabel(BuildContext context, String m) => switch (m) {
-        'cash' => AppLocalizations.of(context).provJdPayCash,
-        'vnpay' => 'VNPay',
-        'momo' => 'MoMo',
-        'zalopay' => 'ZaloPay',
-        'bank_transfer' => AppLocalizations.of(context).provJdPayBankTransfer,
-        '' => '—',
-        _ => m,
-      };
 }
 
 // ── lifecycle actions ────────────────────────────────────────────────────────
@@ -381,7 +379,7 @@ class _LifecycleActionsCard extends StatelessWidget {
     Widget row(String label, int have, int need) => Row(
           children: [
             Icon(have >= need ? Icons.check_circle : Icons.radio_button_unchecked,
-                size: 16, color: have >= need ? Colors.green : Colors.orange),
+                size: 16, color: have >= need ? context.semantics.onSuccessContainer : context.semantics.onWarningContainer),
             const SizedBox(width: 6),
             Text('$label  $have/$need', style: const TextStyle(fontSize: 12)),
           ],
@@ -406,8 +404,8 @@ class _LifecycleActionsCard extends StatelessWidget {
     );
   }
 
-  Widget _note(BuildContext context, String text) => _banner(context, text, Colors.orange, Icons.photo_camera_outlined);
-  Widget _warn(BuildContext context, String text) => _banner(context, text, Colors.orange, Icons.percent);
+  Widget _note(BuildContext context, String text) => _banner(context, text, context.semantics.onWarningContainer, Icons.photo_camera_outlined);
+  Widget _warn(BuildContext context, String text) => _banner(context, text, context.semantics.onWarningContainer, Icons.percent);
   Widget _info(BuildContext context, String text) {
     final cs = Theme.of(context).colorScheme;
     return Text(text, style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant));
@@ -473,7 +471,7 @@ class _PhotosCard extends StatelessWidget {
     return Row(
       children: [
         Icon(have >= need ? Icons.check_circle : Icons.photo_camera_outlined,
-            size: 18, color: have >= need ? Colors.green : cs.onSurfaceVariant),
+            size: 18, color: have >= need ? context.semantics.onSuccessContainer : cs.onSurfaceVariant),
         const SizedBox(width: 8),
         Expanded(child: Text('$label  $have/$need', style: const TextStyle(fontWeight: FontWeight.w600))),
         OutlinedButton.icon(
@@ -522,7 +520,7 @@ class _LiveShareCard extends StatelessWidget {
   const _LiveShareCard({required this.detail, required this.enRoute, this.onPing});
   final TaskerJobDetail detail;
   final bool enRoute;
-  final Future<bool> Function()? onPing;
+  final Future<LivePingResult> Function()? onPing;
 
   @override
   Widget build(BuildContext context) {
@@ -556,8 +554,11 @@ class LiveShareToggle extends StatefulWidget {
   });
 
   final bool enRoute;
-  final Future<bool> Function()? onPing;
+  final Future<LivePingResult> Function()? onPing;
   final Duration interval;
+
+  /// Consecutive transient failures tolerated before the share switches off.
+  static const maxConsecutiveFailures = 3;
 
   @override
   State<LiveShareToggle> createState() => _LiveShareToggleState();
@@ -566,6 +567,8 @@ class LiveShareToggle extends StatefulWidget {
 class _LiveShareToggleState extends State<LiveShareToggle> {
   bool _on = false;
   bool _inFlight = false;
+  bool _stoppedByFailure = false;
+  int _failures = 0; // consecutive transient failures
   DateTime? _lastOk;
   Timer? _timer;
 
@@ -587,36 +590,64 @@ class _LiveShareToggleState extends State<LiveShareToggle> {
     _timer?.cancel();
     _timer = null;
     _on = false;
+    _failures = 0;
+  }
+
+  /// Next ping after the regular interval, or an exponentially growing delay
+  /// (interval x 2^failures, capped at 4x) while pings are failing.
+  void _schedule() {
+    _timer?.cancel();
+    final factor = _failures == 0 ? 1 : (1 << _failures).clamp(1, 4);
+    _timer = Timer(widget.interval * factor, _ping);
   }
 
   Future<void> _ping() async {
     final ping = widget.onPing;
     if (_inFlight || !_on || ping == null) return;
     setState(() => _inFlight = true);
-    bool ok;
+    LivePingResult result;
     try {
-      ok = await ping();
+      result = await ping();
     } catch (_) {
-      ok = false;
+      result = LivePingResult.retry;
     }
     if (!mounted) return;
     setState(() {
       _inFlight = false;
-      if (ok) {
-        _lastOk = DateTime.now();
-      } else {
-        _stop();
+      if (!_on) return; // switched off while the ping was in flight
+      switch (result) {
+        case LivePingResult.ok:
+          _lastOk = DateTime.now();
+          _failures = 0;
+          _schedule();
+        case LivePingResult.retry:
+          _failures++;
+          if (_failures >= LiveShareToggle.maxConsecutiveFailures) {
+            _stop();
+            _stoppedByFailure = true;
+          } else {
+            _schedule();
+          }
+        case LivePingResult.stop:
+          _stop();
+          _stoppedByFailure = true;
       }
     });
   }
 
   void _toggle(bool v) {
     if (v) {
-      setState(() => _on = true);
-      _timer = Timer.periodic(widget.interval, (_) => _ping());
+      setState(() {
+        _on = true;
+        _stoppedByFailure = false;
+        _failures = 0;
+      });
       _ping();
     } else {
-      setState(_stop);
+      setState(() {
+        _stop();
+        _stoppedByFailure = false;
+      });
     }
   }
 
@@ -624,13 +655,18 @@ class _LiveShareToggleState extends State<LiveShareToggle> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     String two(int n) => n.toString().padLeft(2, '0');
+    String last() => _lastOk == null ? '--:--' : '${two(_lastOk!.hour)}:${two(_lastOk!.minute)}';
     final subtitle = !widget.enRoute
         ? l.prov2LiveShareNotEnRoute
-        : !_on
-            ? l.prov2LiveShareOff
-            : _lastOk == null
-                ? l.prov2LiveShareStarting
-                : l.prov2LiveShareOn('${two(_lastOk!.hour)}:${two(_lastOk!.minute)}');
+        : _stoppedByFailure
+            ? l.prov2LiveShareStopped
+            : !_on
+                ? l.prov2LiveShareOff
+                : _failures > 0
+                    ? l.prov2LiveShareReconnecting(last())
+                    : _lastOk == null
+                        ? l.prov2LiveShareStarting
+                        : l.prov2LiveShareOn(last());
     return SwitchListTile(
       contentPadding: EdgeInsets.zero,
       value: _on,
@@ -671,7 +707,7 @@ class _ResubmitCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.feedback_outlined, color: Colors.orange, size: 20),
+              Icon(Icons.feedback_outlined, color: context.semantics.onWarningContainer, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(l.prov2ResubmitTitle, style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -768,6 +804,7 @@ class _ChatCardState extends State<_ChatCard> {
               ),
               const SizedBox(width: 8),
               IconButton.filled(
+                tooltip: l.provJdSend,
                 onPressed: widget.anyBusy ? null : _submit,
                 icon: widget.busy == 'message'
                     ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))

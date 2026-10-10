@@ -6,6 +6,8 @@ import '../../core/adaptive.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
 import 'tasker_compliance_providers.dart';
+import 'package:kyco_mobile/core/datetime.dart';
+import 'package:kyco_mobile/core/labels.dart';
 
 /// Discipline thresholds mirrored from the web `lib/tasker-discipline.ts`.
 /// The mobile `/tasker/cancellations` payload carries [CancellationsView.
@@ -33,7 +35,7 @@ class TaskerCancellationsScreen extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(cancellationsProvider);
-            await ref.read(cancellationsProvider.future);
+            await refreshQuietly(ref.read(cancellationsProvider.future));
           },
           child: CenteredMaxWidth(
             maxWidth: 720,
@@ -42,7 +44,7 @@ class TaskerCancellationsScreen extends ConsumerWidget {
               error: (e, _) => ListView(children: [
                 const SizedBox(height: 120),
                 ErrorRetry(
-                  message: l.homeLoadError(e.toString()),
+                  error: e,
                   onRetry: () => ref.invalidate(cancellationsProvider),
                 ),
               ]),
@@ -214,8 +216,7 @@ class _CancellationRow extends StatelessWidget {
                         ?.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 2),
-                  // reasonCode is a backend enum — shown raw (server-derived).
-                  Text(c.reasonCode ?? '—',
+                  Text(cancelReasonLabel(l, c.reasonCode),
                       style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
                   if ((c.reasonText ?? '').isNotEmpty) ...[
                     const SizedBox(height: 2),
@@ -227,7 +228,7 @@ class _CancellationRow extends StatelessWidget {
                   ],
                   if ((c.createdAt ?? '').isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(_shortDateTime(c.createdAt!),
+                    Text(vnDateTime(context, c.createdAt),
                         style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
                   ],
                 ],
@@ -249,13 +250,4 @@ class _CancellationRow extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Best-effort ISO → `dd/MM/yyyy HH:mm`; falls back to the first 16 chars.
-String _shortDateTime(String iso) {
-  // Server timestamps are UTC ISO strings — render in the device's local zone.
-  final dt = DateTime.tryParse(iso)?.toLocal();
-  if (dt == null) return iso.length >= 16 ? iso.substring(0, 16) : iso;
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${two(dt.day)}/${two(dt.month)}/${dt.year} ${two(dt.hour)}:${two(dt.minute)}';
 }

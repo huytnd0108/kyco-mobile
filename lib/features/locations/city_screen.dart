@@ -29,7 +29,7 @@ class CityScreen extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(cityProvider(slug));
-            await ref.read(cityProvider(slug).future);
+            await refreshQuietly(ref.read(cityProvider(slug).future));
           },
           child: landing.when(
             loading: () =>
@@ -39,7 +39,7 @@ class CityScreen extends ConsumerWidget {
                   ? _NotFound(slug: slug)
                   : Center(
                       child: ErrorRetry(
-                        message: l.genericError,
+                        error: e,
                         onRetry: () => ref.invalidate(cityProvider(slug)),
                       ),
                     ),
@@ -118,11 +118,10 @@ class _CityBody extends StatelessWidget {
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: ServiceCardGridDelegate(
                 crossAxisCount: columns,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.72,
+                textScaler: MediaQuery.textScalerOf(context),
+                aspectRatio: 0.72,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, i) => ServiceCard(
@@ -148,7 +147,7 @@ class _NotFound extends StatelessWidget {
     return Center(
       child: EmptyState(
         message: l.pageNotFound('/locations/$slug'),
-        icon: '🧭',
+        icon: Icons.explore_outlined,
         action: FilledButton(
           onPressed: () => context.go('/locations'),
           child: Text(l.locationsTitle),

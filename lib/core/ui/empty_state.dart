@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
-/// The web's dashed-border empty state (🧹). [action] is an optional reset/CTA.
+/// The web's dashed-border empty state. [icon] is a Material icon (never an
+/// emoji); decorative, so it is excluded from semantics. [action] is an
+/// optional reset/CTA.
 class EmptyState extends StatelessWidget {
-  const EmptyState({super.key, required this.message, this.icon = '🧹', this.action});
+  const EmptyState({super.key, required this.message, this.icon = Icons.cleaning_services_outlined, this.action});
   final String message;
-  final String icon;
+  final IconData icon;
   final Widget? action;
 
   @override
@@ -17,7 +19,8 @@ class EmptyState extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(icon, style: const TextStyle(fontSize: 36)),
+              ExcludeSemantics(
+                  child: Icon(icon, size: 40, color: cs.onSurfaceVariant)),
               const SizedBox(height: 12),
               Text(message,
                   textAlign: TextAlign.center,

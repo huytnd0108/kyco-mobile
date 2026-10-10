@@ -5,11 +5,11 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/adaptive.dart';
 import '../../core/models.dart';
-import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import '../../theme/app_semantics.dart';
 import '../auth/auth_controller.dart';
 import 'home_providers.dart';
+import '../../core/text_scale.dart';
 
 /// Home landing - a full web-mirror of app/[locale]/page.tsx, driven entirely by
 /// the live GET /v1/home composite (categories + services + content + geo). No
@@ -20,7 +20,6 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l = AppLocalizations.of(context);
     final home = ref.watch(homeProvider);
     final auth = ref.watch(authControllerProvider);
     final signedIn = auth.status == AuthStatus.signedIn;
@@ -37,7 +36,7 @@ class HomeScreen extends ConsumerWidget {
           error: (e, _) => ListView(children: [
             const SizedBox(height: 120),
             ErrorRetry(
-              message: l.homeLoadError(apiErrorText(l, e)),
+              error: e,
               onRetry: () => ref.invalidate(homeProvider),
             ),
           ]),
@@ -132,7 +131,7 @@ class _Hero extends StatelessWidget {
                 child: Text(
                   l.bookNowKicker.toUpperCase(),
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
+                    color: Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 1,
@@ -178,7 +177,7 @@ class _CategoryBento extends StatelessWidget {
       child: Column(
         children: [
           SizedBox(
-            height: 180,
+            height: 180 + scaledExtra(context, 44),
             child: CategoryTile(lead, big: true, onTap: () => _open(context, lead)),
           ),
           if (rest.isNotEmpty) ...[
@@ -209,7 +208,7 @@ class _ServiceRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 296,
+      height: 296 + scaledExtra(context, 168),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -346,7 +345,7 @@ class _BottomCtas extends StatelessWidget {
             width: double.infinity,
             child: FilledButton.icon(
               onPressed: () => context.push('/book-now'),
-              icon: const Text('⚡', style: TextStyle(fontSize: 16)),
+              icon: const Icon(Icons.bolt),
               label: Text(l.bookNow),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),

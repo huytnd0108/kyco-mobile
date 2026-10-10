@@ -7,6 +7,7 @@ import '../../core/breakpoints.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
 import 'locations_providers.dart';
+import '../../core/text_scale.dart';
 
 /// `/locations` — the active service-area index. Mirrors the web
 /// `locations/page.tsx` "Active cities" grid: each city links into its landing.
@@ -25,7 +26,7 @@ class LocationsScreen extends ConsumerWidget {
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(locationsTreeProvider);
-            await ref.read(locationsTreeProvider.future);
+            await refreshQuietly(ref.read(locationsTreeProvider.future));
           },
           child: cities.when(
             loading: () =>
@@ -33,7 +34,7 @@ class LocationsScreen extends ConsumerWidget {
             error: (e, _) => _Scroll(
               child: Center(
                 child: ErrorRetry(
-                  message: l.genericError,
+                  error: e,
                   onRetry: () => ref.invalidate(locationsTreeProvider),
                 ),
               ),
@@ -41,7 +42,7 @@ class LocationsScreen extends ConsumerWidget {
             data: (list) => list.isEmpty
                 ? _Scroll(
                     child: Center(
-                        child: EmptyState(message: l.noResults, icon: '📍')))
+                        child: EmptyState(message: l.noResults, icon: Icons.place_outlined)))
                 : _CityGrid(list),
           ),
         ),
@@ -77,7 +78,7 @@ class _CityGrid extends StatelessWidget {
               crossAxisCount: columns,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              mainAxisExtent: 156,
+              mainAxisExtent: 156 + scaledExtra(context, 110),
             ),
             delegate: SliverChildBuilderDelegate(
               (context, i) => _CityCard(cities[i]),
@@ -132,9 +133,6 @@ class _CityCard extends StatelessWidget {
   }
 }
 
-// TODO-i18n: no ARB key exists for a ward-count ("{n} wards" / "{n} khu vực")
-// plural — falls back to a locale-branched literal. Report a `wardsCount(int)`
-// key for the l10n owner (foundation).
 String _wardCountLabel(BuildContext context, int n) {
   return AppLocalizations.of(context).wardsCount(n);
 }

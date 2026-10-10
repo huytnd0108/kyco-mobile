@@ -12,6 +12,10 @@ import '../auth/auth_controller.dart';
 import 'account_providers.dart';
 import 'invite_screen.dart' show SignInGate;
 
+/// Ids of addresses with a DELETE in flight: a second tap is ignored and the
+/// row shows progress instead of staying tappable until the refetch.
+final _deletingAddressesProvider = StateProvider.autoDispose<Set<int>>((_) => const {});
+
 /// `/addresses` — saved-address CRUD over `/v1/addresses`.
 ///
 /// Backend bug MQA-2: `PATCH /v1/addresses/{id}` REPLACES every column (absent
@@ -31,6 +35,7 @@ class AddressesScreen extends ConsumerWidget {
       );
     }
     final async = ref.watch(addressesProvider);
+    final deleting = ref.watch(_deletingAddressesProvider);
     return Scaffold(
       appBar: AppBar(title: Text(l.cust2Addresses)),
       floatingActionButton: FloatingActionButton.extended(
@@ -52,12 +57,12 @@ class AddressesScreen extends ConsumerWidget {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => ListView(children: [
                 const SizedBox(height: 120),
-                ErrorRetry(message: apiErrorText(l, e), onRetry: () => ref.invalidate(addressesProvider)),
+                ErrorRetry(error: e, onRetry: () => ref.invalidate(addressesProvider)),
               ]),
               data: (list) => list.isEmpty
                   ? ListView(children: [
                       const SizedBox(height: 80),
-                      EmptyState(icon: '📍', message: l.cust2AddressEmpty),
+                      EmptyState(icon: Icons.place_outlined, message: l.cust2AddressEmpty),
                     ])
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
@@ -65,6 +70,7 @@ class AddressesScreen extends ConsumerWidget {
                       separatorBuilder: (_, _) => const SizedBox(height: 8),
                       itemBuilder: (_, i) => _AddressTile(
                         a: list[i],
+                        deleting: deleting.contains(list[i].id),
                         onEdit: () => _edit(context, ref, list[i]),
                         onDelete: () => _delete(context, ref, list[i]),
                       ),
@@ -100,18 +106,27 @@ class AddressesScreen extends ConsumerWidget {
       ),
     );
     if (ok != true) return;
+    final inFlight = ref.read(_deletingAddressesProvider.notifier);
+    if (inFlight.state.contains(a.id)) return;
+    inFlight.state = {...inFlight.state, a.id};
     try {
       await ref.read(kycoApiProvider).deleteAddress(a.id);
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(apiErrorText(l, e))));
+      // 404 = already gone (e.g. a double delete): the goal is met, no error.
+      if (!(e is ApiException && e.status == 404)) {
+        messenger.showSnackBar(SnackBar(content: Text(apiErrorText(l, e))));
+      }
+    } finally {
+      if (context.mounted) inFlight.state = {...inFlight.state}..remove(a.id);
     }
     ref.invalidate(addressesProvider);
   }
 }
 
 class _AddressTile extends StatelessWidget {
-  const _AddressTile({required this.a, required this.onEdit, required this.onDelete});
+  const _AddressTile({required this.a, required this.onEdit, required this.onDelete, this.deleting = false});
   final SavedAddress a;
+  final bool deleting;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -122,7 +137,8 @@ class _AddressTile extends StatelessWidget {
     final line = [a.line, a.ward, a.district, a.city].where((s) => s.trim().isNotEmpty).join(', ');
     return Card(
       child: ListTile(
-        onTap: onEdit,
+        enabled: !deleting,
+        onTap: deleting ? null : onEdit,
         leading: Icon(a.isDefault ? Icons.home : Icons.place_outlined, color: cs.primary),
         title: Row(
           children: [
@@ -139,11 +155,13 @@ class _AddressTile extends StatelessWidget {
           ],
         ),
         subtitle: a.label.isEmpty ? null : Text(line),
-        trailing: IconButton(
-          tooltip: l.cust2AddressDelete,
-          icon: const Icon(Icons.delete_outline),
-          onPressed: onDelete,
-        ),
+        trailing: deleting
+            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+            : IconButton(
+                tooltip: l.cust2AddressDelete,
+                icon: const Icon(Icons.delete_outline),
+                onPressed: onDelete,
+              ),
       ),
     );
   }

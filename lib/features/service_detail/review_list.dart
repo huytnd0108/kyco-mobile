@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/models.dart';
 import '../../core/widgets.dart';
 import '../../theme/app_semantics.dart';
 import 'service_detail_providers.dart';
+import 'package:kyco_mobile/core/datetime.dart';
 
 /// The customer-reviews section: title, a verified-review list, and a numeric
 /// cursor "load more". Mirrors the web's review block (every row is a verified
@@ -32,13 +32,13 @@ class ReviewList extends ConsumerWidget {
               child: Center(child: CircularProgressIndicator()),
             ),
             error: (e, _) => ErrorRetry(
-              message: l.genericError,
+              error: e,
               onRetry: () => ref.invalidate(reviewsControllerProvider(serviceId)),
             ),
             data: (s) => s.reviews.isEmpty
                 ? EmptyState(
                     message: l.noReviewsYet,
-                    icon: '💬',
+                    icon: Icons.chat_bubble_outline,
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,14 +77,9 @@ class _ReviewCard extends StatelessWidget {
   const _ReviewCard(this.review);
   final Review review;
 
-  /// Localized short date; falls back to the raw string if it isn't ISO-parseable
-  /// (consistent with how notifications format timestamps).
-  static String _formatDate(BuildContext context, String raw) {
-    final dt = DateTime.tryParse(raw);
-    if (dt == null) return raw;
-    return DateFormat.yMMMd(Localizations.localeOf(context).toString())
-        .format(dt.toLocal());
-  }
+  /// Localized short date in Vietnam time; '—' if unparseable.
+  static String _formatDate(BuildContext context, String raw) =>
+      vnDateMedium(context, raw);
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +104,6 @@ class _ReviewCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    // TODO-i18n: no `verifiedBadge`-equivalent wired for reviews yet.
                     l.verifiedBadge,
                     style: TextStyle(
                       color: context.semantics.onSuccessContainer,
@@ -123,7 +117,7 @@ class _ReviewCard extends StatelessWidget {
             const SizedBox(height: 6),
             Row(
               children: [
-                Text(review.displayName,
+                Text(review.displayName.trim().isEmpty ? l.reviewAnonymous : review.displayName,
                     style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                 if (review.createdAt.isNotEmpty) ...[
                   Text('  ·  ',
