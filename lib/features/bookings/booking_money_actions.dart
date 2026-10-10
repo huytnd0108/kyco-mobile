@@ -97,7 +97,9 @@ class _BookingMoneySectionState extends ConsumerState<BookingMoneySection> with 
     final a = BookingActions.of(b);
     final pay = ref.watch(payFlowProvider(b.id));
     final showPay = a.canPay || pay.phase != PayPhase.idle;
-    if (!a.canCancel &&
+    final why = _blockedNotes(b, a, showPay);
+    if (why.isEmpty &&
+        !a.canCancel &&
         !a.cancelBlocked &&
         !a.canConfirm &&
         !a.awaitingCashConfirm &&
@@ -123,12 +125,13 @@ class _BookingMoneySectionState extends ConsumerState<BookingMoneySection> with 
             onPressed: a.canDispute ? () => _dispute(context) : null,
             child: Text(l.moneyDisputeAction),
           ),
-          if (a.disputeWaiting)
+          if (a.disputeWaiting && a.disputeBlockedReason == null)
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(l.moneyDisputeWaiting, style: TextStyle(color: cs.onSurfaceVariant)),
             ),
         ],
+        for (final n in why) _blockedNote(context, n.$1, n.$2),
         if (showPay) _PayPanel(b),
         if (a.cancelBlocked)
           Padding(
@@ -159,6 +162,41 @@ class _BookingMoneySectionState extends ConsumerState<BookingMoneySection> with 
       ],
     );
   }
+
+  /// Release-h: the server's own label for why confirm / dispute / pay are
+  /// unavailable, shown where the action would be. Deduplicated (the server
+  /// reuses one sentence across actions) and silent on finished bookings.
+  /// Absent on an older backend, so nothing changes there.
+  static const _finished = {'SETTLED', 'CANCELLED', 'CLOSED', 'BAD_DEBT'};
+  List<(String, String)> _blockedNotes(BookingDetail b, BookingActions a, bool showPay) {
+    if (_finished.contains(b.status.toUpperCase())) return const [];
+    final out = <(String, String)>[];
+    void add(String key, String? label) {
+      if (label == null || out.any((e) => e.$2 == label)) return;
+      out.add((key, label));
+    }
+
+    if (!a.canConfirm) {
+      add('confirm', a.confirmBlockedReason);
+    } else if (!a.canDispute) {
+      add('dispute', a.disputeBlockedReason);
+    }
+    if (!a.canPay && !showPay) add('pay', a.payBlockedReason);
+    return out;
+  }
+
+  Widget _blockedNote(BuildContext context, String action, String text) => Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Row(
+          key: ValueKey('booking-$action-blocked'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.info_outline, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            const SizedBox(width: 8),
+            Expanded(child: Text(text, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))),
+          ],
+        ),
+      );
 
   Widget _note(BuildContext context, IconData icon, String text) => Padding(
         padding: const EdgeInsets.only(bottom: 8),

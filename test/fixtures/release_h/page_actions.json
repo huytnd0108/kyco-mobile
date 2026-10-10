@@ -1,0 +1,12 @@
+{
+  "cancel": {"canCancel": false, "cancelBlockedReason": {"code": "TASKER_ARRIVED", "label": "Cộng tác viên đã đến nơi nên không thể huỷ."},
+             "canConfirm": false, "confirmBlockedReason": {"code": "NOT_READY_YET", "label": "Cộng tác viên chưa báo hoàn thành nên chưa thể xác nhận."},
+             "canPay": false, "payBlockedReason": {"code": "NOT_PAYABLE_YET", "label": "Đơn chưa tới bước thanh toán. Bạn sẽ được nhắc khi cộng tác viên hoàn thành."},
+             "canDispute": false, "disputeBlockedReason": {"code": "NOT_READY_YET", "label": "Cộng tác viên chưa báo hoàn thành nên chưa thể xác nhận."}},
+  "dispute_waiting": {"canCancel": false, "canConfirm": true, "canPay": false,
+             "payBlockedReason": {"code": "NOT_PAYABLE_YET", "label": "Đơn chưa tới bước thanh toán. Bạn sẽ được nhắc khi cộng tác viên hoàn thành."},
+             "canDispute": false, "disputeBlockedReason": {"code": "AWAITING_TASKER_RESUBMIT", "label": "Bạn đã gửi yêu cầu \"Chưa hoàn thành\". Vui lòng chờ cộng tác viên xử lý và gửi lại."}},
+  "pay_cash": {"canCancel": false, "canConfirm": false, "confirmBlockedReason": {"code": "ALREADY_CONFIRMED", "label": "Bạn đã xác nhận hoàn thành đơn này rồi."},
+             "canPay": false, "payBlockedReason": {"code": "CASH_PAYMENT", "label": "Đơn này thanh toán bằng tiền mặt nên không cần thanh toán trực tuyến."},
+             "canDispute": false, "disputeBlockedReason": {"code": "ALREADY_CONFIRMED", "label": "Bạn đã xác nhận hoàn thành đơn này rồi."}}
+}

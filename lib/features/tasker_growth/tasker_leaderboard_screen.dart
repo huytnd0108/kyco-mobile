@@ -180,7 +180,7 @@ class _RankRow extends StatelessWidget {
                 Row(
                   children: [
                     Flexible(
-                      child: Text(isPlaceholderPersonName(row.name) ? '—' : row.name!.trim(),
+                      child: Text(taskerDisplayName(AppLocalizations.of(context), row.name),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),

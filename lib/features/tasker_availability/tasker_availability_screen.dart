@@ -158,8 +158,8 @@ class _EditorState extends ConsumerState<_Editor> {
         // Conflicts → offer the force-overwrite confirm; otherwise the server
         // declined for another reason and this is NOT a success — never snack
         // "Đã lưu" on a saved:false response.
-        if (res.conflicts.isNotEmpty) {
-          final ok = await _confirmConflict(res.conflicts);
+        if (res.conflictIds.isNotEmpty) {
+          final ok = await _confirmConflict(res);
           if (ok == true) { await _saveWeekly(force: true); }
           return;
         }
@@ -183,8 +183,8 @@ class _EditorState extends ConsumerState<_Editor> {
       final res = await ref.read(kycoApiProvider).setDateAvailability(date, slots, force: force);
       if (!mounted) return;
       if (!res.saved) {
-        if (res.conflicts.isNotEmpty) {
-          final ok = await _confirmConflict(res.conflicts);
+        if (res.conflictIds.isNotEmpty) {
+          final ok = await _confirmConflict(res);
           if (ok == true) { await _saveDate(date, slots, force: true); }
           return;
         }
@@ -205,30 +205,41 @@ class _EditorState extends ConsumerState<_Editor> {
     }
   }
 
-  /// "Service dd/MM HH:mm, ..." for the conflicting jobs the assigned list
-  /// already knows; the bare "#id" only for the ones it does not.
-  String _describeJobs(BuildContext ctx, List<int> jobIds) {
+  /// "Service dd/MM HH:mm, ..." for the conflicting jobs. The server's
+  /// `conflictJobs` come first; the assigned list is the fallback for an older
+  /// backend; the bare "#id" only for jobs neither knows.
+  String _describeJobs(BuildContext ctx, SaveAvailabilityResult res) {
+    final fromServer = {for (final c in res.conflictJobs) c.jobId: c};
     final known = {
       for (final j in ref.read(assignedJobsControllerProvider).valueOrNull?.items ?? const <TaskerJob>[])
         j.jobId: j,
     };
-    return jobIds.map((id) {
-      final j = known[id];
-      if (j == null) return '#$id';
-      final when = (j.scheduledAt ?? '').isEmpty ? '' : vnDateTime(ctx, j.scheduledAt);
-      final name = (j.serviceName ?? '').isEmpty ? '#$id' : j.serviceName!;
+    return res.conflictIds.map((id) {
+      final String? svc;
+      final String? at;
+      final c = fromServer[id];
+      if (c != null) {
+        svc = c.serviceName;
+        at = c.scheduledAt;
+      } else {
+        svc = known[id]?.serviceName;
+        at = known[id]?.scheduledAt;
+        if (known[id] == null) return '#$id';
+      }
+      final when = (at ?? '').isEmpty || vnWall(at) == null ? '' : vnDateTime(ctx, at);
+      final name = (svc ?? '').isEmpty ? '#$id' : svc!;
       return when.isEmpty ? name : '$name ($when)';
     }).join(', ');
   }
 
-  Future<bool?> _confirmConflict(List<int> jobIds) {
+  Future<bool?> _confirmConflict(SaveAvailabilityResult res) {
     final s = AppLocalizations.of(context);
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.warning_amber_rounded),
         title: Text(s.provAvailConflictTitle),
-        content: Text(s.provAvailConflictBody(_describeJobs(ctx, jobIds))),
+        content: Text(s.provAvailConflictBody(_describeJobs(ctx, res))),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.provAvailCancel)),
           FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(s.provAvailSaveAnyway)),

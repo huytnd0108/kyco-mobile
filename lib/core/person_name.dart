@@ -1,15 +1,11 @@
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
-/// The backend falls back to a numbered placeholder ("Tasker #4") when a tasker
-/// has no display name yet. That is a system label, never a person's name.
-final _placeholderName = RegExp(r'^\s*(tasker|ctv|người làm|cộng tác viên)\s*#?\s*\d+\s*$',
-    caseSensitive: false, unicode: true);
-
-/// True for a missing / blank / "Tasker #N"-style placeholder name.
-bool isPlaceholderPersonName(String? name) =>
-    name == null || name.trim().isEmpty || _placeholderName.hasMatch(name);
+/// Since backend release-h a tasker's name is the real display name or null -
+/// the numbered "Tasker #N" placeholder is never sent, so none is parsed here.
+/// True for a missing / blank name.
+bool isMissingPersonName(String? name) => name == null || name.trim().isEmpty;
 
 /// The name to SHOW for a tasker: the real display name when there is one,
-/// else the single localized term ("Cộng tác viên" / "Tasker") - never "Tasker #N".
+/// else the single localized term ("Cộng tác viên" / "Tasker").
 String taskerDisplayName(AppLocalizations l, String? name) =>
-    isPlaceholderPersonName(name) ? l.cust2DetailProvider : name!.trim();
+    isMissingPersonName(name) ? l.cust2DetailProvider : name!.trim();

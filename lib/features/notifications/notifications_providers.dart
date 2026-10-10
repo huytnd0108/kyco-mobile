@@ -152,15 +152,16 @@ class NotificationsController
     return true;
   }
 
-  static NotificationItem _asRead(NotificationItem n) => NotificationItem(
-        id: n.id,
-        type: n.type,
-        title: n.title,
-        body: n.body,
-        link: n.link,
-        createdAt: n.createdAt,
-        read: true,
-      );
+  static NotificationItem _asRead(NotificationItem n) => n.asRead();
+}
+
+/// Where a notification tap goes: the structured `data` first (a job id opens
+/// the tasker job, a booking id the customer booking), then the `link`. Pure.
+String? inAppRouteForNotification(NotificationItem n) {
+  final d = n.data;
+  if (d?.jobId != null) return '/p/jobs/${d!.jobId}';
+  if (d?.bookingId != null) return '/bookings/${d!.bookingId}';
+  return inAppRouteForLink(n.link);
 }
 
 /// Map a notification `link` (a web path, optionally absolute on a kyco host,

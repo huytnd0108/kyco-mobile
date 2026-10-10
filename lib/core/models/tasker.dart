@@ -137,6 +137,23 @@ class PoolJob {
       );
 }
 
+/// Why a tasker cannot take jobs (release-h `block {code,label,blockedUntil}`).
+/// [code] is `AUTO_CONSECUTIVE_CANCELS | ADMIN_BAN | SUSPENDED`; [blockedUntil]
+/// is an ISO instant only for a suspension.
+class TaskerBlock {
+  const TaskerBlock({required this.code, required this.label, this.blockedUntil});
+  final String code;
+  final String label;
+  final String? blockedUntil;
+
+  static TaskerBlock? tryParse(Object? raw) {
+    if (raw is! Map) return null;
+    final label = _str(raw['label']);
+    if (label == null) return null;
+    return TaskerBlock(code: _str(raw['code']) ?? '', label: label, blockedUntil: _str(raw['blockedUntil']));
+  }
+}
+
 /// The available-jobs view (A9): pool + assigned + claim gate.
 class PoolView {
   const PoolView({
@@ -144,7 +161,11 @@ class PoolView {
     this.assigned = const [],
     this.canClaim = false,
     this.banReason,
+    this.block,
   });
+
+  /// Release-h structured block; null on an older backend (then [banReason]).
+  final TaskerBlock? block;
 
   final List<PoolJob> pool;
   final List<PoolJob> assigned;
@@ -156,6 +177,7 @@ class PoolView {
         assigned: _mapList(j['assigned']).map(PoolJob.fromJson).toList(growable: false),
         canClaim: _bool(j['canClaim']),
         banReason: _str(j['banReason']),
+        block: TaskerBlock.tryParse(j['block']),
       );
 }
 
@@ -455,18 +477,57 @@ class PayoutRequestResult {
 /// `lib/bonus` and is not fixed here — the common fields are surfaced, and the
 /// full map is kept for the W6 unit.
 class Bonus {
-  const Bonus({this.kind, this.amountVnd = 0, this.eligible = false, this.raw = const {}});
+  const Bonus({
+    this.kind,
+    this.amountVnd = 0,
+    this.eligible = false,
+    this.raw = const {},
+    this.kindLabel,
+    this.progress,
+  });
   final String? kind;
   final int amountVnd;
   final bool eligible;
   final Map<String, dynamic> raw;
+
+  /// Release-h server-localized card title; null on an older backend (the app's
+  /// own kind label applies).
+  final String? kindLabel;
+
+  /// Release-h `progress {code,current,target,label}`; null when absent.
+  final BonusProgress? progress;
 
   factory Bonus.fromJson(Map<String, dynamic> j) => Bonus(
         kind: _str(j['kind']),
         amountVnd: _intd(j['amountVnd']),
         eligible: _bool(j['eligible']),
         raw: j,
+        kindLabel: _str(j['kindLabel']),
+        progress: BonusProgress.tryParse(j['progress']),
       );
+}
+
+/// Where the tasker stands against a bonus threshold. Display only: [fraction]
+/// is a bar position, not money, whatever the unit of current/target.
+class BonusProgress {
+  const BonusProgress({required this.code, required this.current, required this.target, this.label});
+  final String code;
+  final num current;
+  final num target;
+  final String? label;
+
+  /// Bar fill in 0..1; 0 when there is no positive target.
+  double get fraction => target > 0 ? (current / target).clamp(0, 1).toDouble() : 0;
+  bool get hasBar => target > 0;
+
+  static BonusProgress? tryParse(Object? raw) {
+    if (raw is! Map) return null;
+    final code = raw['code'];
+    final cur = raw['current'];
+    final tgt = raw['target'];
+    if (code is! String || cur is! num || tgt is! num) return null;
+    return BonusProgress(code: code, current: cur, target: tgt, label: _str(raw['label']));
+  }
 }
 
 class BonusHistoryItem {
@@ -505,9 +566,28 @@ class TaskerBonuses {
   final List<Bonus> monthly;
   final List<BonusHistoryItem> history;
 
+  /// Which bonus kinds belong to which list (web page + payout cron). An older
+  /// backend repeated all five kinds in the monthly list; filtering by kind
+  /// keeps one card per kind either way. Unknown kinds pass through.
+  static const weeklyKinds = {'weekly_jobs', 'punctuality'};
+  static const monthlyKinds = {'monthly_revenue', 'rating', 'referral'};
+
+  static List<Bonus> _cards(Object? raw, Set<String> other) {
+    final seen = <String>{};
+    final out = <Bonus>[];
+    for (final b in _mapList(raw).map(Bonus.fromJson)) {
+      final k = b.kind;
+      if (k != null) {
+        if (other.contains(k) || !seen.add(k)) continue;
+      }
+      out.add(b);
+    }
+    return out;
+  }
+
   factory TaskerBonuses.fromJson(Map<String, dynamic> j) => TaskerBonuses(
-        weekly: _mapList(j['weekly']).map(Bonus.fromJson).toList(growable: false),
-        monthly: _mapList(j['monthly']).map(Bonus.fromJson).toList(growable: false),
+        weekly: _cards(j['weekly'], monthlyKinds),
+        monthly: _cards(j['monthly'], weeklyKinds),
         history: _mapList(j['history']).map(BonusHistoryItem.fromJson).toList(growable: false),
       );
 }
@@ -850,17 +930,53 @@ class AvailabilityWeek {
   }
 }
 
-/// PUT /availability/{weekly,date} response: `{ saved, conflicts }`.
+/// One uncovered job of a refused availability save (release-h
+/// `conflictJobs[]`): enough to describe it without a second lookup.
+class ConflictJob {
+  const ConflictJob({required this.jobId, this.bookingId, this.serviceName, this.scheduledAt});
+  final int jobId;
+  final int? bookingId;
+  final String? serviceName;
+
+  /// ISO instant, shown in VN time.
+  final String? scheduledAt;
+
+  static ConflictJob? tryParse(Object? raw) {
+    if (raw is! Map) return null;
+    final id = (raw['jobId'] as num?)?.toInt();
+    if (id == null) return null;
+    return ConflictJob(
+      jobId: id,
+      bookingId: (raw['bookingId'] as num?)?.toInt(),
+      serviceName: _str(raw['serviceName']),
+      scheduledAt: _str(raw['scheduledAt']),
+    );
+  }
+}
+
+/// PUT /availability/{weekly,date} response: `{ saved, conflicts, conflictJobs }`.
 class SaveAvailabilityResult {
-  const SaveAvailabilityResult({this.saved = false, this.conflicts = const []});
+  const SaveAvailabilityResult(
+      {this.saved = false, this.conflicts = const [], this.conflictJobs = const []});
   final bool saved;
   final List<int> conflicts; // uncovered jobIds
+
+  /// Release-h: the same jobs with service name + time; empty on an older backend.
+  final List<ConflictJob> conflictJobs;
+
+  /// The uncovered job ids: `conflicts`, else those named by `conflictJobs`.
+  List<int> get conflictIds =>
+      conflicts.isNotEmpty ? conflicts : [for (final c in conflictJobs) c.jobId];
 
   factory SaveAvailabilityResult.fromJson(Map<String, dynamic> j) => SaveAvailabilityResult(
         saved: _bool(j['saved']),
         conflicts: (j['conflicts'] is List ? j['conflicts'] as List : const [])
             .map((e) => (e as num?)?.toInt() ?? 0)
             .toList(growable: false),
+        conflictJobs: [
+          if (j['conflictJobs'] is List)
+            for (final c in j['conflictJobs'] as List) ?ConflictJob.tryParse(c),
+        ],
       );
 }
 

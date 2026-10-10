@@ -881,5 +881,15 @@
   "otpResendInMinutes": "Resend code in about {minutes} min",
   "serviceDescriptionHeading": "About this service",
   "provTaskerCaptured": "Captured",
-  "taskerDoneSignInHint": "To track your application, sign in with the phone number you registered."
+  "taskerDoneSignInHint": "To track your application, sign in with the phone number you registered.",
+  "provClaimGateUntil": "Paused until {when}",
+  "taskerAppNeedsChanges": "Your application needs changes",
+  "taskerAppSubmittedOn": "Submitted: {date}",
+  "taskerAppReviewedOn": "Reviewed: {date}",
+  "taskerAppReason": "Reason: {reason}",
+  "taskerAppDocsTitle": "Documents",
+  "taskerAppDocPending": "Awaiting review",
+  "taskerAppDocApproved": "Approved",
+  "taskerAppDocRejected": "Needs a new photo",
+  "taskerAppDocReupload": "Retake {doc}"
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
+import '../../core/format.dart';
 import '../../core/models.dart';
 import '../../core/nav.dart';
 import '../../core/widgets.dart';
@@ -201,7 +202,7 @@ class _NotificationTile extends ConsumerWidget {
   /// Tap: mark read (POST /notifications/{id}/read), then open the in-app
   /// screen its `link` maps to (if any).
   Future<void> _open(BuildContext context, WidgetRef ref) async {
-    final target = inAppRouteForLink(n.link);
+    final target = inAppRouteForNotification(n);
     final ctrl = ref.read(notificationsControllerProvider.notifier);
     if (!n.read) {
       // Fire the mark-read before navigating; a failure never blocks the link.
@@ -220,7 +221,8 @@ class _NotificationTile extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     final when = _formatWhen(context, n.createdAt);
     final body = (n.body?.isNotEmpty ?? false) ? n.body : null;
-    final subtitleParts = <String>[?body, ?when];
+    final detail = _detailLine(context, n.data);
+    final subtitleParts = <String>[?body, ?detail, ?when];
     return Semantics(
       // Unread is otherwise conveyed by colour / weight only.
       value: n.read ? null : l.unreadLabel,
@@ -242,11 +244,24 @@ class _NotificationTile extends ConsumerWidget {
             subtitleParts.isEmpty ? null : Text(subtitleParts.join('\n')),
         isThreeLine: subtitleParts.length > 1,
         onTap: () => _open(context, ref),
-        trailing: inAppRouteForLink(n.link) != null
+        trailing: inAppRouteForNotification(n) != null
             ? Icon(Icons.chevron_right, color: cs.onSurfaceVariant)
             : null,
       ),
     ));
+  }
+
+  /// Structured release-h facts (service, appointment time in VN time, total),
+  /// taken from `data` - never parsed out of the body. Display only.
+  static String? _detailLine(BuildContext context, NotificationData? d) {
+    if (d == null) return null;
+    final parts = <String>[
+      if (d.serviceName != null) d.serviceName!,
+      if (d.scheduledAt != null && vnWall(d.scheduledAt) != null)
+        vnDateTime(context, d.scheduledAt),
+      if (d.totalVnd != null) formatVnd(d.totalVnd!),
+    ];
+    return parts.isEmpty ? null : parts.join(' · ');
   }
 
   static String? _formatWhen(BuildContext context, String? raw) {

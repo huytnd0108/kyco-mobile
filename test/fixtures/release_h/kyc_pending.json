@@ -1,0 +1,6 @@
+{"application": {"status": "pending", "statusLabel": "Hồ sơ đã được gửi và đang chờ Kyco xét duyệt.", "submittedAt": "2026-10-08T03:00:00.000Z",
+  "documents": [
+    {"docKind": "cccd_front", "docLabel": "CCCD mặt trước", "status": "pending"},
+    {"docKind": "cccd_back", "docLabel": "CCCD mặt sau", "status": "pending"},
+    {"docKind": "selfie", "docLabel": "Ảnh chân dung", "status": "pending"}
+  ]}}

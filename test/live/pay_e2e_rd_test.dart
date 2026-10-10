@@ -240,6 +240,7 @@ void main() {
       final payAmt = sqlInt("select amount_vnd::bigint from payments where booking_id=$B and provider_tx_id='$txn'");
       final payMethod = sql("select method from payments where booking_id=$B and provider_tx_id='$txn'");
       final before = _ledger(B);
+      final pcBefore = _rows("select id, status, coalesce(paid_at::text,''), provider_tx_id from payments where booking_id=$B and provider_tx_id like 'kyco-post-confirm-%' order by id");
       final ipn = await _sendIpn(txn, payAmt);
       final ipnBody = ipn['body'] is String ? jsonDecode(ipn['body'] as String) as Map<String, dynamic> : <String, dynamic>{};
       _step('5b', 'signed VNPay IPN accepted by /api/payment/vnpay/ipn (RspCode 00)', ipn['status'] == 200 && ipnBody['RspCode'] == '00',
@@ -284,6 +285,14 @@ void main() {
             'actual': {'taskerEarningVnd': taskerNet, 'kycoRevenueCommissionVnd': commissionNet, 'insuranceSweepOutOfRevenueVnd': sweep, 'insuranceFundInVnd': insuranceIn, 'clearingPaymentInVnd': clearingIn, 'clearingSettlementOutVnd': clearingOut},
             'ledger': led,
           });
+
+      // 7b. NEW (cd3c1d02/0070): the kyco-post-confirm-* placeholder pending row is closed on settle
+      final pcAfter = _rows("select id, status, coalesce(paid_at::text,''), provider_tx_id from payments where booking_id=$B and provider_tx_id like 'kyco-post-confirm-%' order by id");
+      final anyPendingLeft = sqlInt("select count(*) from payments where booking_id=$B and status='pending'");
+      _step('7b', 'kyco-post-confirm-* pending placeholder closed after IPN settle (failed/superseded, paid_at NULL), no pending left, ledger 80/20 unchanged (step 7)',
+          pcAfter.isNotEmpty && pcAfter.every((r) => (r[1] == 'failed' || r[1] == 'superseded') && r[2].isEmpty) && anyPendingLeft == 0,
+          detail: {'postConfirmBefore': pcBefore, 'postConfirmAfter': pcAfter, 'pendingPaymentsLeft': anyPendingLeft,
+            'allPayments': _ledger(B)['payments']});
 
       // 8. replay IPN: Redis fast path, then DB claim path (redis key removed)
       final rowsBefore = (led['walletTransactions'] as List).length;

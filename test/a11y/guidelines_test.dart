@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kyco_mobile/features/auth/login_screen.dart';
+import 'package:kyco_mobile/features/auth/signup_screen.dart';
 import 'package:kyco_mobile/features/bookings/booking_detail_screen.dart';
 import 'package:kyco_mobile/features/bookings/bookings_screen.dart';
 import 'package:kyco_mobile/features/home/home_screen.dart';
@@ -36,6 +37,8 @@ final Map<String, _Pump> _screens = {
       screen: withFakeBookingDetail(const BookingDetailScreen(id: 1042)), device: _device, brightness: b),
   'login': (t, b) => pumpGoldenScreen(t,
       screen: const LoginScreen(), device: _device, brightness: b, auth: Fakes.signedOut),
+  'signup': (t, b) => pumpGoldenScreen(t,
+      screen: const SignupScreen(), device: _device, brightness: b, auth: Fakes.signedOut),
   'tasker home': (t, b) => pumpTaskerHome(t, device: _device, brightness: b),
   'tasker jobs': (t, b) => pumpTaskerJobs(t, device: _device, brightness: b),
   'wallet': (t, b) => pumpTaskerWallet(t, device: _device, brightness: b),

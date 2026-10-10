@@ -2903,4 +2903,44 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get taskerDoneSignInHint =>
       'Để theo dõi trạng thái hồ sơ, hãy đăng nhập bằng số điện thoại bạn đã đăng ký.';
+
+  @override
+  String provClaimGateUntil(String when) {
+    return 'Tạm ngưng đến $when';
+  }
+
+  @override
+  String get taskerAppNeedsChanges => 'Hồ sơ cần bổ sung';
+
+  @override
+  String taskerAppSubmittedOn(String date) {
+    return 'Đã gửi: $date';
+  }
+
+  @override
+  String taskerAppReviewedOn(String date) {
+    return 'Đã xét duyệt: $date';
+  }
+
+  @override
+  String taskerAppReason(String reason) {
+    return 'Lý do: $reason';
+  }
+
+  @override
+  String get taskerAppDocsTitle => 'Giấy tờ';
+
+  @override
+  String get taskerAppDocPending => 'Đang chờ duyệt';
+
+  @override
+  String get taskerAppDocApproved => 'Đã duyệt';
+
+  @override
+  String get taskerAppDocRejected => 'Cần chụp lại';
+
+  @override
+  String taskerAppDocReupload(String doc) {
+    return 'Chụp lại $doc';
+  }
 }

@@ -1,0 +1,2 @@
+{"serviceId": 3, "totalVnd": 540000, "breakdown": {"baseVnd": 510000, "durationHours": 3, "surchargesVnd": 0, "surchargeReasons": [], "addonsVnd": 0, "discountPct": 0, "discountAmountVnd": 0, "priceVnd": 510000,
+  "compensationVnd": 30000, "cancelCompensations": [{"kind": "cancel_compensation", "label": "Cancellation compensation fee, booking #41", "amountVnd": 30000, "refBookingId": 41}], "totalVnd": 540000}}

@@ -15,16 +15,16 @@ void main() {
   final en = lookupAppLocalizations(const Locale('en'));
 
   group('OCD-019 tasker display name', () {
-    test('placeholders are never shown as a person name', () {
-      for (final n in ['Tasker #1', 'tasker #42', 'Tasker 7', 'TASKER#9', 'CTV #3', 'Người làm #5', 'Cộng tác viên #5', '', '  ', null]) {
-        expect(isPlaceholderPersonName(n), isTrue, reason: '$n');
+    test('a null / blank name falls back to the generic term (release-h sends real name or null)', () {
+      for (final n in ['', '  ', null]) {
+        expect(isMissingPersonName(n), isTrue, reason: '$n');
         expect(taskerDisplayName(vi, n), 'Cộng tác viên');
         expect(taskerDisplayName(en, n), 'Tasker');
       }
     });
     test('real names pass through (trimmed)', () {
-      for (final n in ['Nguyễn Thị Lan', ' Lan ', 'Tasker Minh', 'Tasker #1 Lan']) {
-        expect(isPlaceholderPersonName(n), isFalse, reason: n);
+      for (final n in ['Nguyễn Thị Lan', ' Lan ', 'Tasker Minh', 'Tasker #1 Lan', 'Tasker #4']) {
+        expect(isMissingPersonName(n), isFalse, reason: n);
         expect(taskerDisplayName(vi, n), n.trim());
       }
     });

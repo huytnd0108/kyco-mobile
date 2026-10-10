@@ -5281,6 +5281,66 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Để theo dõi trạng thái hồ sơ, hãy đăng nhập bằng số điện thoại bạn đã đăng ký.'**
   String get taskerDoneSignInHint;
+
+  /// Release-h wiring copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạm ngưng đến {when}'**
+  String provClaimGateUntil(String when);
+
+  /// Release-h wiring copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ cần bổ sung'**
+  String get taskerAppNeedsChanges;
+
+  /// Release-h wiring copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã gửi: {date}'**
+  String taskerAppSubmittedOn(String date);
+
+  /// Release-h wiring copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã xét duyệt: {date}'**
+  String taskerAppReviewedOn(String date);
+
+  /// Release-h wiring copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Lý do: {reason}'**
+  String taskerAppReason(String reason);
+
+  /// Release-h wiring copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Giấy tờ'**
+  String get taskerAppDocsTitle;
+
+  /// Release-h wiring copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang chờ duyệt'**
+  String get taskerAppDocPending;
+
+  /// Release-h wiring copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã duyệt'**
+  String get taskerAppDocApproved;
+
+  /// Release-h wiring copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Cần chụp lại'**
+  String get taskerAppDocRejected;
+
+  /// Release-h wiring copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp lại {doc}'**
+  String taskerAppDocReupload(String doc);
 }
 
 class _AppLocalizationsDelegate

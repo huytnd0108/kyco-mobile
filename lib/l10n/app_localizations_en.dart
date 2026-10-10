@@ -2907,4 +2907,44 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get taskerDoneSignInHint =>
       'To track your application, sign in with the phone number you registered.';
+
+  @override
+  String provClaimGateUntil(String when) {
+    return 'Paused until $when';
+  }
+
+  @override
+  String get taskerAppNeedsChanges => 'Your application needs changes';
+
+  @override
+  String taskerAppSubmittedOn(String date) {
+    return 'Submitted: $date';
+  }
+
+  @override
+  String taskerAppReviewedOn(String date) {
+    return 'Reviewed: $date';
+  }
+
+  @override
+  String taskerAppReason(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get taskerAppDocsTitle => 'Documents';
+
+  @override
+  String get taskerAppDocPending => 'Awaiting review';
+
+  @override
+  String get taskerAppDocApproved => 'Approved';
+
+  @override
+  String get taskerAppDocRejected => 'Needs a new photo';
+
+  @override
+  String taskerAppDocReupload(String doc) {
+    return 'Retake $doc';
+  }
 }

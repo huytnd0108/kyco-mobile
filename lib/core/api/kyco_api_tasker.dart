@@ -445,6 +445,11 @@ extension KycoApiTasker on KycoApi {
     return list.whereType<Map<String, dynamic>>().map(SupportTicket.fromJson).toList(growable: false);
   }
 
+  /// GET /kyc - the caller's own application status (release-h). Throws on an
+  /// older backend (404); callers fall back to `/me`'s `application`.
+  Future<TaskerApplication?> kycApplication() async =>
+      TaskerApplication.fromKycBody(await _c.get('/kyc'));
+
   /// POST /kyc/upload — multipart KYC upload for a SIGNED-IN account (owner =
   /// Bearer subject; 8 MB/file cap server-side). One part per doc kind, each
   /// with an explicit contentType (the server validates `File.type` against the

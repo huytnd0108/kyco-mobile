@@ -60,6 +60,7 @@ class IdempotencyLedger {
   IdempotencyLedger({
     PendingKeyStore? store,
     this.ttl = const Duration(hours: 12),
+    this.settleWindow = const Duration(seconds: 5),
     DateTime Function()? now,
     this.userId,
   })  : _store = store ?? MemoryPendingKeyStore(),
@@ -75,6 +76,13 @@ class IdempotencyLedger {
   final Duration ttl;
   final DateTime Function() _now;
   final Map<String, ({String key, DateTime at})> _keys = {};
+
+  /// How long a SUCCEEDED action's key keeps answering a repeat of the same
+  /// action. A tap that lands just after the first request completed (S3b in
+  /// the lab replay: third tap 40 ms later) must replay the server's stored
+  /// result, not mint a new key and create a second payout. In-memory only.
+  final Duration settleWindow;
+  final Map<String, ({String key, DateTime at})> _recentDone = {};
   Future<void>? _loaded;
 
   Future<void> _ensureLoaded() => _loaded ??= () async {
@@ -113,6 +121,9 @@ class IdempotencyLedger {
     final fingerprint = _scoped(action);
     final hit = _keys[fingerprint];
     if (hit != null && _now().difference(hit.at) < ttl) return hit.key;
+    final done = _recentDone[fingerprint];
+    if (done != null && _now().difference(done.at) < settleWindow) return done.key;
+    _recentDone.remove(fingerprint);
     final key = uuidV4();
     _keys[fingerprint] = (key: key, at: _now());
     await _persist(); // persisted BEFORE the request leaves the device
@@ -129,6 +140,7 @@ class IdempotencyLedger {
   Future<void> clear() async {
     await _ensureLoaded();
     _keys.clear();
+    _recentDone.clear();
     await _persist();
   }
 
@@ -156,6 +168,7 @@ class IdempotencyLedger {
     try {
       final out = await call(key);
       await _forgetIfKey(fingerprint, key);
+      _recentDone[_scoped(fingerprint)] = (key: key, at: _now());
       return out;
     } on ApiException catch (e) {
       if (!keepAfter(e)) await _forgetIfKey(fingerprint, key);

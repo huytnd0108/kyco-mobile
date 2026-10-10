@@ -151,7 +151,7 @@ class _Harness {
         current = detail ?? _booking('PENDING');
   final _FakeApi api;
   BookingDetail current;
-  final ledger = IdempotencyLedger(store: MemoryPendingKeyStore());
+  final ledger = IdempotencyLedger(store: MemoryPendingKeyStore(), settleWindow: Duration.zero);
   final launched = <Uri>[];
   bool launchResult = true;
   final show = ValueNotifier<bool>(true);

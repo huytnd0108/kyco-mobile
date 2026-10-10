@@ -78,7 +78,7 @@ class _ProfileBody extends StatelessWidget {
                         null,
                         NetworkImage(avatar))
                     : null,
-                child: isPlaceholderPersonName(profile.displayName)
+                child: isMissingPersonName(profile.displayName)
                     ? Icon(Icons.person, size: 36, color: cs.onPrimaryContainer)
                     : Text(
                   _initials(profile.displayName),

@@ -344,15 +344,34 @@ class BookingDetail {
   }
 }
 
-/// `actions: {canCancel, canConfirm, canPay, canDispute}` — each flag optional.
+/// Server-localized text for why an action is unavailable. Release-h sends
+/// `{code, label}`; an older backend sent a bare string (kept as the label).
+/// Display only.
+String? parseBlockedReasonLabel(Object? raw) {
+  final v = raw is Map ? raw['label'] : raw;
+  return v is String && v.trim().isNotEmpty ? v.trim() : null;
+}
+
+/// `actions: {canCancel, canConfirm, canPay, canDispute}` — each flag optional,
+/// plus the release-h `{cancel,confirm,pay,dispute}BlockedReason{code,label}`.
 class ServerActions {
   const ServerActions(
-      {this.canCancel, this.canConfirm, this.canPay, this.canDispute, this.cancelBlockedReason});
+      {this.canCancel,
+      this.canConfirm,
+      this.canPay,
+      this.canDispute,
+      this.cancelBlockedReason,
+      this.confirmBlockedReason,
+      this.payBlockedReason,
+      this.disputeBlockedReason});
   final bool? canCancel;
 
-  /// Server text explaining why [canCancel] is false (`actions.cancelBlockedReason`),
-  /// when the backend sends one. Display-only.
+  /// Server text explaining why each action is unavailable (the `label` of
+  /// `actions.<x>BlockedReason`), when the backend sends one. Display-only.
   final String? cancelBlockedReason;
+  final String? confirmBlockedReason;
+  final String? payBlockedReason;
+  final String? disputeBlockedReason;
   final bool? canConfirm;
   final bool? canPay;
   final bool? canDispute;
@@ -360,13 +379,16 @@ class ServerActions {
   static ServerActions? tryParse(Object? raw) {
     if (raw is! Map) return null;
     bool? f(String k) => raw[k] is bool ? raw[k] as bool : null;
-    final why = raw['cancelBlockedReason'] ?? raw['cancelBlockedMessage'];
     final a = ServerActions(
         canCancel: f('canCancel'),
         canConfirm: f('canConfirm'),
         canPay: f('canPay'),
         canDispute: f('canDispute'),
-        cancelBlockedReason: why is String && why.trim().isNotEmpty ? why.trim() : null);
+        cancelBlockedReason:
+            parseBlockedReasonLabel(raw['cancelBlockedReason'] ?? raw['cancelBlockedMessage']),
+        confirmBlockedReason: parseBlockedReasonLabel(raw['confirmBlockedReason']),
+        payBlockedReason: parseBlockedReasonLabel(raw['payBlockedReason']),
+        disputeBlockedReason: parseBlockedReasonLabel(raw['disputeBlockedReason']));
     return (a.canCancel ?? a.canConfirm ?? a.canPay ?? a.canDispute) == null ? null : a;
   }
 }
@@ -547,7 +569,15 @@ class BookingActions {
     this.awaitingCashConfirm = false,
     this.cancelBlocked = false,
     this.cancelBlockedReason,
+    this.confirmBlockedReason,
+    this.payBlockedReason,
+    this.disputeBlockedReason,
   });
+
+  /// Server labels for why confirm / pay / dispute are unavailable.
+  final String? confirmBlockedReason;
+  final String? payBlockedReason;
+  final String? disputeBlockedReason;
 
   /// The booking is in a normally-cancellable state but cancelling is refused
   /// (24h lock, tasker already arrived ...): the UI explains instead of hiding.
@@ -581,6 +611,9 @@ class BookingActions {
     return BookingActions(
       cancelBlocked: !canCancel && _cancellable.contains(status),
       cancelBlockedReason: sa?.cancelBlockedReason,
+      confirmBlockedReason: sa?.confirmBlockedReason,
+      payBlockedReason: sa?.payBlockedReason,
+      disputeBlockedReason: sa?.disputeBlockedReason,
       // Server flags win when present; else the status table (MONEY-CONTRACT 5.3).
       canCancel: canCancel,
       canConfirm: sa?.canConfirm ?? confirming,

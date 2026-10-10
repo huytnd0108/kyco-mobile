@@ -1,0 +1,13 @@
+{"weekly": [
+  {"kind": "weekly_jobs", "earned": false, "amountVnd": 0, "reason": "Cần 10 job, mới 4"},
+  {"kind": "monthly_revenue", "earned": false, "amountVnd": 0, "reason": "x"},
+  {"kind": "punctuality", "earned": false, "amountVnd": 0, "reason": "x"},
+  {"kind": "rating", "earned": false, "amountVnd": 0, "reason": "x"},
+  {"kind": "referral", "earned": false, "amountVnd": 0, "reason": "x"}],
+ "monthly": [
+  {"kind": "weekly_jobs", "earned": false, "amountVnd": 0, "reason": "Cần 10 job, mới 4"},
+  {"kind": "monthly_revenue", "earned": false, "amountVnd": 0, "reason": "x"},
+  {"kind": "punctuality", "earned": false, "amountVnd": 0, "reason": "x"},
+  {"kind": "rating", "earned": false, "amountVnd": 0, "reason": "x"},
+  {"kind": "referral", "earned": false, "amountVnd": 0, "reason": "x"}],
+ "history": []}

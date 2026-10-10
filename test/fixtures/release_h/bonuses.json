@@ -1,0 +1,12 @@
+{"weekly": [
+  {"kind": "weekly_jobs", "kindLabel": "Thưởng tuần (số đơn)", "earned": false, "amountVnd": 0, "reason": "Cần 10 job, mới 4",
+   "progress": {"code": "NEED_JOBS", "current": 4, "target": 10, "label": "Cần 10 đơn trong tuần, bạn đã hoàn thành 4."}},
+  {"kind": "punctuality", "kindLabel": "Thưởng chuyên cần", "earned": true, "amountVnd": 50000, "reason": "ok",
+   "progress": {"code": "EARNED_ATTENDANCE", "current": 4, "target": 3, "label": "Đã đạt 4 trên 4 tuần chuyên cần."}}],
+ "monthly": [
+  {"kind": "monthly_revenue", "kindLabel": "Thưởng tháng (doanh thu)", "earned": false, "amountVnd": 0, "reason": "x",
+   "progress": {"code": "NEED_REVENUE", "current": 2000000, "target": 5000000, "label": "Cần doanh thu từ 5.000.000 ₫, hiện có 2.000.000 ₫."}},
+  {"kind": "rating", "kindLabel": "Thưởng đánh giá cao", "earned": false, "amountVnd": 0, "reason": "x", "progress": null},
+  {"kind": "referral", "kindLabel": "Thưởng giới thiệu", "earned": false, "amountVnd": 0, "reason": "x",
+   "progress": {"code": "NEED_REFEREE_JOBS", "current": 1, "target": 3, "label": "Người bạn giới thiệu cần hoàn thành 3 đơn, hiện mới 1."}}],
+ "history": []}

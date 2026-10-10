@@ -173,6 +173,51 @@ class PlanCard {
       );
 }
 
+/// Release-h structured payload of a notification (`data`). Every field is
+/// optional: an older backend sends no `data` at all. `totalVnd` is customer
+/// only and display only.
+class NotificationData {
+  const NotificationData({
+    this.bookingId,
+    this.jobId,
+    this.serviceId,
+    this.serviceName,
+    this.scheduledAt,
+    this.totalVnd,
+  });
+  final int? bookingId;
+  final int? jobId;
+  final int? serviceId;
+  final String? serviceName;
+
+  /// ISO-8601 instant; shown in VN time via `core/datetime.dart`.
+  final String? scheduledAt;
+  final int? totalVnd;
+
+  bool get isEmpty =>
+      bookingId == null &&
+      jobId == null &&
+      serviceId == null &&
+      (serviceName == null || serviceName!.isEmpty) &&
+      scheduledAt == null &&
+      totalVnd == null;
+
+  static NotificationData? tryParse(Object? raw) {
+    if (raw is! Map) return null;
+    final j = Map<String, dynamic>.from(raw);
+    final name = (j['serviceName'] as String?)?.trim();
+    final d = NotificationData(
+      bookingId: (j['bookingId'] as num?)?.toInt(),
+      jobId: (j['jobId'] as num?)?.toInt(),
+      serviceId: (j['serviceId'] as num?)?.toInt(),
+      serviceName: (name == null || name.isEmpty) ? null : name,
+      scheduledAt: j['scheduledAt'] as String?,
+      totalVnd: (j['totalVnd'] as num?)?.round(),
+    );
+    return d.isEmpty ? null : d;
+  }
+}
+
 /// An account notification. Actual API shape: `title`, `body`, `link`,
 /// `isRead`, `createdAt`. Tolerant of `subject`/`readAt`/`read` legacy spellings.
 class NotificationItem {
@@ -184,6 +229,7 @@ class NotificationItem {
     this.link,
     this.createdAt,
     required this.read,
+    this.data,
   });
   final int id;
   final String? type;
@@ -192,6 +238,20 @@ class NotificationItem {
   final String? link;
   final String? createdAt;
   final bool read;
+
+  /// Release-h structured fields; null on an older backend or a row without an entity.
+  final NotificationData? data;
+
+  NotificationItem asRead() => NotificationItem(
+        id: id,
+        type: type,
+        title: title,
+        body: body,
+        link: link,
+        createdAt: createdAt,
+        read: true,
+        data: data,
+      );
 
   factory NotificationItem.fromJson(Map<String, dynamic> j) => NotificationItem(
         id: (j['id'] as num?)?.toInt() ?? 0,
@@ -204,6 +264,7 @@ class NotificationItem {
         link: j['link'] as String?,
         createdAt: j['createdAt'] as String?,
         read: j['isRead'] == true || j['readAt'] != null || j['read'] == true,
+        data: NotificationData.tryParse(j['data']),
       );
 }
 

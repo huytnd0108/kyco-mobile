@@ -120,7 +120,10 @@ class _BonusCard extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     // The server sends `earned`/`reason` inside the raw BonusOutput map.
     final earned = bonus.raw['earned'] == true || bonus.eligible;
-    final reason = bonus.raw['reason']?.toString();
+    final progress = bonus.progress;
+    // The localized progress label replaces the server's raw vi `reason`
+    // (kept only for old backends that send no `progress`).
+    final reason = progress?.label ?? bonus.raw['reason']?.toString();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -135,7 +138,7 @@ class _BonusCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(bonusKindLabel(l, bonus.kind),
+                child: Text(bonus.kindLabel ?? bonusKindLabel(l, bonus.kind),
                     style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
               ),
               _EarnedBadge(earned: earned),
@@ -145,6 +148,19 @@ class _BonusCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(reason,
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+          ],
+          if (progress != null && progress.hasBar) ...[
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                key: ValueKey('bonus-progress-${bonus.kind}'),
+                value: progress.fraction,
+                minHeight: 8,
+                semanticsLabel: reason,
+                semanticsValue: '${(progress.fraction * 100).round()}%',
+              ),
+            ),
           ],
           const SizedBox(height: 12),
           Row(

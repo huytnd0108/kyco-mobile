@@ -1,0 +1,7 @@
+{"application": {"status": "rejected", "statusLabel": "Hồ sơ cần bổ sung. Vui lòng xem lý do và tải lại giấy tờ.",
+  "submittedAt": "2026-10-08T03:00:00.000Z", "reviewedAt": "2026-10-09T08:30:00.000Z", "rejectionReason": "Ảnh CCCD mặt trước bị mờ",
+  "documents": [
+    {"docKind": "cccd_front", "docLabel": "CCCD mặt trước", "status": "rejected", "reason": "Ảnh CCCD mặt trước bị mờ"},
+    {"docKind": "cccd_back", "docLabel": "CCCD mặt sau", "status": "approved"},
+    {"docKind": "selfie", "docLabel": "Ảnh chân dung", "status": "pending"}
+  ]}}

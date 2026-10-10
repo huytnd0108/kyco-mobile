@@ -1,0 +1,7 @@
+[
+  {"id": 9003, "type": "booking", "title": "Đơn Vệ sinh nhà theo giờ đã được xác nhận", "body": "Lịch hẹn lúc 09:00 12/10/2026. Tổng 300.000 ₫.", "link": "/vi/bookings/5", "isRead": false, "createdAt": "2026-10-10T05:00:00.000Z",
+   "data": {"bookingId": 5, "serviceId": 3, "serviceName": "Vệ sinh nhà theo giờ", "scheduledAt": "2026-10-12T02:00:00.000Z", "totalVnd": 300000}},
+  {"id": 9002, "type": "job", "title": "Bạn có việc mới: Vệ sinh nhà theo giờ", "body": null, "link": "/vi/tasker/jobs/118", "isRead": false, "createdAt": "2026-10-10T04:00:00.000Z",
+   "data": {"jobId": 118, "bookingId": 77, "serviceId": 3, "serviceName": "Vệ sinh nhà theo giờ", "scheduledAt": "2026-10-12T02:00:00.000Z"}},
+  {"id": 9001, "type": "promo", "title": "Chào mừng đến với Kyco", "body": null, "link": null, "isRead": true, "createdAt": "2026-10-09T05:00:00.000Z", "data": null}
+]

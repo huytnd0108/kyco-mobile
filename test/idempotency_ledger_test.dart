@@ -29,7 +29,7 @@ void main() {
   });
 
   test('success or a definitive 4xx ends the action → next confirmation gets a new key', () async {
-    final l = IdempotencyLedger();
+    final l = IdempotencyLedger(settleWindow: Duration.zero);
     final seen = <String>[];
     await _attempt(l, 'payout:100000', seen, null);
     await _attempt(l, 'payout:100000', seen, null);
@@ -91,7 +91,7 @@ void main() {
   });
 
   test('S3b: concurrent runs of one action coalesce → ONE request, ONE key, shared outcome', () async {
-    final l = IdempotencyLedger();
+    final l = IdempotencyLedger(settleWindow: Duration.zero);
     var calls = 0;
     final keys = <String>[];
     Future<String> call(String k) async {
@@ -109,11 +109,25 @@ void main() {
   });
 
   test('a run only forgets the key it used', () async {
-    final l = IdempotencyLedger();
+    final l = IdempotencyLedger(settleWindow: Duration.zero);
     final k1 = await l.keyFor('payout:7');
     // Simulate the key being rotated by an expired TTL / other action meanwhile.
     final out = await l.run('payout:7', (k) async => k);
     expect(out, k1);
     expect(await l.keyFor('payout:7'), isNot(k1));
+  });
+
+  test('S3b lab race: a repeat right after success replays the SAME key; later = new action', () async {
+    var now = DateTime(2026, 10, 11, 9);
+    final l = IdempotencyLedger(now: () => now);
+    final keys = <String>[];
+    Future<String> call(String k) async { keys.add(k); return 'ok'; }
+    await l.run('payout:100000', call);
+    now = now.add(const Duration(milliseconds: 40)); // third tap, first already done
+    await l.run('payout:100000', call);
+    expect(keys.toSet(), hasLength(1), reason: 'server replays instead of a 2nd payout');
+    now = now.add(const Duration(seconds: 6)); // a deliberate new withdrawal later
+    await l.run('payout:100000', call);
+    expect(keys.toSet(), hasLength(2));
   });
 }

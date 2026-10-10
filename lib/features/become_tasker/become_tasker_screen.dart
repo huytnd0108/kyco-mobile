@@ -8,7 +8,9 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/api/kyco_api.dart';
 import '../../core/api/problem.dart';
+import '../../core/datetime.dart';
 import '../../core/di.dart';
+import '../../core/models.dart';
 import '../../core/ui/consent_checkbox.dart';
 import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
@@ -23,6 +25,17 @@ final kycPhotoPickerProvider = Provider<Future<XFile?> Function()>(
         maxWidth: 1600,
       ),
 );
+
+/// The signed-in pending tasker's application status. `GET /v1/kyc` first;
+/// an older backend (no such route) falls back to `/me`'s `application`, and
+/// when neither is there the screen shows the static review copy.
+final taskerApplicationProvider = FutureProvider.autoDispose<TaskerApplication?>((ref) async {
+  try {
+    final app = await ref.read(kycoApiProvider).kycApplication();
+    if (app != null) return app;
+  } catch (_) {/* older backend / offline: use the session's copy */}
+  return ref.read(authControllerProvider).user?.application;
+});
 
 /// `/become-tasker` — PUBLIC (guest-first) partner onboarding, mirroring the web
 /// `become-tasker/tasker-signup-form.tsx` 3-step wizard:
@@ -351,6 +364,7 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
     setState(() => _refreshing = true);
+    ref.invalidate(taskerApplicationProvider);
     final role = await ref.read(authControllerProvider.notifier).reloadMe();
     if (!mounted) return;
     setState(() => _refreshing = false);
@@ -498,7 +512,7 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
 
 // ── pending review (signed-in pending_tasker) ───────────────────────────────
 
-class _PendingReviewView extends StatelessWidget {
+class _PendingReviewView extends ConsumerWidget {
   const _PendingReviewView({
     required this.onReupload,
     required this.onRefresh,
@@ -509,10 +523,12 @@ class _PendingReviewView extends StatelessWidget {
   final bool refreshing;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final app = ref.watch(taskerApplicationProvider).valueOrNull;
+    final rejected = app?.isRejected ?? false;
     Widget step(int n, String text) => Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Row(
@@ -535,11 +551,15 @@ class _PendingReviewView extends StatelessWidget {
       children: [
         Icon(Icons.hourglass_top, size: 48, color: cs.primary),
         const SizedBox(height: 12),
-        Text(l.taskerReviewTitle,
+        Text(rejected ? l.taskerAppNeedsChanges : l.taskerReviewTitle,
             textAlign: TextAlign.center,
             style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
-        Text(l.taskerReviewIntro, textAlign: TextAlign.center, style: TextStyle(color: cs.onSurfaceVariant)),
+        Text(app?.statusLabel ?? l.taskerReviewIntro,
+            key: const ValueKey('tasker-app-status'),
+            textAlign: TextAlign.center,
+            style: TextStyle(color: cs.onSurfaceVariant)),
+        if (app != null) _ApplicationDetails(app: app, onReupload: onReupload),
         const SizedBox(height: 24),
         Text(l.taskerReviewNextTitle, style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
         step(1, l.taskerReviewNext1),
@@ -562,6 +582,97 @@ class _PendingReviewView extends StatelessWidget {
         ),
         TextButton(onPressed: () => context.go('/'), child: Text(l.provTaskerBackHome)),
       ],
+    );
+  }
+}
+
+/// Dates, the admin's rejection reason and per-document status of the
+/// application. A rejected document gets its own re-upload CTA (all three
+/// photos are retaken together by the form it opens).
+class _ApplicationDetails extends StatelessWidget {
+  const _ApplicationDetails({required this.app, required this.onReupload});
+  final TaskerApplication app;
+  final VoidCallback onReupload;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final muted = TextStyle(color: cs.onSurfaceVariant);
+    final submitted = vnWall(app.submittedAt) == null ? null : vnDateTime(context, app.submittedAt);
+    final reviewed = vnWall(app.reviewedAt) == null ? null : vnDateTime(context, app.reviewedAt);
+    return Column(
+      key: const ValueKey('tasker-app-details'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (submitted != null || reviewed != null) ...[
+          const SizedBox(height: 12),
+          if (submitted != null)
+            Text(l.taskerAppSubmittedOn(submitted),
+                key: const ValueKey('tasker-app-submitted'), textAlign: TextAlign.center, style: muted),
+          if (reviewed != null)
+            Text(l.taskerAppReviewedOn(reviewed),
+                key: const ValueKey('tasker-app-reviewed'), textAlign: TextAlign.center, style: muted),
+        ],
+        if (app.rejectionReason != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            key: const ValueKey('tasker-app-rejection'),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: cs.errorContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(l.taskerAppReason(app.rejectionReason!),
+                style: TextStyle(color: cs.onErrorContainer)),
+          ),
+        ],
+        if (app.documents.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text(l.taskerAppDocsTitle, style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+          for (final d in app.documents) _docRow(context, l, cs, d),
+        ],
+      ],
+    );
+  }
+
+  Widget _docRow(BuildContext context, AppLocalizations l, ColorScheme cs, ApplicationDocument d) {
+    final name = d.docLabel ?? _kycKindLabel(l, d.docKind);
+    final (statusText, icon, color) = switch (d.status) {
+      'approved' => (l.taskerAppDocApproved, Icons.check_circle_outline, cs.primary),
+      'rejected' => (l.taskerAppDocRejected, Icons.error_outline, cs.error),
+      _ => (l.taskerAppDocPending, Icons.hourglass_top, cs.onSurfaceVariant),
+    };
+    return Padding(
+      key: ValueKey('tasker-app-doc-${d.docKind}'),
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(width: 8),
+            Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.w600))),
+            Text(statusText, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+          ]),
+          if (d.reason != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 28, top: 2),
+              child: Text(d.reason!, style: TextStyle(color: cs.onSurfaceVariant)),
+            ),
+          if (d.rejected)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                key: ValueKey('tasker-app-reupload-${d.docKind}'),
+                onPressed: onReupload,
+                icon: const Icon(Icons.photo_camera_outlined),
+                label: Text(l.taskerAppDocReupload(name)),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

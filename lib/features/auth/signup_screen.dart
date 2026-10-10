@@ -130,7 +130,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       onChanged: _onEdited,
                       decoration: InputDecoration(
                         labelText: l.password,
-                        helperText: l.passwordMin8,
+                        helper: Text(l.passwordMin8,
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                         suffixIcon: IconButton(
                           tooltip: _obscure ? l.showPassword : l.hidePassword,
                           icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),

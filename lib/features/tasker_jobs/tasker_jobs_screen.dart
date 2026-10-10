@@ -343,7 +343,7 @@ class _AvailableTabState extends ConsumerState<_AvailableTab> {
           return ListView(
             padding: const EdgeInsets.only(bottom: 24),
             children: [
-              if (!view.canClaim) _ClaimGateBanner(reason: view.banReason),
+              if (!view.canClaim) _ClaimGateBanner(reason: view.banReason, block: view.block),
               if (view.assigned.isNotEmpty) ...[
                 SectionHeader('${l.provPoolAssigned} (${view.assigned.length})'),
                 for (final job in view.assigned)
@@ -382,13 +382,20 @@ class _AvailableTabState extends ConsumerState<_AvailableTab> {
 /// Ban / suspend gate — mirrors the web's banned/suspended banner. Shown when
 /// the server reports `canClaim == false`; claim buttons render disabled.
 class _ClaimGateBanner extends StatelessWidget {
-  const _ClaimGateBanner({this.reason});
+  const _ClaimGateBanner({this.reason, this.block});
   final String? reason;
+  final TaskerBlock? block;
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final l = AppLocalizations.of(context);
-    final body = (reason != null && reason!.isNotEmpty) ? reason! : l.provClaimGateBody;
+    // Release-h: the server's localized label wins; the legacy `banReason` may
+    // be a raw machine string ("Auto: ..."), which is never shown.
+    final legacy = (reason != null && reason!.isNotEmpty && !RegExp(r'^\s*auto:', caseSensitive: false).hasMatch(reason!))
+        ? reason!
+        : null;
+    final body = block?.label ?? legacy ?? l.provClaimGateBody;
+    final until = block?.blockedUntil;
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
       padding: const EdgeInsets.all(14),
@@ -413,6 +420,13 @@ class _ClaimGateBanner extends StatelessWidget {
                         ?.copyWith(color: cs.onErrorContainer, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
                 Text(body, style: TextStyle(color: cs.onErrorContainer, fontSize: 13)),
+                if (until != null && vnWall(until) != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(l.provClaimGateUntil(vnDateTime(context, until)),
+                        key: const ValueKey('pool-block-until'),
+                        style: TextStyle(color: cs.onErrorContainer, fontSize: 13, fontWeight: FontWeight.w600)),
+                  ),
               ],
             ),
           ),
