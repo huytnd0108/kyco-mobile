@@ -338,6 +338,15 @@
   "provJobStatusActive": "Đang làm",
   "provJobStatusClosed": "Đã đóng",
   "provJobNetHint": "≈ 80% về bạn",
+  "provJobNetEstimate": "≈ {amount} về bạn",
+  "@provJobNetEstimate": {
+    "description": "Claim card: server-computed tasker net estimate (taskerNetVnd), already formatted.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "provJobsAssignedEmpty": "Chưa có công việc nào",
   "provPoolEmpty": "Hiện chưa có đơn nào để nhận",
   "provJobsLoadError": "Không tải được công việc",
@@ -1067,5 +1076,15 @@
   },
   "prov2ResubmitAction": "Gửi lại xác nhận hoàn thành",
   "prov2ResubmitDone": "Đã gửi lại — khách sẽ được nhắc xác nhận.",
-  "prov2ComplaintNeedsText": "Vui lòng mô tả khiếu nại (ít nhất 20 ký tự)."
+  "prov2ComplaintNeedsText": "Vui lòng mô tả khiếu nại (ít nhất 20 ký tự).",
+  "provPoolDistanceKm": "~{km} km",
+  "@provPoolDistanceKm": {
+    "description": "Pool card: server-computed distance to the job (Z2, pre-claim).",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "provPoolAddressAfterClaim": "Địa chỉ chính xác và ghi chú của khách hiện sau khi bạn nhận việc."
 }

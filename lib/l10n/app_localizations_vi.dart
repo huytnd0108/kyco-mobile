@@ -636,6 +636,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provJobNetHint => '≈ 80% về bạn';
 
   @override
+  String provJobNetEstimate(String amount) {
+    return '≈ $amount về bạn';
+  }
+
+  @override
   String get provJobsAssignedEmpty => 'Chưa có công việc nào';
 
   @override
@@ -2156,4 +2161,13 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get prov2ComplaintNeedsText =>
       'Vui lòng mô tả khiếu nại (ít nhất 20 ký tự).';
+
+  @override
+  String provPoolDistanceKm(String km) {
+    return '~$km km';
+  }
+
+  @override
+  String get provPoolAddressAfterClaim =>
+      'Địa chỉ chính xác và ghi chú của khách hiện sau khi bạn nhận việc.';
 }

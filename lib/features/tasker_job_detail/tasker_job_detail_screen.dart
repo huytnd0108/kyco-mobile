@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
+import '../../core/ui/error_text.dart';
 import '../../core/api/kyco_api.dart';
 import '../../core/api/problem.dart';
 import '../../core/di.dart';
@@ -148,13 +149,14 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
     if (_busy != null) return null;
     setState(() => _busy = action);
     final api = ref.read(kycoApiProvider);
-    final generic = AppLocalizations.of(context).genericError;
+    final l = AppLocalizations.of(context);
+    final generic = l.genericError;
     try {
       final resp = await call(api);
       _refreshAfterMutation(id, wallet: refreshWallet);
       return resp;
     } on ApiException catch (e) {
-      _snack(e.message);
+      _snack(apiErrorText(l, e));
       return null;
     } catch (_) {
       _snack(generic);
@@ -227,7 +229,7 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
       _refreshAfterMutation(id);
       _snack(l.provJdEnRouteSnack);
     } on ApiException catch (e) {
-      _snack(e.message);
+      _snack(apiErrorText(l, e));
     } catch (_) {
       _snack(l.genericError);
     } finally {
@@ -251,7 +253,7 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
       _refreshAfterMutation(id);
       _showCheckInOutcome(l, r);
     } on ApiException catch (e) {
-      _snack(e.message);
+      _snack(apiErrorText(l, e));
     } catch (_) {
       _snack(l.genericError);
     } finally {
@@ -276,7 +278,7 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
       _refreshAfterMutation(id);
       _snack(l.provJdCheckedOutSnack);
     } on ApiException catch (e) {
-      _snack(e.message);
+      _snack(apiErrorText(l, e));
     } catch (_) {
       _snack(l.genericError);
     } finally {
@@ -307,7 +309,7 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
       _refreshAfterMutation(id);
       _snack(l.provJdPhotoUploaded);
     } on ApiException catch (e) {
-      _snack(e.message);
+      _snack(apiErrorText(l, e));
     } catch (_) {
       _snack(l.genericError);
     } finally {

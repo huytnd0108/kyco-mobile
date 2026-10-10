@@ -1250,6 +1250,12 @@ abstract class AppLocalizations {
   /// **'≈ 80% về bạn'**
   String get provJobNetHint;
 
+  /// Claim card: server-computed tasker net estimate (taskerNetVnd), already formatted.
+  ///
+  /// In vi, this message translates to:
+  /// **'≈ {amount} về bạn'**
+  String provJobNetEstimate(String amount);
+
   /// No description provided for @provJobsAssignedEmpty.
   ///
   /// In vi, this message translates to:
@@ -4015,6 +4021,18 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Vui lòng mô tả khiếu nại (ít nhất 20 ký tự).'**
   String get prov2ComplaintNeedsText;
+
+  /// Pool card: server-computed distance to the job (Z2, pre-claim).
+  ///
+  /// In vi, this message translates to:
+  /// **'~{km} km'**
+  String provPoolDistanceKm(String km);
+
+  /// No description provided for @provPoolAddressAfterClaim.
+  ///
+  /// In vi, this message translates to:
+  /// **'Địa chỉ chính xác và ghi chú của khách hiện sau khi bạn nhận việc.'**
+  String get provPoolAddressAfterClaim;
 }
 
 class _AppLocalizationsDelegate

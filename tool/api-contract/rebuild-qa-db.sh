@@ -33,3 +33,5 @@ SQL
 npx tsx scripts/seed-qa-money-fixtures.ts > "$FIXTURES_JSON.tmp"
 node -e 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"))' "$FIXTURES_JSON.tmp" && mv "$FIXTURES_JSON.tmp" "$FIXTURES_JSON"
 echo "money fixtures → $FIXTURES_JSON"; cat "$FIXTURES_JSON"
+# Media storage for the PROD build: start fake GCS (idempotent) and pass its env to `next start`:
+#   tool/api-contract/lab-fakegcs.sh up > /tmp/gcs.env; set -a; . /tmp/gcs.env; set +a; npx next start -p 4142

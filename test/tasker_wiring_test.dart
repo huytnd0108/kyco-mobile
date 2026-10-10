@@ -220,4 +220,16 @@ void main() {
     expect(maskPhone('0912345678'), '•••••••678');
     expect(maskPhone('12'), '12');
   });
+
+  test('Z2 pool row: distanceKm parsed, pre-claim rows carry no address/notes', () {
+    final j = PoolJob.fromJson({
+      'jobId': 1, 'ward': 'Đa Kao', 'district': 'Quận 1', 'distanceKm': 2.4, 'totalVnd': 900000,
+    });
+    expect(j.distanceKm, 2.4);
+    expect(PoolJob.fromJson({'jobId': 4, 'taskerNetVnd': 720000}).taskerNetVnd, 720000);
+    expect(j.addressLine, isNull);
+    expect(j.notes, isNull);
+    expect(PoolJob.fromJson({'jobId': 2, 'distanceKm': 3}).distanceKm, 3.0);
+    expect(PoolJob.fromJson({'jobId': 3}).distanceKm, isNull);
+  });
 }

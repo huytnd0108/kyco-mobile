@@ -192,6 +192,7 @@
   "provJobStatusActive": "In progress",
   "provJobStatusClosed": "Closed",
   "provJobNetHint": "≈ 80% to you",
+  "provJobNetEstimate": "≈ {amount} to you",
   "provJobsAssignedEmpty": "No jobs yet",
   "provPoolEmpty": "No jobs available to claim right now",
   "provJobsLoadError": "Couldn't load jobs",
@@ -652,5 +653,7 @@
   "prov2ResubmitNote": "Customer's note: {note}",
   "prov2ResubmitAction": "Resubmit completion",
   "prov2ResubmitDone": "Resubmitted — the customer will be reminded to confirm.",
-  "prov2ComplaintNeedsText": "Please describe the complaint (at least 20 characters)."
+  "prov2ComplaintNeedsText": "Please describe the complaint (at least 20 characters).",
+  "provPoolDistanceKm": "~{km} km",
+  "provPoolAddressAfterClaim": "The exact address and customer notes appear after you claim the job."
 }

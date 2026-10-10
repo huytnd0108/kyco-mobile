@@ -88,6 +88,8 @@ class PoolJob {
     this.jobStatus,
     this.confirmationCode,
     this.claimDeadline,
+    this.distanceKm,
+    this.taskerNetVnd,
   });
 
   final int jobId;
@@ -105,6 +107,16 @@ class PoolJob {
   final String? confirmationCode;
   final String? claimDeadline;
 
+  /// Pool rows only (Z2): great-circle km from the tasker's last location ping,
+  /// computed server-side. Pre-claim rows carry ward/district + this distance,
+  /// never [addressLine] / [notes]; those appear once the tasker owns the job.
+  final double? distanceKm;
+
+  /// Server-computed estimate of the tasker's net for this job
+  /// (resolveCommission, 8edc05d). Display as-is — the app never derives it
+  /// from [totalVnd]. Final settlement still resolves at check-out.
+  final int? taskerNetVnd;
+
   factory PoolJob.fromJson(Map<String, dynamic> j) => PoolJob(
         jobId: _intd(j['jobId']),
         bookingId: _int(j['bookingId']),
@@ -120,6 +132,8 @@ class PoolJob {
         jobStatus: _str(j['jobStatus']),
         confirmationCode: _str(j['confirmationCode']),
         claimDeadline: _str(j['claimDeadline']),
+        distanceKm: _dbl(j['distanceKm']),
+        taskerNetVnd: _int(j['taskerNetVnd']),
       );
 }
 

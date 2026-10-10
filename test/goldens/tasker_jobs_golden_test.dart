@@ -75,26 +75,27 @@ PoolView _fakePool({bool canClaim = true, String? banReason}) => PoolView(
           confirmationCode: 'KC-8001',
         ),
       ],
+      // Z2 — pre-claim rows: ward/district + server distanceKm, no address/notes.
       pool: const [
         PoolJob(
           jobId: 8100,
           serviceName: 'Vệ sinh sofa – nệm – rèm cửa cao cấp',
           scheduledAt: '2026-09-06 18:00',
           durationMinutes: 120,
-          addressLine: '20 Điện Biên Phủ',
           ward: 'Đa Kao',
           district: 'Quận 1',
           totalVnd: 900000,
-          notes: 'Nhà có nuôi mèo, mang theo dụng cụ hút lông.',
+          taskerNetVnd: 720000,
+          distanceKm: 2.4,
         ),
         PoolJob(
           jobId: 8101,
           serviceName: 'Vệ sinh máy lạnh',
           scheduledAt: '2026-09-07 09:00',
           durationMinutes: 60,
-          addressLine: '77 Cách Mạng Tháng 8',
           district: 'Quận 10',
           totalVnd: 350000,
+          taskerNetVnd: 280000,
         ),
       ],
     );

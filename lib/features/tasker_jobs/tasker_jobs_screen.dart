@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
+import '../../core/format.dart';
 import '../../core/api/kyco_api.dart';
 import '../../core/di.dart';
 import '../../core/models.dart';
@@ -436,8 +437,8 @@ class _AssignedPoolTile extends StatelessWidget {
 }
 
 /// Quick-claim card. Shows the service, when/where, the server-derived VND
-/// total (💰) and a rate hint (`≈ 80% về bạn`) — the net is never computed in
-/// the app. "Claim" calls `claimJob(id)` (no amount) and is disabled when the
+/// total (💰) and the server's net estimate `taskerNetVnd` (`≈ 720.000₫ về bạn`)
+/// — the net is never computed in the app. "Claim" calls `claimJob(id)` (no amount) and is disabled when the
 /// server gate (`canClaim`) is closed.
 class _ClaimCard extends StatefulWidget {
   const _ClaimCard(this.job, {required this.canClaim, required this.onClaim});
@@ -471,7 +472,13 @@ class _ClaimCardState extends State<_ClaimCard> {
     final cs = Theme.of(context).colorScheme;
     final l = AppLocalizations.of(context);
     final title = job.serviceName ?? '#${job.bookingId ?? job.jobId}';
-    final where = [job.addressLine, job.ward, job.district].whereType<String>().where((s) => s.isNotEmpty).join(', ');
+    // Z2 — pre-claim the server sends ward/district + distanceKm only; the
+    // street address and the customer's notes appear after claiming.
+    final area = [job.ward, job.district].whereType<String>().where((s) => s.isNotEmpty).join(', ');
+    final where = [
+      if (area.isNotEmpty) area,
+      if (job.distanceKm != null) l.provPoolDistanceKm(job.distanceKm!.toStringAsFixed(1)),
+    ].join(' · ');
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
@@ -505,12 +512,10 @@ class _ClaimCardState extends State<_ClaimCard> {
                         const SizedBox(height: 4),
                         Text(where, style: const TextStyle(fontSize: 13)),
                       ],
-                      if ((job.notes ?? '').isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text('"${job.notes}"',
-                            style: TextStyle(
-                                fontSize: 12, fontStyle: FontStyle.italic, color: cs.onSurfaceVariant)),
-                      ],
+                      const SizedBox(height: 4),
+                      Text(l.provPoolAddressAfterClaim,
+                          style: TextStyle(
+                              fontSize: 12, fontStyle: FontStyle.italic, color: cs.onSurfaceVariant)),
                     ],
                   ),
                 ),
@@ -519,8 +524,13 @@ class _ClaimCardState extends State<_ClaimCard> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     _MoneyValue(job.totalVnd),
-                    const SizedBox(height: 2),
-                    Text(l.provJobNetHint, style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
+                    // Server-computed net estimate (8edc05d) — never derived
+                    // in the app; hidden when an older backend omits it.
+                    if (job.taskerNetVnd != null) ...[
+                      const SizedBox(height: 2),
+                      Text(l.provJobNetEstimate(formatVnd(job.taskerNetVnd!)),
+                          style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
+                    ],
                   ],
                 ),
               ],

@@ -635,6 +635,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provJobNetHint => '≈ 80% to you';
 
   @override
+  String provJobNetEstimate(String amount) {
+    return '≈ $amount to you';
+  }
+
+  @override
   String get provJobsAssignedEmpty => 'No jobs yet';
 
   @override
@@ -2153,4 +2158,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get prov2ComplaintNeedsText =>
       'Please describe the complaint (at least 20 characters).';
+
+  @override
+  String provPoolDistanceKm(String km) {
+    return '~$km km';
+  }
+
+  @override
+  String get provPoolAddressAfterClaim =>
+      'The exact address and customer notes appear after you claim the job.';
 }
