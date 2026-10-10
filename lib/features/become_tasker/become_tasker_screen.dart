@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,9 +9,20 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 import '../../core/api/kyco_api.dart';
 import '../../core/api/problem.dart';
 import '../../core/di.dart';
+import '../../core/ui/consent_checkbox.dart';
 import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import '../auth/auth_controller.dart';
+
+/// Captures one KYC photo from the device camera (null = the user backed out).
+/// A provider so widget tests can supply bytes without the camera plugin.
+final kycPhotoPickerProvider = Provider<Future<XFile?> Function()>(
+  (ref) => () => ImagePicker().pickImage(
+        source: ImageSource.camera,
+        imageQuality: 70,
+        maxWidth: 1600,
+      ),
+);
 
 /// `/become-tasker` — PUBLIC (guest-first) partner onboarding, mirroring the web
 /// `become-tasker/tasker-signup-form.tsx` 3-step wizard:
@@ -71,6 +84,28 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
   String? _error;
   bool _done = false;
 
+  /// A signed-in pending_tasker looking at the status first; the re-upload form
+  /// is one tap away ([_showReupload]).
+  bool _showReupload = false;
+  bool _refreshing = false;
+
+  /// The public door answered 409 (phone already registered): offer sign-in.
+  bool _needLogin = false;
+
+  /// Explicit terms/privacy consent (UX-M06 / FE-47). Client-side gate only:
+  /// the API rejects unknown keys (MQA-65); server-side recording is a backend
+  /// gap. Not required when re-uploading KYC on an existing pending account.
+  bool _consent = false;
+  bool _consentTouched = false;
+  bool get _needsConsent => !_reapply;
+
+  /// A signed-in CUSTOMER applying: no OTP / phone steps, the account exists
+  /// (`POST /become-tasker/upgrade`, the phone is already verified server-side).
+  bool get _upgrade {
+    final auth = ref.read(authControllerProvider);
+    return auth.status == AuthStatus.signedIn && auth.user?.role == 'customer';
+  }
+
   /// A signed-in pending_tasker re-uploading KYC: no phone/OTP/profile steps
   /// (the account exists) — straight to the captures, sent via /kyc/upload.
   bool get _reapply {
@@ -83,7 +118,13 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _reapply) setState(() => _step = _Step.profile);
+      if (!mounted) return;
+      if (_reapply) setState(() => _step = _Step.profile);
+      if (_upgrade) {
+        final known = ref.read(authControllerProvider).user?.name;
+        if (known != null && known.trim().isNotEmpty && _name.text.isEmpty) _name.text = known.trim();
+        setState(() => _step = _Step.profile);
+      }
     });
   }
 
@@ -139,11 +180,7 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
   Future<void> _capture(String kind) async {
     final l = AppLocalizations.of(context);
     try {
-      final x = await ImagePicker().pickImage(
-        source: ImageSource.camera,
-        imageQuality: 70,
-        maxWidth: 1600,
-      );
+      final x = await ref.read(kycPhotoPickerProvider)();
       if (x == null) return; // user backed out
       if (!mounted) return;
       setState(() => _files[kind] = x);
@@ -160,7 +197,15 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
   Future<void> _submit() async {
     final l = AppLocalizations.of(context);
     final reapply = _reapply;
-    setState(() => _error = null);
+    final upgrade = _upgrade;
+    if (_needsConsent && !_consent) {
+      setState(() => _consentTouched = true);
+      return;
+    }
+    setState(() {
+      _error = null;
+      _needLogin = false;
+    });
     if (!reapply &&
         (_name.text.trim().isEmpty || _district.text.trim().isEmpty)) {
       setState(() => _error = l.provTaskerNameDistrictRequired);
@@ -204,6 +249,18 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
           );
           return;
         }
+      } else if (upgrade) {
+        await api.becomeTaskerUpgrade(
+          name: _name.text.trim(),
+          city: _city,
+          district: _district.text.trim(),
+          referralCode: _referral.text,
+          files: uploads,
+        );
+        if (!mounted) return;
+        // The account is pending_tasker now: refresh the session role so the app
+        // (Account menu, /p gate) reflects it without a cold start.
+        unawaited(ref.read(authControllerProvider.notifier).reloadMe());
       } else {
         await api.becomeTasker(
           phone: _phone.text.trim(),
@@ -246,6 +303,13 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
     if (e.isMaintenance || e.code == 'network') {
       return l.prov2TaskerSubmitFailed;
     }
+    // 409 on the PUBLIC door = the phone already belongs to an account. Say what
+    // to do (sign in first) instead of the generic "please sign in or use a
+    // different number" that read as nonsense to someone already signed in.
+    if (e.status == 409 && !_reapply && !_upgrade) {
+      _needLogin = true;
+      return l.taskerPhoneExistsLogin;
+    }
     final text = apiErrorText(l, e);
     return text == l.genericError ? l.prov2TaskerSubmitFailed : text;
   }
@@ -257,17 +321,44 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
       appBar: AppBar(title: Text(l.becomePartner)),
       body: _done
           ? const _DoneView()
+          : (_reapply && !_showReupload)
+          ? _PendingReviewView(
+              refreshing: _refreshing,
+              onReupload: () => setState(() => _showReupload = true),
+              onRefresh: _refreshStatus,
+            )
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
               children: [
                 _Stepper(step: _step),
                 const SizedBox(height: 20),
+                if (_upgrade) ...[
+                  Text(l.taskerUpgradeIntro, key: const ValueKey('tasker-upgrade-intro')),
+                  const SizedBox(height: 16),
+                ],
                 if (_step == _Step.phone) _phoneStep(l),
                 if (_step == _Step.verify) _verifyStep(l),
                 if (_step == _Step.profile) _profileStep(l),
               ],
             ),
     );
+  }
+
+  /// Re-read the role: an approved tasker goes straight to the workspace.
+  Future<void> _refreshStatus() async {
+    if (_refreshing) return;
+    final l = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+    setState(() => _refreshing = true);
+    final role = await ref.read(authControllerProvider.notifier).reloadMe();
+    if (!mounted) return;
+    setState(() => _refreshing = false);
+    if (role == 'tasker') {
+      router.go('/p');
+    } else {
+      messenger.showSnackBar(SnackBar(content: Text(l.taskerReviewStillPending)));
+    }
   }
 
   // ── step views ─────────────────────────────────────────────────────────────
@@ -376,37 +467,129 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
           onTap: () => _capture(kind),
         ),
       if (_error != null) ...[const SizedBox(height: 12), ErrorBanner(_error!)],
+      if (_needLogin) ...[
+        const SizedBox(height: 8),
+        OutlinedButton(
+          key: const ValueKey('tasker-login-first'),
+          onPressed: () => context.push('/login?from=${Uri.encodeQueryComponent('/become-tasker')}'),
+          child: Text(AppLocalizations.of(context).login),
+        ),
+      ],
+      if (_needsConsent) ...[
+        const SizedBox(height: 8),
+        ConsentCheckbox(
+          value: _consent,
+          showError: _consentTouched,
+          onChanged: (v) => setState(() {
+            _consent = v;
+            _consentTouched = true;
+          }),
+        ),
+      ],
       const SizedBox(height: 16),
       _PrimaryButton(
         label: _submitting ? l.provTaskerSending : l.provTaskerSubmit,
         busy: _submitting,
-        onPressed: _submitting ? null : _submit,
+        onPressed: (_submitting || (_needsConsent && !_consent)) ? null : _submit,
       ),
     ],
   );
 }
 
-// ── completion ─────────────────────────────────────────────────────────────
+// ── pending review (signed-in pending_tasker) ───────────────────────────────
 
-class _DoneView extends StatelessWidget {
-  const _DoneView();
+class _PendingReviewView extends StatelessWidget {
+  const _PendingReviewView({
+    required this.onReupload,
+    required this.onRefresh,
+    required this.refreshing,
+  });
+  final VoidCallback onReupload;
+  final VoidCallback onRefresh;
+  final bool refreshing;
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    Widget step(int n, String text) => Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 12,
+                backgroundColor: cs.secondaryContainer,
+                foregroundColor: cs.onSecondaryContainer,
+                child: Text('$n', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Text(text)),
+            ],
+          ),
+        );
+    return ListView(
+      key: const ValueKey('tasker-pending-review'),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
+      children: [
+        Icon(Icons.hourglass_top, size: 48, color: cs.primary),
+        const SizedBox(height: 12),
+        Text(l.taskerReviewTitle,
+            textAlign: TextAlign.center,
+            style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        Text(l.taskerReviewIntro, textAlign: TextAlign.center, style: TextStyle(color: cs.onSurfaceVariant)),
+        const SizedBox(height: 24),
+        Text(l.taskerReviewNextTitle, style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+        step(1, l.taskerReviewNext1),
+        step(2, l.taskerReviewNext2),
+        step(3, l.taskerReviewNext3),
+        const SizedBox(height: 24),
+        FilledButton.icon(
+          key: const ValueKey('tasker-review-refresh'),
+          onPressed: refreshing ? null : onRefresh,
+          icon: refreshing
+              ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.refresh),
+          label: Text(l.taskerReviewRefresh),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton(
+          key: const ValueKey('tasker-review-reupload'),
+          onPressed: onReupload,
+          child: Text(l.taskerReviewReupload),
+        ),
+        TextButton(onPressed: () => context.go('/'), child: Text(l.provTaskerBackHome)),
+      ],
+    );
+  }
+}
+
+// ── completion ─────────────────────────────────────────────────────────────
+
+class _DoneView extends ConsumerWidget {
+  const _DoneView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    // A phone-only applicant who applied through the PUBLIC door is not signed
+    // in: say how to track the application (OCD-058).
+    final signedOut = ref.watch(authControllerProvider).status != AuthStatus.signedIn;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: _submitted(context, cs),
+          children: _submitted(context, cs, signedOut: signedOut),
         ),
       ),
     );
   }
 
   // Reached ONLY after the server confirmed the application was stored.
-  List<Widget> _submitted(BuildContext context, ColorScheme cs) {
+  List<Widget> _submitted(BuildContext context, ColorScheme cs, {required bool signedOut}) {
     final l = AppLocalizations.of(context);
     return [
       CircleAvatar(
@@ -427,11 +610,29 @@ class _DoneView extends StatelessWidget {
         textAlign: TextAlign.center,
         style: TextStyle(color: cs.onSurfaceVariant),
       ),
+      if (signedOut) ...[
+        const SizedBox(height: 12),
+        Text(
+          l.taskerDoneSignInHint,
+          key: const ValueKey('tasker-done-signin-hint'),
+          textAlign: TextAlign.center,
+          style: TextStyle(color: cs.onSurfaceVariant),
+        ),
+      ],
       const SizedBox(height: 24),
-      FilledButton(
-        onPressed: () => context.go('/'),
-        child: Text(l.provTaskerBackHome),
-      ),
+      if (signedOut) ...[
+        FilledButton(
+          key: const ValueKey('tasker-done-login'),
+          onPressed: () => context.go('/login'),
+          child: Text(l.login),
+        ),
+        const SizedBox(height: 8),
+        TextButton(onPressed: () => context.go('/'), child: Text(l.provTaskerBackHome)),
+      ] else
+        FilledButton(
+          onPressed: () => context.go('/'),
+          child: Text(l.provTaskerBackHome),
+        ),
     ];
   }
 }
@@ -586,11 +787,10 @@ class _KycTile extends StatelessWidget {
                       label,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                    if (captured && fileName != null)
+                    // Never the raw temp file name ("scaled_e114de20-….jpg").
+                    if (captured)
                       Text(
-                        fileName!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        AppLocalizations.of(context).provTaskerCaptured,
                         style: TextStyle(
                           fontSize: 12,
                           color: cs.onSurfaceVariant,

@@ -97,7 +97,12 @@ class _BookingMoneySectionState extends ConsumerState<BookingMoneySection> with 
     final a = BookingActions.of(b);
     final pay = ref.watch(payFlowProvider(b.id));
     final showPay = a.canPay || pay.phase != PayPhase.idle;
-    if (!a.canCancel && !a.canConfirm && !a.awaitingCashConfirm && !showPay && !b.manualSettlementRequired) {
+    if (!a.canCancel &&
+        !a.cancelBlocked &&
+        !a.canConfirm &&
+        !a.awaitingCashConfirm &&
+        !showPay &&
+        !b.manualSettlementRequired) {
       return const SizedBox.shrink();
     }
     return Column(
@@ -125,6 +130,22 @@ class _BookingMoneySectionState extends ConsumerState<BookingMoneySection> with 
             ),
         ],
         if (showPay) _PayPanel(b),
+        if (a.cancelBlocked)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              key: const ValueKey('booking-cancel-blocked'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline, size: 18, color: cs.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(a.cancelBlockedReason ?? l.moneyCancelBlockedGeneric,
+                      style: TextStyle(color: cs.onSurfaceVariant)),
+                ),
+              ],
+            ),
+          ),
         if (a.canCancel)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -299,7 +320,7 @@ class _CancelBookingDialogState extends ConsumerState<CancelBookingDialog> {
         actions: [
           TextButton(
             key: const ValueKey('cancel-keep'),
-            onPressed: _busy ? null : () => Navigator.of(context).pop(false),
+            onPressed: _busy ? null : () => Navigator.of(context).pop(),
             child: Text(l.moneyCancelKeep),
           ),
           FilledButton(
@@ -395,7 +416,7 @@ class _ConfirmCompletionDialogState extends ConsumerState<ConfirmCompletionDialo
         ),
         actions: [
           TextButton(
-            onPressed: _busy ? null : () => Navigator.of(context).pop(false),
+            onPressed: _busy ? null : () => Navigator.of(context).pop(),
             child: Text(l.moneyDialogClose),
           ),
           FilledButton(
@@ -490,7 +511,7 @@ class _DisputeDialogState extends ConsumerState<DisputeDialog> {
         ),
         actions: [
           TextButton(
-            onPressed: _busy ? null : () => Navigator.of(context).pop(false),
+            onPressed: _busy ? null : () => Navigator.of(context).pop(),
             child: Text(l.moneyDialogClose),
           ),
           FilledButton(

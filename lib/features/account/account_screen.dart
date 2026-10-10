@@ -86,7 +86,8 @@ class AccountScreen extends ConsumerWidget {
               else
                 _AccountRow(
                   icon: Icons.handshake_outlined,
-                  label: l.becomePartner,
+                  // A pending application opens its review status.
+                  label: auth.user?.role == 'pending_tasker' ? l.taskerReviewTitle : l.becomePartner,
                   onTap: () => context.push('/become-tasker'),
                 ),
               // Public curated content (GET /v1/legal/{doc}, /v1/help).

@@ -118,6 +118,12 @@ JobPhase deriveJobPhase(TaskerJobDetail d) {
   return JobPhase.unknown;
 }
 
+/// The tracking leg has started (booking EN_ROUTE / ARRIVED, not yet checked in).
+bool isTravelling(TaskerJobDetail d) {
+  final b = _s(d.booking?['status']).toUpperCase();
+  return !d.hasCheckedIn && (b == 'EN_ROUTE' || b == 'ARRIVED');
+}
+
 /// The booking has moved past the point where SOS / check-out / live-share are
 /// meaningful. Mirrors the web `bookingDone` gate.
 bool bookingIsDone(TaskerJobDetail d) {

@@ -490,6 +490,31 @@ extension KycoApiTasker on KycoApi {
     return id is num ? id.toInt() : null;
   }
 
+  /// POST /become-tasker/upgrade — a SIGNED-IN customer applies to become a
+  /// tasker (no OTP: the account's phone is already verified). Same multipart
+  /// profile fields + the 3 KYC docs; flips customer -> pending_tasker. Returns
+  /// true when the account was already pending (idempotent retry, HTTP 200).
+  Future<bool> becomeTaskerUpgrade({
+    required String name,
+    required String city,
+    required String district,
+    String? referralCode,
+    required List<KycUploadFile> files,
+  }) async {
+    final ref = referralCode?.trim();
+    final form = FormData.fromMap({
+      'name': name,
+      'city': city,
+      'district': district,
+      if (ref != null && ref.isNotEmpty) 'referral_code': ref,
+    });
+    for (final f in files) {
+      form.files.add(MapEntry(f.kind, f.toMultipart()));
+    }
+    final data = await _c.post('/become-tasker/upgrade', body: form);
+    return data is Map<String, dynamic> && data['alreadyPending'] == true;
+  }
+
   /// POST /media/request-upload — signed-URL upload ticket (lib/media/
   /// access-write.ts::UploadIntentSchema). The server builds the object path and
   /// runs canUpload: for job photos `category` is `checkin` (slot before) or

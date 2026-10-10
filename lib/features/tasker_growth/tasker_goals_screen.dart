@@ -123,7 +123,7 @@ class _GoalCard extends ConsumerWidget {
           // Jobs target.
           _GoalMetric(
             label: l.provGoalJobs,
-            achievedText: achievedJobs?.toString() ?? '—',
+            achievedText: (achievedJobs ?? 0).toString(),
             targetText: targetJobs > 0 ? '$targetJobs' : '—',
             value: (achievedJobs ?? 0).toDouble(),
             max: targetJobs.toDouble(),
@@ -132,7 +132,7 @@ class _GoalCard extends ConsumerWidget {
           // Income target (display-only VND).
           _GoalMetric(
             label: l.provGoalIncome,
-            achievedText: achievedVnd != null ? formatVnd(achievedVnd!) : '—',
+            achievedText: formatVnd(achievedVnd ?? 0),
             targetText: targetVnd > 0 ? formatVnd(targetVnd) : '—',
             value: (achievedVnd ?? 0).toDouble(),
             max: targetVnd.toDouble(),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
+import '../../core/person_name.dart';
 
 import '../../core/adaptive.dart';
 import '../../core/api/problem.dart';
@@ -142,10 +143,10 @@ class _Detail extends ConsumerWidget {
           if (address.isNotEmpty) _row(context, l.cust2DetailAddress, address),
           if (b.notes != null) _row(context, l.cust2DetailNotes, b.notes!),
           if (b.taskerName != null)
-            _row(context, l.cust2DetailProvider, b.taskerName!,
+            _row(context, l.cust2DetailProvider, taskerDisplayName(l, b.taskerName),
                 // UX-M17: the assigned tasker opens the public profile.
                 onTap: b.taskerId == null ? null : () => context.push('/taskers/${b.taskerId}'),
-                semanticsLabel: l.openTaskerProfile(b.taskerName!)),
+                semanticsLabel: l.openTaskerProfile(taskerDisplayName(l, b.taskerName))),
           _row(context, l.totalLabel, vnd),
           if (b.breakdown != null) _breakdown(context, l, b.breakdown!),
           _row(context, l.cust2DetailPayment, paymentMethodLabel(l, b.paymentMethod)),
@@ -260,9 +261,14 @@ class _Detail extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Label column with a gutter: a long label ("Confirmation code") wraps
+          // inside it and never runs into its value.
           SizedBox(
-            width: 120,
-            child: Text(label, style: TextStyle(color: cs.onSurfaceVariant)),
+            width: 132,
+            child: Padding(
+              padding: const EdgeInsetsDirectional.only(end: 12),
+              child: Text(label, style: TextStyle(color: cs.onSurfaceVariant)),
+            ),
           ),
           Expanded(
             child: Text(value,

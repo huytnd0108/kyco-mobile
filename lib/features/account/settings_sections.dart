@@ -42,6 +42,7 @@ class ThemeSettings extends ConsumerWidget {
               (ThemeMode.dark, l.themeDark, Icons.dark_mode),
             ])
               ChoiceChip(
+                showCheckmark: false, // the selected state is the filled chip; no second icon
                 selected: mode == m,
                 onSelected: (_) => ref.read(themeModeControllerProvider.notifier).set(m),
                 avatar: Icon(icon, size: 18),
@@ -75,6 +76,7 @@ class LanguageSettings extends ConsumerWidget {
               ('en', l.langEn),
             ])
               ChoiceChip(
+                showCheckmark: false, // the selected state is the filled chip; no second icon
                 selected: (locale?.languageCode ?? 'system') == code,
                 onSelected: (_) => ref
                     .read(localeControllerProvider.notifier)

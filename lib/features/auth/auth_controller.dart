@@ -145,6 +145,22 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
+  /// Re-read /me and apply it (role changes after approval / an application,
+  /// OCD-060). Best effort: offline or a failed read keeps the current session;
+  /// a definitive 401 ends it like any other authed call. Returns the fresh
+  /// role, or null when it could not be read.
+  Future<String?> reloadMe() async {
+    if (state.status != AuthStatus.signedIn) return null;
+    try {
+      final user = await _api.me();
+      if (state.status != AuthStatus.signedIn) return null;
+      await _accept(user);
+      return state.user?.role;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<bool> login({required String email, required String password, String? totpCode}) =>
       _run(() => _api.login(email: email, password: password, totpCode: totpCode));
 

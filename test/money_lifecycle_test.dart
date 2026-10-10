@@ -407,6 +407,47 @@ void main() {
       expect(_key('booking-cancel-cta'), findsNothing);
     });
 
+    testWidgets('OCD-016: canCancel=false on a cancellable status explains why (generic copy)', (t) async {
+      final h = _Harness(detail: _booking('CONFIRMED', actions: {'canCancel': false}));
+      await h.pump(t);
+      expect(_key('booking-cancel-cta'), findsNothing);
+      expect(_key('booking-cancel-blocked'), findsOneWidget);
+      expect(find.text(_vi.moneyCancelBlockedGeneric), findsOneWidget);
+      expect(_vi.moneyCancelBlockedGeneric,
+          'Không thể hủy ở trạng thái này. Liên hệ hỗ trợ nếu cần.');
+    });
+
+    testWidgets('OCD-016: the server reason wins over the generic copy', (t) async {
+      final h = _Harness(
+          detail: _booking('CONFIRMED',
+              actions: {'canCancel': false, 'cancelBlockedReason': 'Vui lòng chờ 24h trước khi hủy tiếp.'}));
+      await h.pump(t);
+      expect(find.text('Vui lòng chờ 24h trước khi hủy tiếp.'), findsOneWidget);
+      expect(find.text(_vi.moneyCancelBlockedGeneric), findsNothing);
+    });
+
+    testWidgets('OCD-016: no blocked note when cancel is allowed or the status is not cancellable', (t) async {
+      final ok = _Harness(detail: _booking('CONFIRMED'));
+      await ok.pump(t);
+      expect(_key('booking-cancel-blocked'), findsNothing);
+      final done = _Harness(detail: _booking('SETTLED', actions: {'canCancel': false}));
+      await done.pump(t);
+      expect(_key('booking-cancel-blocked'), findsNothing);
+    });
+
+    testWidgets('OCD-047: "Giữ đơn" closes the cancel dialog and cancels nothing', (t) async {
+      final h = _Harness(detail: _booking('CONFIRMED'));
+      await h.pump(t);
+      await _tapScroll(t, _key('booking-cancel-cta'));
+      await _settle(t);
+      expect(_key('cancel-keep'), findsOneWidget);
+      await t.tap(_key('cancel-keep'));
+      await _settle(t);
+      expect(_key('cancel-keep'), findsNothing, reason: 'dialog closed');
+      expect(t.takeException(), isNull);
+      expect(h.api.cancels, isEmpty);
+    });
+
     test('cancelPreview parsing', () {
       expect(CancelPreview.tryParse(null), isNull);
       expect(CancelPreview.tryParse({}), isNull);
@@ -984,6 +1025,8 @@ void main() {
       ));
       await t.tap(find.text('go'));
       await _settle(t);
+      // OCD-062: the field starts empty; the tasker types the amount.
+      await t.enterText(find.byType(TextField), '500000');
       await t.tap(find.text(_vi.provWalletContinue));
       await _settle(t);
       return msg;

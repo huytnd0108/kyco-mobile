@@ -44,6 +44,10 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
   /// spinner. Null when idle.
   String? _busy;
 
+  /// The last action's failure, rendered INLINE next to the lifecycle buttons
+  /// (a snackbar alone is easy to miss on this long page; OCD-035).
+  String? _actionError;
+
   int? _routeId(BuildContext context) {
     if (widget.id != null) return widget.id;
     try {
@@ -88,6 +92,7 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
             child: JobDetailBody(
               detail: d,
               busy: _busy,
+              actionError: _actionError,
               onConfirm: () => _confirm(id),
               onDecline: () => _decline(id),
               onCancel: () => _cancel(id),
@@ -121,7 +126,16 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
 
   void _snack(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  /// A failed action: snackbar AND an inline banner beside the action buttons.
+  void _failed(String msg) {
+    if (!mounted) return;
+    setState(() => _actionError = msg);
+    _snack(msg);
   }
 
   /// Every job mutation changes what the tab shells show (they stay mounted):
@@ -129,9 +143,11 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
   /// carry this job, so refresh them alongside the detail. [wallet] is set ONLY
   /// after cash-received — it re-reads the server ledger (a refresh, no money is
   /// computed or moved client-side).
-  void _refreshAfterMutation(int id, {bool wallet = false}) {
+  void _refreshAfterMutation(int id, {bool wallet = false, bool detail = true}) {
     if (!mounted) return;
-    ref.invalidate(taskerJobDetailProvider(id));
+    // [detail] false when the job is about to be left (cancel / decline): the
+    // detail of a job that is no longer the caller's is a 404 (OCD-066).
+    if (detail) ref.invalidate(taskerJobDetailProvider(id));
     ref.invalidate(assignedJobsControllerProvider);
     ref.invalidate(taskerWorkspaceProvider);
     ref.invalidate(poolProvider);
@@ -147,21 +163,25 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
     int id,
     Future<Map<String, dynamic>> Function(KycoApi api) call, {
     bool refreshWallet = false,
+    bool refreshDetail = true,
   }) async {
     if (_busy != null) return null;
-    setState(() => _busy = action);
+    setState(() {
+      _busy = action;
+      _actionError = null;
+    });
     final api = ref.read(kycoApiProvider);
     final l = AppLocalizations.of(context);
     final generic = l.genericError;
     try {
       final resp = await call(api);
-      _refreshAfterMutation(id, wallet: refreshWallet);
+      _refreshAfterMutation(id, wallet: refreshWallet, detail: refreshDetail);
       return resp;
     } on ApiException catch (e) {
       // A stale server-side key means the outcome is unknown: refetch so the
       // tasker sees the real job/wallet state before acting again.
       if (e.code == 'IDEMPOTENCY_STALE') _refreshAfterMutation(id, wallet: refreshWallet);
-      _snack(apiErrorText(l, e));
+      _failed(apiErrorText(l, e));
       return null;
     } catch (_) {
       _snack(generic);
@@ -199,8 +219,10 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
       confirmLabel: l.provJdDecline,
     );
     if (reason == null) return; // dismissed
-    final resp = await _runMap('decline', id, (api) => api.declineJob(id, reason: reason.isEmpty ? null : reason));
-    if (resp != null) _showFineOutcome(l, resp, l.provJdDeclined);
+    final resp = await _runMap('decline', id,
+        (api) => api.declineJob(id, reason: reason.isEmpty ? null : reason),
+        refreshDetail: false);
+    if (resp != null) await _leaveWithOutcome(l, resp, l.provJdDeclined);
   }
 
   Future<void> _cancel(int id) async {
@@ -218,30 +240,34 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
         'cancel',
         id,
         (api) => ledger.run('job-cancel:$id:${picked.code}.${IdempotencyLedger.textTag(reasonText)}',
-            (key) => api.cancelJob(id, reasonCode: picked.code, reasonText: reasonText, idempotencyKey: key)));
-    if (resp != null) _showFineOutcome(l, resp, l.provJdCancelled);
+            (key) => api.cancelJob(id, reasonCode: picked.code, reasonText: reasonText, idempotencyKey: key)),
+        refreshDetail: false);
+    if (resp != null) await _leaveWithOutcome(l, resp, l.provJdCancelled);
   }
 
   Future<void> _startTracking(int id) async {
     if (_busy != null) return;
     final l = AppLocalizations.of(context);
     // Prove location access up front so "en route" reflects a real permission.
-    final gps = await const LocationService().currentPosition();
+    final gps = await ref.read(locationServiceProvider).currentPosition();
     if (!mounted) return; // GPS can take 10-30s; the screen may be gone.
     if (!gps.isOk) {
       _snack(_gpsFailureMessage(l, gps.failure!));
       return;
     }
-    setState(() => _busy = 'start');
+    setState(() {
+      _busy = 'start';
+      _actionError = null;
+    });
     final api = ref.read(kycoApiProvider);
     try {
       await api.startTracking(id);
       _refreshAfterMutation(id);
       _snack(l.provJdEnRouteSnack);
     } on ApiException catch (e) {
-      _snack(apiErrorText(l, e));
+      _failed(apiErrorText(l, e));
     } catch (_) {
-      _snack(l.genericError);
+      _failed(l.genericError);
     } finally {
       if (mounted) setState(() => _busy = null);
     }
@@ -250,22 +276,25 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
   Future<void> _checkIn(int id) async {
     if (_busy != null) return;
     final l = AppLocalizations.of(context);
-    final gps = await const LocationService().currentPosition();
+    final gps = await ref.read(locationServiceProvider).currentPosition();
     if (!mounted) return; // GPS can take 10-30s; the screen may be gone.
     if (!gps.isOk) {
       _snack(_gpsFailureMessage(l, gps.failure!));
       return;
     }
-    setState(() => _busy = 'checkin');
+    setState(() {
+      _busy = 'checkin';
+      _actionError = null;
+    });
     final api = ref.read(kycoApiProvider);
     try {
       final r = await api.checkIn(id, lat: gps.fix!.lat, lon: gps.fix!.lon, accuracyM: gps.fix!.accuracyM);
       _refreshAfterMutation(id);
       _showCheckInOutcome(l, r);
     } on ApiException catch (e) {
-      _snack(apiErrorText(l, e));
+      _failed(apiErrorText(l, e));
     } catch (_) {
-      _snack(l.genericError);
+      _failed(l.genericError);
     } finally {
       if (mounted) setState(() => _busy = null);
     }
@@ -274,13 +303,16 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
   Future<void> _checkOut(int id) async {
     if (_busy != null) return;
     final l = AppLocalizations.of(context);
-    final gps = await const LocationService().currentPosition();
+    final gps = await ref.read(locationServiceProvider).currentPosition();
     if (!mounted) return; // GPS can take 10-30s; the screen may be gone.
     if (!gps.isOk) {
       _snack(_gpsFailureMessage(l, gps.failure!));
       return;
     }
-    setState(() => _busy = 'checkout');
+    setState(() {
+      _busy = 'checkout';
+      _actionError = null;
+    });
     final api = ref.read(kycoApiProvider);
     try {
       // NOTE: check-out's body key is `lng` (asymmetric with check-in's `lon`).
@@ -288,9 +320,9 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
       _refreshAfterMutation(id);
       _snack(l.provJdCheckedOutSnack);
     } on ApiException catch (e) {
-      _snack(apiErrorText(l, e));
+      _failed(apiErrorText(l, e));
     } catch (_) {
-      _snack(l.genericError);
+      _failed(l.genericError);
     } finally {
       if (mounted) setState(() => _busy = null);
     }
@@ -383,7 +415,7 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
   /// the toggle switches itself off, with the reason surfaced once.
   Future<LivePingResult> _livePing(int id) async {
     final l = AppLocalizations.of(context);
-    final gps = await const LocationService().currentPosition();
+    final gps = await ref.read(locationServiceProvider).currentPosition();
     if (!mounted) return LivePingResult.stop;
     if (!gps.isOk) {
       _snack(_gpsFailureMessage(l, gps.failure!));
@@ -420,6 +452,7 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
       warning: l.provJdComplaintBody,
       hint: l.provJdComplaintHint,
       confirmLabel: l.provJdSend,
+      minLength: 20, // server rule (376db7f): description >= 20 characters
     );
     if (reason == null) return;
     // The server requires a description (422 `description:required`).
@@ -446,7 +479,7 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
     // Best-effort location: never let a slow/denied GPS delay the alert.
     GpsFix? fix;
     try {
-      final gps = await const LocationService()
+      final gps = await ref.read(locationServiceProvider)
           .currentPosition()
           .timeout(const Duration(seconds: 8));
       fix = gps.fix;
@@ -494,17 +527,25 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
     }
   }
 
-  void _showFineOutcome(AppLocalizations l, Map<String, dynamic> resp, String successMsg) {
+  /// After a successful cancel / decline the job is no longer the caller's:
+  /// show the server outcome (fine dialog when there is one), then return to
+  /// the jobs list with a success message instead of re-fetching a 404 detail.
+  Future<void> _leaveWithOutcome(AppLocalizations l, Map<String, dynamic> resp, String successMsg) async {
     final money = serverMoneyFields(resp);
     final fine = money['fineVnd'] ?? money['penaltyVnd'];
     if (fine != null && fine > 0) {
-      _showInfoDialog(
+      await _showInfoDialog(
         title: l.provJdFineTitle,
         body: l.provJdFineBody(formatVnd(fine)),
       );
-    } else {
-      _snack(successMsg);
     }
+    if (!mounted) return;
+    // The app-level messenger outlives this route, so the snackbar shows on the list.
+    final messenger = ScaffoldMessenger.of(context);
+    context.go('/p/jobs');
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(successMsg)));
   }
 
   void _showCashOutcome(Map<String, dynamic> resp) {
@@ -548,9 +589,9 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
     );
   }
 
-  void _showInfoDialog({required String title, required String body}) {
+  Future<void> _showInfoDialog({required String title, required String body}) async {
     if (!mounted) return;
-    showDialog<void>(
+    await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(title),
@@ -607,53 +648,18 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
     required String warning,
     required String hint,
     required String confirmLabel,
+    int minLength = 0,
   }) {
-    final controller = TextEditingController();
-    // whenComplete disposes the controller once the dialog route is gone —
-    // without it every open/dismiss leaks one TextEditingController.
     return showDialog<String>(
       context: context,
-      builder: (ctx) {
-        final cs = Theme.of(ctx).colorScheme;
-        return AlertDialog(
-          title: Text(title),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: cs.errorContainer.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(warning, style: TextStyle(fontSize: 12, color: cs.onSurface)),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                maxLines: 3,
-                minLines: 1,
-                decoration: InputDecoration(
-                  hintText: hint,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(AppLocalizations.of(ctx).provJdDialogCancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
-              child: Text(confirmLabel),
-            ),
-          ],
-        );
-      },
-    ).whenComplete(controller.dispose);
+      builder: (_) => _ReasonDialog(
+        title: title,
+        warning: warning,
+        hint: hint,
+        confirmLabel: confirmLabel,
+        minLength: minLength,
+      ),
+    );
   }
 
   /// Photo-gated complete dialog: shows the per-slot deficit and only enables the
@@ -702,6 +708,95 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
           ],
         );
       },
+    );
+  }
+}
+
+/// Free-text reason dialog (decline / complaint). Owns its controller, so it is
+/// disposed with the dialog's State - after the exit animation - never while the
+/// route is still painting. With [minLength] > 0 the confirm button stays
+/// disabled and an inline hint shows until enough text is typed: the dialog never
+/// closes on a too-short entry and the typed text is kept.
+class _ReasonDialog extends StatefulWidget {
+  const _ReasonDialog({
+    required this.title,
+    required this.warning,
+    required this.hint,
+    required this.confirmLabel,
+    this.minLength = 0,
+  });
+  final String title, warning, hint, confirmLabel;
+  final int minLength;
+  @override
+  State<_ReasonDialog> createState() => _ReasonDialogState();
+}
+
+class _ReasonDialogState extends State<_ReasonDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(widget.title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: cs.errorContainer.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(widget.warning, style: TextStyle(fontSize: 12, color: cs.onSurface)),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _controller,
+            maxLines: 3,
+            minLines: 1,
+            decoration: InputDecoration(hintText: widget.hint, border: const OutlineInputBorder()),
+          ),
+          if (widget.minLength > 0)
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _controller,
+              builder: (_, v, _) => v.text.trim().length >= widget.minLength
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        l.prov2ComplaintNeedsText,
+                        key: const ValueKey('reason-min-hint'),
+                        style: TextStyle(fontSize: 12, color: cs.error),
+                      ),
+                    ),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l.provJdDialogCancel),
+        ),
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: _controller,
+          builder: (_, v, _) => FilledButton(
+            key: const ValueKey('reason-confirm'),
+            onPressed: v.text.trim().length >= widget.minLength
+                ? () => Navigator.of(context).pop(_controller.text.trim())
+                : null,
+            child: Text(widget.confirmLabel),
+          ),
+        ),
+      ],
     );
   }
 }

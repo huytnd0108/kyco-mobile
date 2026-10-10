@@ -225,7 +225,7 @@ class _HeroImage extends StatelessWidget {
       fallbackServiceId: serviceId,
       builder: (context, resolved, _) => resolved == null
           ? placeholder()
-          : Image.network(
+          : SizedNetworkImage(
               resolved,
               fit: BoxFit.cover,
               excludeFromSemantics: true,
@@ -292,7 +292,7 @@ class _Overview extends StatelessWidget {
             RatingStars(agg.average, count: agg.count),
           ],
           const SizedBox(height: 16),
-          Text(l.viewDetails,
+          Text(l.serviceDescriptionHeading,
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
@@ -311,7 +311,7 @@ class _Overview extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(l.providersAvailable,
-                    style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
+                    style: TextStyle(color: cs.onSurface, fontSize: 13, fontWeight: FontWeight.w500)),
               ),
             ],
           ),

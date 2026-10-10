@@ -1,3 +1,4 @@
+import 'package:kyco_mobile/l10n/app_localizations.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -55,3 +56,8 @@ class ResendCooldown extends ChangeNotifier {
     super.dispose();
   }
 }
+
+/// "Resend in 45 s" for short waits; whole minutes for a long server lockout
+/// (a 786-second Retry-After reads as "about 14 min", not "786 seconds").
+String resendInText(AppLocalizations l, int seconds) =>
+    seconds >= 120 ? l.otpResendInMinutes((seconds / 60).ceil()) : l.otpResendIn(seconds);

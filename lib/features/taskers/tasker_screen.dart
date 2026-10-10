@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/ui/media_image.dart' show resolveImageUrl;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
+import '../../core/person_name.dart';
 
 import '../../core/adaptive.dart';
 import '../../core/api/problem.dart';
@@ -72,9 +73,14 @@ class _ProfileBody extends StatelessWidget {
                 radius: 40,
                 backgroundColor: cs.primaryContainer,
                 foregroundImage: (avatar != null && avatar.isNotEmpty)
-                    ? NetworkImage(avatar)
+                    ? ResizeImage.resizeIfNeeded(
+                        (80 * MediaQuery.devicePixelRatioOf(context)).ceil(),
+                        null,
+                        NetworkImage(avatar))
                     : null,
-                child: Text(
+                child: isPlaceholderPersonName(profile.displayName)
+                    ? Icon(Icons.person, size: 36, color: cs.onPrimaryContainer)
+                    : Text(
                   _initials(profile.displayName),
                   style: TextStyle(
                     color: cs.onPrimaryContainer,
@@ -89,7 +95,7 @@ class _ProfileBody extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      profile.displayName,
+                      taskerDisplayName(l, profile.displayName),
                       style: Theme.of(context)
                           .textTheme
                           .titleLarge

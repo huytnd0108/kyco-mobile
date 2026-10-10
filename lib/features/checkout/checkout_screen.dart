@@ -125,13 +125,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         if (mounted) context.go('/bookings/${result.bookingId}');
         return;
       }
-      await _draftCtrl.clear();
       if (!mounted) return;
+      // Keep the form (and its draft) INTACT while the success sheet is up: the
+      // sheet covers it, and clearing first reset the fields behind the sheet and
+      // surfaced red "required" errors (OCD-013). Only after the sheet is gone do
+      // we drop the draft - with the error flag lowered first - and leave.
+      // (Handles captured up front: the in-sheet button may dispose this screen.)
+      final draftCtrl = _draftCtrl;
+      final errorFlag = ref.read(checkoutShowErrorsProvider(_id).notifier);
       await _showSuccess(result);
-      // Draft is cleared and the _seeded latch blocks a re-seed, so the checkout
-      // underneath is now blank and inert. Leave for the booking on ANY sheet
-      // dismissal — tap or swipe — instead of stranding the user on it. (When the
-      // in-sheet button navigated, this screen is already gone → mounted false.)
+      if (mounted) errorFlag.state = false;
+      await draftCtrl.clear();
+      // Leave for the booking on ANY sheet dismissal - tap or swipe - instead of
+      // stranding the user on a now-blank checkout. (When the in-sheet button
+      // navigated, this screen is already gone -> mounted false.)
       if (mounted) context.go('/bookings/${result.bookingId}');
     } catch (e) {
       if (mounted) {

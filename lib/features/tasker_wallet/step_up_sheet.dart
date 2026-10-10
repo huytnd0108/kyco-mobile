@@ -31,8 +31,15 @@ import '../../core/widgets.dart';
 /// number: the sheet reads `GET /me` {phone, phoneVerified}, shows the number
 /// masked, and issues the OTP to exactly that phone. An account with no verified
 /// phone cannot OTP step-up at all (server fails closed) — say so up front.
+/// What the step-up protects: selects the sheet's explanatory copy so an
+/// account deletion never says "confirm the withdrawal" (OCD-051 / OCD-054).
+enum StepUpPurpose { withdraw, deleteAccount, changePhone, generic }
+
 class StepUpSheet extends ConsumerStatefulWidget {
-  const StepUpSheet({super.key, required this.hasUsablePassword});
+  const StepUpSheet({super.key, required this.hasUsablePassword, this.purpose = StepUpPurpose.generic});
+
+  /// Which action is being confirmed (copy only; the grant itself is generic).
+  final StepUpPurpose purpose;
 
   /// From [StepUpStatus.hasUsablePassword] — password path vs. OTP path.
   final bool hasUsablePassword;
@@ -195,14 +202,14 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
           const SizedBox(height: 8),
           Text(
             usePassword
-                ? l.provWalletStepUpPassword
+                ? stepUpPasswordCopy(l, widget.purpose)
                 : collectPhone
                     ? (_accountPhone != null
                         ? l.prov2StepUpOtpTo(maskPhone(_accountPhone!))
                         : _noVerifiedPhone
                             ? l.prov2StepUpNoVerifiedPhone
                             : '')
-                    : l.provWalletStepUpOtpPrompt,
+                    : stepUpOtpCopy(l, widget.purpose),
             style: TextStyle(color: cs.onSurfaceVariant),
           ),
           const SizedBox(height: 16),
@@ -294,7 +301,7 @@ class _StepUpSheetState extends ConsumerState<StepUpSheet> {
               onPressed: (_sending || _submitting || _cooldown.active) ? null : _requestOtp,
               child: Text(_sending
                   ? l.provWalletResendSending
-                  : (_cooldown.active ? l.otpResendIn(_cooldown.remaining) : l.provWalletResend)),
+                  : (_cooldown.active ? resendInText(l, _cooldown.remaining) : l.provWalletResend)),
             ),
           ),
         ],
@@ -331,14 +338,30 @@ class _InfoBanner extends StatelessWidget {
   }
 }
 
+/// Purpose-specific "enter your password" line.
+String stepUpPasswordCopy(AppLocalizations l, StepUpPurpose p) => switch (p) {
+      StepUpPurpose.withdraw => l.provWalletStepUpPassword,
+      StepUpPurpose.deleteAccount => l.stepUpPasswordDeleteAccount,
+      StepUpPurpose.changePhone => l.stepUpPasswordChangePhone,
+      StepUpPurpose.generic => l.stepUpPasswordGeneric,
+    };
+
+/// Purpose-specific "enter the OTP" line.
+String stepUpOtpCopy(AppLocalizations l, StepUpPurpose p) => switch (p) {
+      StepUpPurpose.withdraw => l.provWalletStepUpOtpPrompt,
+      StepUpPurpose.deleteAccount => l.stepUpOtpDeleteAccount,
+      StepUpPurpose.changePhone => l.stepUpOtpChangePhone,
+      StepUpPurpose.generic => l.stepUpOtpGeneric,
+    };
+
 /// Present the step-up sheet; resolves to `true` once a grant is minted.
 Future<bool> showStepUpSheet(BuildContext context,
-    {required bool hasUsablePassword}) async {
+    {required bool hasUsablePassword, StepUpPurpose purpose = StepUpPurpose.generic}) async {
   final ok = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (_) => StepUpSheet(hasUsablePassword: hasUsablePassword),
+    builder: (_) => StepUpSheet(hasUsablePassword: hasUsablePassword, purpose: purpose),
   );
   return ok ?? false;
 }

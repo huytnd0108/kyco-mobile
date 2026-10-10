@@ -11,6 +11,10 @@ import 'auth_controller.dart';
 
 /// The web's `callbackUrl` — the flow the guest came from, to resume after
 /// sign-in. Safe when there is no GoRouter in the tree (e.g. golden harness).
+/// `extra` marker passed when signup is PUSHED over login, so signup's "I have an
+/// account" pops back instead of stacking a second login.
+const kFromLoginExtra = 'from-login';
+
 String? authFromParam(BuildContext context) => GoRouter.maybeOf(context) == null
     ? null
     : GoRouterState.of(context).uri.queryParameters['from'];
@@ -201,12 +205,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       runSpacing: 8,
                       children: [
                         ChoiceChip(
+                          showCheckmark: false, // the selected state is the filled chip; no second icon
                           selected: !phoneMode,
                           avatar: const Icon(Icons.mail_outline, size: 18),
                           label: Text(l.cust2LoginModeEmail),
                           onSelected: auth.busy ? null : (_) => _setMode(_LoginMode.email),
                         ),
                         ChoiceChip(
+                          showCheckmark: false, // the selected state is the filled chip; no second icon
                           selected: phoneMode,
                           avatar: const Icon(Icons.phone_iphone, size: 18),
                           label: Text(l.cust2LoginModePhone),
@@ -268,7 +274,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: _sending
                               ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                               : Text(_cooldown.active
-                                  ? l.otpResendIn(_cooldown.remaining)
+                                  ? resendInText(l, _cooldown.remaining)
                                   : (_otpSentTo == null ? l.cust2SendCode : l.cust2ResendCode)),
                         ),
                       ),
@@ -319,7 +325,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     TextButton(
-                      onPressed: auth.busy ? null : () => context.go(signupPath),
+                      // PUSH (not go): signup sits on top of login so system Back returns here.
+                      onPressed: auth.busy ? null : () => context.push(signupPath, extra: kFromLoginExtra),
                       child: Text(l.noAccountSignup),
                     ),
                     TextButton(

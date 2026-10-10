@@ -1,4 +1,6 @@
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -102,7 +104,19 @@ String? appRedirect({
   String? role,
   required String loc,
   String? from,
+  bool coldStart = false,
 }) {
+  // COLD START (the first resolved session after launch): a tasker /
+  // pending_tasker relaunching on the customer root lands in the /p area
+  // (pending_tasker is then routed to the under-review screen by the /p gate).
+  // Only the very first decision: a later deliberate "back to customer home"
+  // from the tasker More menu must not be bounced back.
+  if (coldStart &&
+      status == AuthStatus.signedIn &&
+      loc == '/' &&
+      (role == 'tasker' || role == 'pending_tasker')) {
+    return '/p';
+  }
   if (isTaskerPath(loc)) {
     // Mid-bootstrap: never bounce to login (mirrors the guest-first unknown rule).
     if (status == AuthStatus.unknown) return '/';
@@ -130,6 +144,10 @@ String? appRedirect({
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
+  // True once the router has seen the first signed-in session with a known role
+  // (cold-start role routing is a one-shot, see [appRedirect]). Plain local
+  // state: redirects can run during a build, where provider writes are illegal.
+  var coldStartRouted = false;
   return GoRouter(
     navigatorKey: _rootKey,
     initialLocation: '/',
@@ -140,11 +158,18 @@ final routerProvider = Provider<GoRouter>((ref) {
     // never a route redirect — NEVER add /checkout (or anything else) here.
     redirect: (context, state) {
       final auth = ref.read(authControllerProvider);
+      final role = auth.user?.role;
+      var coldStart = false;
+      if (auth.status == AuthStatus.signedIn && role != null) {
+        coldStart = !coldStartRouted;
+        coldStartRouted = true;
+      }
       return appRedirect(
         status: auth.status,
-        role: auth.user?.role,
+        role: role,
         loc: state.matchedLocation,
         from: state.uri.queryParameters['from'],
+        coldStart: coldStart,
       );
     },
     routes: [
@@ -258,6 +283,11 @@ final routerProvider = Provider<GoRouter>((ref) {
               routes: [
                 GoRoute(
                   path: ':id',
+                  // ROOT navigator: reachable from root-level screens
+                  // (/notifications, /messages/:id) as well as the bookings tab;
+                  // a shell-scoped page pushed from a root route trips the
+                  // Navigator keyReservation assertion (OCD-025).
+                  parentNavigatorKey: _rootKey,
                   builder: (_, s) => BookingDetailScreen(id: int.tryParse(s.pathParameters['id'] ?? '')),
                 ),
               ],
@@ -390,6 +420,41 @@ class _KycoAppState extends ConsumerState<KycoApp> with WidgetsBindingObserver {
     }
   }
 
+  bool _refetchScheduled = false;
+  DateTime? _lastMeReload;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // OCD-060: an admin may approve the application while the app is in the
+    // background. Re-read /me on resume (at most every 30 s) so the role - and
+    // with it the Account menu / workspace entry - is current without a cold start.
+    if (state != AppLifecycleState.resumed) return;
+    final now = DateTime.now();
+    final last = _lastMeReload;
+    if (last != null && now.difference(last) < const Duration(seconds: 30)) return;
+    if (ref.read(authControllerProvider).status != AuthStatus.signedIn) return;
+    _lastMeReload = now;
+    unawaited(ref.read(authControllerProvider.notifier).reloadMe());
+    ref.invalidate(accountMeProvider);
+  }
+
+  void _scheduleLocaleRefetch() {
+    if (_refetchScheduled) return;
+    _refetchScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refetchScheduled = false;
+      if (!mounted) return;
+      // (kycoApiProvider depends on the locale, so every provider watching it is
+      // already rebuilt; these are the belt-and-braces for read()-based ones.)
+      ref.invalidate(homeProvider);
+      ref.invalidate(bookingsProvider);
+      // Kept-alive shell branches (Services) must re-fetch in the new language.
+      ref.invalidate(catalogTreeProvider);
+    });
+    // A scheduled callback needs a frame to run in.
+    WidgetsBinding.instance.scheduleFrame();
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -409,12 +474,12 @@ class _KycoAppState extends ConsumerState<KycoApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     // Re-fetch server content in the new language when the locale changes.
     ref.listen(appLocaleCodeProvider, (_, _) {
-      // (kycoApiProvider depends on the locale, so every provider watching it is
-      // already rebuilt; these are the belt-and-braces for read()-based ones.)
-      ref.invalidate(homeProvider);
-      ref.invalidate(bookingsProvider);
-      // Kept-alive shell branches (Services) must re-fetch in the new language.
-      ref.invalidate(catalogTreeProvider);
+      // OCD-049: never invalidate (= rebuild a large part of the tree) from
+      // inside the frame that is applying the new locale - a dialog / route
+      // transition may be mid-update and a provider rebuild there has surfaced
+      // as a Navigator / Element-tree assertion. Run it once, after the frame,
+      // and coalesce rapid successive switches into a single refetch.
+      _scheduleLocaleRefetch();
     });
     // Sign-out (explicit or refresh-lost): drop EVERY user-scoped cache so the
     // next account never sees the previous one's data. (User-scoped providers

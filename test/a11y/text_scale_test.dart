@@ -2,6 +2,8 @@
 // size (Android "Font size", iOS "Larger Text"). Each key screen is pumped at
 // textScaler 1.6 and 2.0 on a phone and on the narrowest canary width; a
 // RenderFlex overflow surfaces as a test exception.
+import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kyco_mobile/features/auth/login_screen.dart';
 import 'package:kyco_mobile/features/bookings/booking_detail_screen.dart';
@@ -60,6 +62,39 @@ void main() {
           expect(t.takeException(), isNull);
         });
       }
+    }
+  }
+
+  // OCD-022: booking rows reflow at big text. A date or an amount is ONE token:
+  // the layout may move it to the next line but must give it room to fit - it
+  // may never be split ("10/10/2\n026", "3.630.0\n00 đ"). For every Text on the
+  // screen, each digit-bearing token must be narrower than the Text's box.
+  for (final scale in const [1.6, 2.0]) {
+    for (final d in const [GoldenDevice.iphone16, GoldenDevice.slideOver]) {
+      testWidgets('bookings rows never break a date/price mid-token at ${scale}x on ${d.size.width.toInt()}dp',
+          (t) async {
+        await pumpGoldenScreen(t,
+            screen: withFakeBookingDetail(const BookingsScreen()), device: d, textScale: scale);
+        expect(t.takeException(), isNull);
+        var checked = 0;
+        for (final f in find.byType(Text).evaluate()) {
+          final data = (f.widget as Text).data;
+          if (data == null) continue;
+          final ro = f.renderObject as RenderParagraph;
+          for (final token in data.split(RegExp(r'\s+'))) {
+            if (!RegExp(r'\d{2,}').hasMatch(token)) continue;
+            final tp = TextPainter(
+              text: TextSpan(text: token, style: ro.text.style),
+              textDirection: TextDirection.ltr,
+              textScaler: ro.textScaler,
+            )..layout();
+            expect(tp.width, lessThanOrEqualTo(ro.size.width + 0.5),
+                reason: 'token "$token" of "$data" is wider than its box -> breaks mid-token');
+            checked++;
+          }
+        }
+        expect(checked, greaterThan(3), reason: 'the rows must render date/price tokens');
+      });
     }
   }
 }

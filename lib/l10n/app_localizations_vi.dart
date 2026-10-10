@@ -42,6 +42,20 @@ class AppLocalizationsVi extends AppLocalizations {
   String get fullName => 'Họ tên';
 
   @override
+  String get consentAgree =>
+      'Tôi đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư';
+
+  @override
+  String get consentTermsLink => 'Điều khoản sử dụng';
+
+  @override
+  String get consentPrivacyLink => 'Chính sách quyền riêng tư';
+
+  @override
+  String get consentRequired =>
+      'Vui lòng đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư để tiếp tục.';
+
+  @override
   String get createAccount => 'Tạo tài khoản';
 
   @override
@@ -136,7 +150,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get navHome => 'Trang chủ';
 
   @override
-  String get navBookings => 'Đơn của tôi';
+  String get navBookings => 'Đơn đặt';
 
   @override
   String get navAccount => 'Tài khoản';
@@ -243,7 +257,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get providersAvailable => 'Đối tác sẵn sàng';
+  String get providersAvailable => 'Cộng tác viên sẵn sàng';
 
   @override
   String get checkoutTitle => 'Đặt dịch vụ';
@@ -306,7 +320,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get providerTitle => 'Hồ sơ đối tác';
+  String get providerTitle => 'Hồ sơ cộng tác viên';
 
   @override
   String get verifiedBadge => 'Đã xác minh';
@@ -348,7 +362,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get inviteFriends => 'Mời bạn bè';
 
   @override
-  String get becomePartner => 'Trở thành đối tác';
+  String get becomePartner => 'Trở thành cộng tác viên';
 
   @override
   String get contactUs => 'Liên hệ';
@@ -375,7 +389,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get serviceNotFound => 'Không tìm thấy dịch vụ';
 
   @override
-  String get partnerNotFound => 'Không tìm thấy đối tác';
+  String get partnerNotFound => 'Không tìm thấy cộng tác viên';
 
   @override
   String get noNotifications => 'Chưa có thông báo';
@@ -419,7 +433,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get manageOnWeb => 'Tạo hoặc đổi gói trên kyco.vn';
 
   @override
-  String get provWorkspace => 'Khu vực đối tác';
+  String get provWorkspace => 'Khu vực cộng tác viên';
 
   @override
   String get provTabHome => 'Trang chủ';
@@ -536,7 +550,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provAvailSave => 'Lưu';
 
   @override
-  String get provAvailCancel => 'Huỷ';
+  String get provAvailCancel => 'Hủy';
 
   @override
   String get provAvailSaved => 'Đã lưu lịch làm việc.';
@@ -684,7 +698,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provHomeKpi30d => 'KPI 30 ngày qua';
 
   @override
-  String get provKpiAcceptanceLabel => 'Nhận job';
+  String get provKpiAcceptanceLabel => 'Tỷ lệ nhận việc';
 
   @override
   String get provKpiCompletionLabel => 'Hoàn thành';
@@ -727,13 +741,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provHomeSeeAll => 'Xem tất cả →';
 
   @override
-  String get provStatusPending => 'đang chờ';
+  String get provStatusPending => 'Đang chờ';
 
   @override
-  String get provStatusActive => 'đang làm';
+  String get provStatusActive => 'Đang làm';
 
   @override
-  String get provStatusClosed => 'đã đóng';
+  String get provStatusClosed => 'Đã đóng';
 
   @override
   String get provWalletExportTooltip => 'Xuất CSV tháng này';
@@ -961,11 +975,12 @@ class AppLocalizationsVi extends AppLocalizations {
       'Tính năng đang được bật, vui lòng thử lại sau ít phút.';
 
   @override
-  String get provJdGpsOff => 'Vui lòng bật Dịch vụ vị trí (GPS) để check-in.';
+  String get provJdGpsOff =>
+      'Vui lòng bật Dịch vụ vị trí (GPS) để xác nhận đã đến nơi.';
 
   @override
   String get provJdGpsPermNeeded =>
-      'Ứng dụng cần quyền vị trí để check-in tại địa điểm khách.';
+      'Ứng dụng cần quyền vị trí để xác nhận bạn đã đến địa điểm của khách.';
 
   @override
   String get provJdGpsPermOff =>
@@ -999,27 +1014,27 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provJdDeclined => 'Đã từ chối công việc';
 
   @override
-  String get provJdCancelTitle => 'Huỷ công việc';
+  String get provJdCancelTitle => 'Hủy công việc';
 
   @override
   String get provJdCancelWarning =>
-      'Huỷ đơn đã nhận có thể phát sinh phí phạt theo chính sách. Mức phí do Kyco tính và hiển thị sau khi xác nhận.';
+      'Hủy đơn đã nhận có thể phát sinh phí phạt theo chính sách. Mức phí do Kyco tính và hiển thị sau khi xác nhận.';
 
   @override
-  String get provJdCancelReason => 'Lý do huỷ';
+  String get provJdCancelReason => 'Lý do hủy';
 
   @override
-  String get provJdCancelJob => 'Huỷ đơn';
+  String get provJdCancelJob => 'Hủy đơn';
 
   @override
-  String get provJdCancelled => 'Đã huỷ công việc';
+  String get provJdCancelled => 'Đã hủy công việc';
 
   @override
   String get provJdEnRouteSnack => 'Đã bắt đầu di chuyển đến khách';
 
   @override
   String get provJdCheckedOutSnack =>
-      'Đã check-out. Đơn được chuyển sang chờ khách xác nhận & thanh toán.';
+      'Đã kết thúc ca. Đơn được chuyển sang chờ khách xác nhận & thanh toán.';
 
   @override
   String get provJdPhotoUploaded => 'Đã tải ảnh lên';
@@ -1067,7 +1082,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provJdSosSent => 'Đã gửi SOS. Đội an toàn Kyco sẽ liên hệ ngay.';
 
   @override
-  String get provJdCheckedIn => 'Đã check-in';
+  String get provJdCheckedIn => 'Đã xác nhận đến nơi';
 
   @override
   String get provJdWithinGeofence => 'trong phạm vi địa điểm';
@@ -1170,7 +1185,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provJdPhaseClosed => 'Đã đóng';
 
   @override
-  String get provJdPhaseCancelled => 'Đã huỷ';
+  String get provJdPhaseCancelled => 'Đã hủy';
 
   @override
   String get provJdPhaseUnknown => 'Trạng thái công việc';
@@ -1213,18 +1228,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provJdStartTracking => 'Bắt đầu di chuyển (dùng GPS)';
 
   @override
-  String get provJdCheckIn => 'Check-in tại địa điểm (GPS)';
+  String get provJdCheckIn => 'Xác nhận đã đến nơi (GPS)';
 
   @override
   String provJdBeforePhotoGate(Object need, Object have) {
-    return 'Cần ≥ $need ảnh \"trước ca\" mới được check-out (hiện $have/$need). Chụp ở khung ảnh bên dưới.';
+    return 'Cần ≥ $need ảnh \"trước ca\" mới được kết thúc ca (hiện $have/$need). Chụp ở khung ảnh bên dưới.';
   }
 
   @override
   String get provJdFaceVerify => 'Xác minh khuôn mặt';
 
   @override
-  String get provJdCheckOut => 'Check-out (GPS)';
+  String get provJdCheckOut => 'Kết thúc ca làm (GPS)';
 
   @override
   String get provJdCashReceivedAction => 'Đã nhận tiền mặt từ khách';
@@ -1245,7 +1260,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provJdClosedInfo => 'Công việc đã đóng. Không còn hành động nào.';
 
   @override
-  String get provJdCancelledInfo => 'Công việc đã huỷ.';
+  String get provJdCancelledInfo => 'Công việc đã hủy.';
 
   @override
   String get provJdNoActions => 'Không có hành động khả dụng.';
@@ -1339,7 +1354,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provBonusKindPunctuality => 'Thưởng chuyên cần';
 
   @override
-  String get provBonusKindRating => 'Thưởng rating cao';
+  String get provBonusKindRating => 'Thưởng đánh giá cao';
 
   @override
   String get provBonusKindReferral => 'Thưởng giới thiệu';
@@ -1378,7 +1393,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provGoalSave => 'Lưu';
 
   @override
-  String get provGoalCancel => 'Huỷ';
+  String get provGoalCancel => 'Hủy';
 
   @override
   String provLbYourRank(Object n) {
@@ -1410,7 +1425,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get provVipPerkPriorityBody =>
-      'Được ưu tiên phân bổ các đơn giá trị cao trước các CTV khác.';
+      'Được ưu tiên phân bổ các đơn giá trị cao trước những cộng tác viên khác.';
 
   @override
   String get provVipPerkAreaTitle => 'Mở rộng khu vực';
@@ -1438,7 +1453,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get provVipPerkGiftBody =>
-      'Nhận quà tri ân và các ưu đãi độc quyền dành cho CTV VIP.';
+      'Nhận quà tri ân và các ưu đãi độc quyền dành cho cộng tác viên VIP.';
 
   @override
   String get provVipPerkBonusTitle => 'Thưởng cao hơn';
@@ -1448,14 +1463,14 @@ class AppLocalizationsVi extends AppLocalizations {
       'Hệ số thưởng cao hơn cho cùng một mức thành tích.';
 
   @override
-  String get provVipWelcome => 'Chào mừng CTV VIP';
+  String get provVipWelcome => 'Chào mừng cộng tác viên VIP';
 
   @override
   String get provVipPerksTitle => 'Đặc quyền VIP';
 
   @override
   String get provVipPerksSubtitle =>
-      'Những quyền lợi dành cho CTV hạng Bạch kim.';
+      'Những quyền lợi dành cho cộng tác viên hạng Bạch kim.';
 
   @override
   String get provVipReqJobs => 'Hoàn thành ≥ 800 đơn';
@@ -1481,7 +1496,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provVipReqTitle => 'Điều kiện lên hạng';
 
   @override
-  String get provVipBackDashboard => 'Về trang chủ CTV';
+  String get provVipBackDashboard => 'Về trang chủ cộng tác viên';
 
   @override
   String get provVipTierPlatinum => 'Bạch kim';
@@ -1550,7 +1565,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đội ngũ Kyco sẽ xem xét khiếu nại của bạn trong thời gian sớm nhất.';
 
   @override
-  String get provCancels30d => 'Huỷ trong 30 ngày';
+  String get provCancels30d => 'Hủy trong 30 ngày';
 
   @override
   String get provCancelsPenaltyPoints => 'Điểm phạt';
@@ -1560,7 +1575,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String provCancelsSuspend30Body(Object count, Object limit) {
-    return 'Bạn đã huỷ $count lần trong 30 ngày. Đạt $limit lần sẽ bị tạm khoá 30 ngày.';
+    return 'Bạn đã hủy $count lần trong 30 ngày. Đạt $limit lần sẽ bị tạm khoá 30 ngày.';
   }
 
   @override
@@ -1568,11 +1583,11 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String provCancelsSuspend7Body(Object count, Object limit) {
-    return 'Bạn đã huỷ $count lần trong 30 ngày. Đạt $limit lần sẽ bị tạm khoá 7 ngày.';
+    return 'Bạn đã hủy $count lần trong 30 ngày. Đạt $limit lần sẽ bị tạm khoá 7 ngày.';
   }
 
   @override
-  String get provCancelsHistory => 'Lịch sử huỷ';
+  String get provCancelsHistory => 'Lịch sử hủy';
 
   @override
   String get provOrderNoNumber => 'Đơn #—';
@@ -1611,7 +1626,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get provReferralsShare => 'Chia sẻ';
 
   @override
-  String get provReferralsColPartner => 'Đối tác';
+  String get provReferralsColPartner => 'Cộng tác viên';
 
   @override
   String get provReferralsColArea => 'Khu vực';
@@ -1911,7 +1926,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get cust2StatusArrived => 'Đã đến nơi';
 
   @override
-  String get cust2StatusCheckedIn => 'Đã check-in';
+  String get cust2StatusCheckedIn => 'Đã đến nơi';
 
   @override
   String get cust2StatusActive => 'Đang thực hiện';
@@ -1962,13 +1977,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get cust2TlScheduled => 'Lịch hẹn';
 
   @override
-  String get cust2TlClaimed => 'CTV nhận việc';
+  String get cust2TlClaimed => 'Cộng tác viên nhận việc';
 
   @override
   String get cust2TlStarted => 'Bắt đầu làm';
 
   @override
-  String get cust2TlFinished => 'CTV báo hoàn tất';
+  String get cust2TlFinished => 'Cộng tác viên báo hoàn tất';
 
   @override
   String get cust2TlCompleted => 'Hoàn thành';
@@ -2072,7 +2087,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get cust2Save => 'Lưu';
 
   @override
-  String get cust2Cancel => 'Huỷ';
+  String get cust2Cancel => 'Hủy';
 
   @override
   String get cust2Required => 'Bắt buộc';
@@ -2131,7 +2146,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get prov2LiveShareNotEnRoute =>
-      'Chỉ chia sẻ được khi đang di chuyển tới nhà khách (trước khi check-in).';
+      'Chỉ chia sẻ được khi đang di chuyển tới nhà khách (trước khi xác nhận đã đến nơi).';
 
   @override
   String get prov2LiveShareStopped => 'Đã dừng chia sẻ vị trí.';
@@ -2469,7 +2484,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get labelOther => 'Khác';
 
   @override
-  String get fineKindCancelLate => 'Huỷ muộn';
+  String get fineKindCancelLate => 'Hủy muộn';
 
   @override
   String get fineKindLate => 'Đến trễ';
@@ -2532,7 +2547,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get roleTasker => 'Cộng tác viên';
 
   @override
-  String get rolePendingTasker => 'CTV chờ duyệt';
+  String get rolePendingTasker => 'Cộng tác viên (chờ duyệt)';
 
   @override
   String get roleAdmin => 'Quản trị viên';
@@ -2635,7 +2650,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get deleteSupportOnly =>
-      'Tài khoản Cộng tác viên và quản trị không tự xóa được. Vui lòng liên hệ hỗ trợ để được xử lý.';
+      'Tài khoản cộng tác viên và quản trị không tự xóa được. Vui lòng liên hệ hỗ trợ để được xử lý.';
 
   @override
   String get deleteContactSupport => 'Liên hệ hỗ trợ';
@@ -2682,7 +2697,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get goHome => 'Về trang chủ';
 
   @override
-  String get trackCardTitle => 'Vị trí người làm';
+  String get trackCardTitle => 'Vị trí cộng tác viên';
 
   @override
   String trackUpdatedAt(String time) {
@@ -2711,7 +2726,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get trackNoPosition =>
-      'Chưa có vị trí. Vị trí sẽ hiện khi người làm bắt đầu di chuyển.';
+      'Chưa có vị trí. Vị trí sẽ hiện khi cộng tác viên bắt đầu di chuyển.';
 
   @override
   String get trackStale => 'Vị trí đã cũ, có thể chưa chính xác.';
@@ -2720,7 +2735,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get trackOpenMap => 'Mở bản đồ';
 
   @override
-  String get trackOpenMapLabel => 'Mở vị trí người làm trong ứng dụng bản đồ';
+  String get trackOpenMapLabel =>
+      'Mở vị trí cộng tác viên trong ứng dụng bản đồ';
 
   @override
   String get trackLoadFailed => 'Chưa tải được vị trí. Sẽ tự thử lại.';
@@ -2729,7 +2745,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get openLinkFailed => 'Không mở được liên kết.';
 
   @override
-  String get chatEmpty => 'Chưa có tin nhắn. Hãy gửi tin nhắn cho người làm.';
+  String get chatEmpty =>
+      'Chưa có tin nhắn. Hãy gửi tin nhắn cho cộng tác viên.';
 
   @override
   String get chatInputHint => 'Nhập tin nhắn';
@@ -2741,11 +2758,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get chatFromYou => 'Bạn';
 
   @override
-  String get chatFromTasker => 'Người làm';
+  String get chatFromTasker => 'Cộng tác viên';
 
   @override
   String get chatNoConversations =>
-      'Chưa có cuộc trò chuyện. Hãy đặt dịch vụ để nhắn tin với người làm.';
+      'Chưa có cuộc trò chuyện. Hãy đặt dịch vụ để nhắn tin với cộng tác viên.';
 
   @override
   String get sosCustomerCta => 'Báo sự cố khẩn cấp';
@@ -2791,4 +2808,99 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get errorFallbackBody =>
       'Phần này gặp sự cố. Hãy quay lại và thử lại.';
+
+  @override
+  String get provJdPhaseTravelling => 'Đang di chuyển đến chỗ khách';
+
+  @override
+  String get provJdTravellingNote =>
+      'Bạn đã bắt đầu di chuyển. Đến nơi, hãy bấm Xác nhận đã đến nơi.';
+
+  @override
+  String get moneyCancelBlockedGeneric =>
+      'Không thể hủy ở trạng thái này. Liên hệ hỗ trợ nếu cần.';
+
+  @override
+  String get stepUpPasswordDeleteAccount =>
+      'Nhập mật khẩu để xác nhận xóa tài khoản.';
+
+  @override
+  String get stepUpOtpDeleteAccount =>
+      'Nhập mã OTP vừa gửi tới điện thoại để xác nhận xóa tài khoản.';
+
+  @override
+  String get stepUpPasswordChangePhone =>
+      'Nhập mật khẩu để xác nhận đổi số điện thoại.';
+
+  @override
+  String get stepUpOtpChangePhone =>
+      'Nhập mã OTP vừa gửi tới điện thoại để xác nhận đổi số điện thoại.';
+
+  @override
+  String get stepUpPasswordGeneric => 'Nhập mật khẩu để xác nhận thao tác này.';
+
+  @override
+  String get stepUpOtpGeneric =>
+      'Nhập mã OTP vừa gửi tới điện thoại để xác nhận thao tác này.';
+
+  @override
+  String get taskerReviewTitle => 'Hồ sơ đang được duyệt';
+
+  @override
+  String get taskerReviewIntro =>
+      'Kyco đã nhận hồ sơ và giấy tờ của bạn và đang kiểm tra.';
+
+  @override
+  String get taskerReviewNextTitle => 'Điều gì xảy ra tiếp theo';
+
+  @override
+  String get taskerReviewNext1 =>
+      'Đội ngũ Kyco kiểm tra CCCD và ảnh chân dung của bạn.';
+
+  @override
+  String get taskerReviewNext2 =>
+      'Khi được duyệt, bạn có thể vào Khu vực cộng tác viên để nhận việc.';
+
+  @override
+  String get taskerReviewNext3 =>
+      'Nếu cần bổ sung hoặc chụp lại giấy tờ, bạn có thể gửi lại ngay bên dưới.';
+
+  @override
+  String get taskerReviewReupload => 'Chụp lại giấy tờ';
+
+  @override
+  String get taskerReviewRefresh => 'Kiểm tra lại trạng thái';
+
+  @override
+  String get taskerReviewStillPending => 'Hồ sơ của bạn vẫn đang được duyệt.';
+
+  @override
+  String get taskerUpgradeIntro =>
+      'Bạn đã có tài khoản Kyco, chỉ cần bổ sung thông tin và giấy tờ. Không cần xác minh lại số điện thoại.';
+
+  @override
+  String get taskerPhoneExistsLogin =>
+      'Số điện thoại này đã có tài khoản Kyco. Hãy đăng nhập trước, rồi vào Tài khoản và chọn Trở thành cộng tác viên để gửi hồ sơ.';
+
+  @override
+  String get taskerUpgradePhoneUnverified =>
+      'Hãy xác minh số điện thoại của tài khoản trước khi đăng ký làm cộng tác viên.';
+
+  @override
+  String get subscriptionsEmptyMine => 'Bạn chưa đăng ký gói nào.';
+
+  @override
+  String otpResendInMinutes(int minutes) {
+    return 'Gửi lại mã sau khoảng $minutes phút';
+  }
+
+  @override
+  String get serviceDescriptionHeading => 'Mô tả dịch vụ';
+
+  @override
+  String get provTaskerCaptured => 'Đã chụp';
+
+  @override
+  String get taskerDoneSignInHint =>
+      'Để theo dõi trạng thái hồ sơ, hãy đăng nhập bằng số điện thoại bạn đã đăng ký.';
 }

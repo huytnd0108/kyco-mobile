@@ -161,24 +161,53 @@ class _BookingTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     final vnd = b.totalVnd != null
         ? NumberFormat.currency(locale: 'vi_VN', symbol: '₫', decimalDigits: 0).format(b.totalVnd)
         : null;
-    final parts = <String>[?vnd, if (b.createdAt != null) formatBookingDate(context, b.createdAt)];
+    final date = b.createdAt != null ? formatBookingDate(context, b.createdAt) : null;
+    // Big text: the status pill drops under the title instead of squeezing it.
+    final large = MediaQuery.textScalerOf(context).scale(14) / 14 > 1.3;
+    final title = Text(b.serviceName ?? l.bookingNumber(b.id),
+        style: tt.titleMedium, maxLines: 4, overflow: TextOverflow.ellipsis);
+    final chip = BookingStatusChip(b.status);
     return Card(
       color: selected ? cs.primaryContainer : null,
-      child: ListTile(
+      clipBehavior: Clip.antiAlias,
+      child: Semantics(
         selected: selected,
-        onTap: onTap,
-        leading: CircleAvatar(
+        child: InkWell(
+          onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(4),
-            child: FittedBox(child: Text('#${b.id}')),
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // No fixed-width avatar: the id is plain text in the sub-line, so
+                // the title keeps the full row and wraps at word boundaries.
+                if (large)
+                  title
+                else
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [Expanded(child: title), const SizedBox(width: 8), chip],
+                  ),
+                const SizedBox(height: 4),
+                // Each fact is one unbreakable token; the Wrap moves a whole token
+                // to the next line instead of splitting "10/10/2026" mid-number.
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 2,
+                  children: [
+                    for (final t in ['#${b.id}', ?vnd, ?date])
+                      Text(t, style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+                  ],
+                ),
+                if (large) ...[const SizedBox(height: 8), chip],
+              ],
+            ),
           ),
         ),
-        title: Text(b.serviceName ?? l.bookingNumber(b.id)),
-        subtitle: parts.isEmpty ? null : Text(parts.join(' • ')),
-        trailing: BookingStatusChip(b.status),
       ),
     );
   }

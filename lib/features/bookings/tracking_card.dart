@@ -38,7 +38,7 @@ final jobTrackingProvider = FutureProvider.autoDispose.family<JobTracking, int>(
   }
 });
 
-/// "Vị trí người làm": last-updated time (VN), server distance / ETA as text, a
+/// "Vị trí cộng tác viên": last-updated time (VN), server distance / ETA as text, a
 /// static position and an "Open map" hand-off. No map SDK is bundled - the
 /// position opens in the user's maps app. Polls every [kTrackingPollInterval]
 /// only while visible; stops on dispose and when the app is backgrounded.

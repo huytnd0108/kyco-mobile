@@ -103,6 +103,11 @@ class _Body extends ConsumerWidget {
   }
 }
 
+/// The title already states the duration ("3 tháng", "Gói 6 tháng"): a second
+/// "3 tháng" chip beside it is just noise.
+bool _durationInTitle(String title, int months) =>
+    RegExp('(^|\\D)$months(\\D|\$)').hasMatch(title);
+
 class _PlanCardTile extends StatelessWidget {
   const _PlanCardTile(this.plan);
   final PlanCard plan;
@@ -137,16 +142,17 @@ class _PlanCardTile extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (price != null)
-                  Text(
-                    l.perMonth(formatVnd(price)),
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(color: cs.primary, fontWeight: FontWeight.w700),
-                  ),
+                // A 0 / unknown price is NOT a price: never render "0₫/tháng".
+                Text(
+                  (price != null && price > 0) ? l.perMonth(formatVnd(price)) : l.contactUs,
+                  key: const ValueKey('plan-price'),
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(color: cs.primary, fontWeight: FontWeight.w700),
+                ),
                 const Spacer(),
-                if (plan.durationMonths != null)
+                if (plan.durationMonths != null && !_durationInTitle(plan.title, plan.durationMonths!))
                   _Pill(l.monthsCount(plan.durationMonths ?? 0)),
               ],
             ),
@@ -178,7 +184,7 @@ class _MySubscriptions extends ConsumerWidget {
         if (items.isEmpty) {
           return Padding(
             padding: const EdgeInsets.all(16),
-            child: EmptyState(message: l.noResults),
+            child: EmptyState(message: l.subscriptionsEmptyMine),
           );
         }
         return Padding(

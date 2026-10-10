@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/models.dart';
+import '../../core/nav.dart';
 import '../../core/widgets.dart';
 import '../auth/auth_controller.dart';
 import 'notifications_providers.dart';
@@ -122,6 +123,8 @@ class _NotificationsListState extends ConsumerState<_NotificationsList> {
                 : null,
             child: Text(l.markAllRead),
           ),
+          // Keep the action off the screen edge.
+          const SizedBox(width: 8),
         ],
       ),
       body: SafeArea(
@@ -208,7 +211,7 @@ class _NotificationTile extends ConsumerWidget {
             SnackBar(content: Text(AppLocalizations.of(context).genericError)));
       }
     }
-    if (target != null && context.mounted) context.push(target);
+    if (target != null && context.mounted) openInApp(context, target);
   }
 
   @override

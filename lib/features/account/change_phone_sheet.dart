@@ -103,7 +103,8 @@ class _ChangePhoneSheetState extends ConsumerState<ChangePhoneSheet> {
     }
     if (status.fresh) return true;
     if (!mounted) return false;
-    return showStepUpSheet(context, hasUsablePassword: status.hasUsablePassword);
+    return showStepUpSheet(context,
+        hasUsablePassword: status.hasUsablePassword, purpose: StepUpPurpose.changePhone);
   }
 
   Future<void> _submit() async {
@@ -288,7 +289,7 @@ class _ChangePhoneSheetState extends ConsumerState<ChangePhoneSheet> {
             onPressed: (_sending || _submitting || _cooldown.active) ? null : _requestOtp,
             child: Text(_sending
                 ? l.provWalletResendSending
-                : (_cooldown.active ? l.otpResendIn(_cooldown.remaining) : l.provWalletResend)),
+                : (_cooldown.active ? resendInText(l, _cooldown.remaining) : l.provWalletResend)),
           ),
         ),
       ],

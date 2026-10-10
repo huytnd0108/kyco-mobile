@@ -97,3 +97,41 @@ class ResolvedImageUrl extends ConsumerWidget {
     return builder(context, fb.valueOrNull, fb.isLoading);
   }
 }
+
+/// `Image.network` that decodes at the layout size (× devicePixelRatio) instead
+/// of the full-size source, via cacheWidth/cacheHeight. Use in lists/grids.
+class SizedNetworkImage extends StatelessWidget {
+  const SizedNetworkImage(
+    this.url, {
+    super.key,
+    this.fit = BoxFit.cover,
+    this.semanticLabel,
+    this.excludeFromSemantics = false,
+    this.errorBuilder,
+    this.loadingBuilder,
+  });
+  final String url;
+  final BoxFit fit;
+  final String? semanticLabel;
+  final bool excludeFromSemantics;
+  final ImageErrorWidgetBuilder? errorBuilder;
+  final ImageLoadingBuilder? loadingBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    return LayoutBuilder(builder: (context, c) {
+      final w = c.hasBoundedWidth && c.maxWidth.isFinite ? (c.maxWidth * dpr).ceil() : null;
+      // Width only: keeps the aspect ratio; height follows.
+      return Image.network(
+        url,
+        fit: fit,
+        cacheWidth: w,
+        semanticLabel: semanticLabel,
+        excludeFromSemantics: excludeFromSemantics,
+        errorBuilder: errorBuilder,
+        loadingBuilder: loadingBuilder,
+      );
+    });
+  }
+}

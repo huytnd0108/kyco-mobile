@@ -10,8 +10,10 @@ import 'core/prefs.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   installGlobalErrorHandling();
-  final prefs = await SharedPreferences.getInstance();
-  await initializeDateFormatting(); // vi_VN date symbols
+  // Run both in parallel but still await them BOTH before runApp: DateFormat
+  // throws LocaleDataException if the vi_VN symbols are not loaded when the
+  // first frame formats a date, so this cannot be deferred past runApp.
+  final (prefs, _) = await (SharedPreferences.getInstance(), initializeDateFormatting()).wait;
   runApp(ProviderScope(
     overrides: [sharedPrefsProvider.overrideWithValue(prefs)],
     child: const KycoApp(),

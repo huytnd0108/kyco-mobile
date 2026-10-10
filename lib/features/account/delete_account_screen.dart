@@ -12,6 +12,7 @@ import '../../core/models.dart';
 import '../../core/ui/error_text.dart';
 import '../../core/widgets.dart';
 import '../auth/auth_controller.dart';
+import '../../core/text_fold.dart';
 import '../tasker_wallet/step_up_sheet.dart';
 import 'invite_screen.dart' show SignInGate;
 
@@ -52,7 +53,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   }
 
   bool _matches(AppLocalizations l) =>
-      _confirm.text.trim().toLowerCase() == l.deleteConfirmWord.toLowerCase();
+      foldViText(_confirm.text) == foldViText(l.deleteConfirmWord);
 
   Future<void> _export() async {
     if (_exporting || _exported) return;
@@ -82,7 +83,8 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
     }
     if (status.fresh) return true;
     if (!mounted) return false;
-    return showStepUpSheet(context, hasUsablePassword: status.hasUsablePassword);
+    return showStepUpSheet(context,
+        hasUsablePassword: status.hasUsablePassword, purpose: StepUpPurpose.deleteAccount);
   }
 
   Future<void> _submit() async {

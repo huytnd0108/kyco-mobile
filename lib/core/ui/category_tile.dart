@@ -51,7 +51,7 @@ class CategoryTile extends StatelessWidget {
             url: category.imageUrl,
             builder: (context, resolved, _) => resolved == null
                 ? placeholder()
-                : Image.network(resolved,
+                : SizedNetworkImage(resolved,
                     fit: BoxFit.cover,
                     excludeFromSemantics: true,
                     errorBuilder: (_, _, _) => placeholder(),

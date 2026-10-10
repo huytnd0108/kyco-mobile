@@ -23,6 +23,7 @@ class JobDetailBody extends StatelessWidget {
     super.key,
     required this.detail,
     required this.busy,
+    this.actionError,
     required this.onConfirm,
     required this.onDecline,
     required this.onCancel,
@@ -42,6 +43,9 @@ class JobDetailBody extends StatelessWidget {
 
   final TaskerJobDetail detail;
   final String? busy;
+
+  /// The last failed action's message, shown inline next to the buttons.
+  final String? actionError;
   final VoidCallback onConfirm, onDecline, onCancel, onStartTracking, onCheckIn,
       onCheckOut, onFaceVerify, onComplete, onCashReceived, onComplaint, onSos;
   final void Function(PhotoSlot slot) onCapture;
@@ -67,7 +71,7 @@ class JobDetailBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
       children: [
-        _PhaseBanner(phase: phase, detail: d),
+        _PhaseBanner(phase: phase, detail: d, travelling: isTravelling(d)),
         const SizedBox(height: 16),
         if (awaitingResubmit(d) && onResubmit != null) ...[
           _ResubmitCard(detail: d, busy: busy, anyBusy: _anyBusy, onResubmit: onResubmit!),
@@ -83,6 +87,7 @@ class JobDetailBody extends StatelessWidget {
           counts: counts,
           busy: busy,
           anyBusy: _anyBusy,
+          actionError: actionError,
           onConfirm: onConfirm,
           onDecline: onDecline,
           onCancel: onCancel,
@@ -134,9 +139,12 @@ String _s(dynamic v) => v == null ? '' : v.toString();
 // ── phase banner ─────────────────────────────────────────────────────────────
 
 class _PhaseBanner extends StatelessWidget {
-  const _PhaseBanner({required this.phase, required this.detail});
+  const _PhaseBanner({required this.phase, required this.detail, this.travelling = false});
   final JobPhase phase;
   final TaskerJobDetail detail;
+
+  /// Booking is EN_ROUTE (tracking started): "on the way", not "ready to head out".
+  final bool travelling;
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +152,11 @@ class _PhaseBanner extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final (label, icon, tone) = switch (phase) {
       JobPhase.pending => (l.provJdPhasePending, Icons.hourglass_top, cs.tertiary),
-      JobPhase.enRoute => (l.provJdPhaseEnRoute, Icons.directions_car, cs.primary),
+      JobPhase.enRoute => (
+          travelling ? l.provJdPhaseTravelling : l.provJdPhaseEnRoute,
+          Icons.directions_car,
+          cs.primary
+        ),
       JobPhase.onSite => (l.provJdPhaseOnSite, Icons.cleaning_services, cs.primary),
       JobPhase.wrapUp => (l.provJdPhaseWrapUp, Icons.task_alt, cs.primary),
       JobPhase.awaitingCustomer => (l.provJdPhaseAwaitingCustomer, Icons.schedule, cs.tertiary),
@@ -196,7 +208,7 @@ class _OrderInfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _kv(context, l.provJdCustomer, _s(cust['name']).isEmpty ? '—' : _s(cust['name'])),
-          _kv(context, l.email, _s(cust['email']).isEmpty ? '—' : _s(cust['email'])),
+          if (_s(cust['email']).isNotEmpty) _kv(context, l.email, _s(cust['email'])),
           _kv(context, l.provJdTime, fmtJobTime(_s(b['scheduledAt']).isEmpty ? null : _s(b['scheduledAt']))),
           _kv(context, l.provJdDuration,
               duration is num ? l.minutesShort(duration.toInt()) : '—'),
@@ -276,6 +288,7 @@ class _LifecycleActionsCard extends StatelessWidget {
     required this.counts,
     required this.busy,
     required this.anyBusy,
+    this.actionError,
     required this.onConfirm,
     required this.onDecline,
     required this.onCancel,
@@ -292,6 +305,7 @@ class _LifecycleActionsCard extends StatelessWidget {
   final PhotoCounts counts;
   final String? busy;
   final bool anyBusy;
+  final String? actionError;
   final VoidCallback onConfirm, onDecline, onCancel, onStartTracking, onCheckIn,
       onCheckOut, onFaceVerify, onComplete, onCashReceived;
 
@@ -306,7 +320,12 @@ class _LifecycleActionsCard extends StatelessWidget {
         children.add(_action(context, 'decline', l.provJdDecline, Icons.close, onDecline, outlined: true));
         children.add(_action(context, 'cancel', l.provJdCancelTitle, Icons.cancel_outlined, onCancel, danger: true));
       case JobPhase.enRoute:
-        children.add(_action(context, 'start', l.provJdStartTracking, Icons.directions_car, onStartTracking, primary: true));
+        if (isTravelling(detail)) {
+          // Tracking already started: no second "start" (it would 409).
+          children.add(_info(context, l.provJdTravellingNote));
+        } else {
+          children.add(_action(context, 'start', l.provJdStartTracking, Icons.directions_car, onStartTracking, primary: true));
+        }
         children.add(_action(context, 'checkin', l.provJdCheckIn, Icons.my_location, onCheckIn, primary: true));
         children.add(_action(context, 'cancel', l.provJdCancelTitle, Icons.cancel_outlined, onCancel, danger: true));
       case JobPhase.onSite:
@@ -342,6 +361,32 @@ class _LifecycleActionsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (actionError != null) ...[
+            Semantics(
+              liveRegion: true,
+              container: true,
+              child: Container(
+                key: const ValueKey('job-action-error'),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.error_outline, size: 18, color: Theme.of(context).colorScheme.onErrorContainer),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(actionError!,
+                          style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
           for (var i = 0; i < children.length; i++) ...[
             if (i > 0) const SizedBox(height: 10),
             children[i],
@@ -667,12 +712,17 @@ class _LiveShareToggleState extends State<LiveShareToggle> {
                     : _lastOk == null
                         ? l.prov2LiveShareStarting
                         : l.prov2LiveShareOn(last());
-    return SwitchListTile(
-      contentPadding: EdgeInsets.zero,
-      value: _on,
-      onChanged: _available ? _toggle : null,
-      title: Text(l.prov2LiveShareTitle),
-      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+    // Own Material: the card behind is a coloured DecoratedBox that would hide
+    // the tile's ink (and trips a debug assertion otherwise).
+    return Material(
+      type: MaterialType.transparency,
+      child: SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        value: _on,
+        onChanged: _available ? _toggle : null,
+        title: Text(l.prov2LiveShareTitle),
+        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+      ),
     );
   }
 }

@@ -42,6 +42,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullName => 'Full name';
 
   @override
+  String get consentAgree =>
+      'I agree to the Terms of Service and Privacy Policy';
+
+  @override
+  String get consentTermsLink => 'Terms of Service';
+
+  @override
+  String get consentPrivacyLink => 'Privacy Policy';
+
+  @override
+  String get consentRequired =>
+      'Please accept the Terms of Service and Privacy Policy to continue.';
+
+  @override
   String get createAccount => 'Create account';
 
   @override
@@ -239,7 +253,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String reviewCount(int n) {
-    return '$n reviews';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n reviews',
+      one: '1 review',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -305,7 +325,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get providerTitle => 'Partner profile';
+  String get providerTitle => 'Tasker profile';
 
   @override
   String get verifiedBadge => 'Verified';
@@ -347,7 +367,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inviteFriends => 'Invite friends';
 
   @override
-  String get becomePartner => 'Become a partner';
+  String get becomePartner => 'Become a tasker';
 
   @override
   String get contactUs => 'Contact';
@@ -374,7 +394,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serviceNotFound => 'Service not found';
 
   @override
-  String get partnerNotFound => 'Partner not found';
+  String get partnerNotFound => 'Tasker not found';
 
   @override
   String get noNotifications => 'No notifications';
@@ -1407,7 +1427,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get provVipPerkPriorityBody =>
-      'Get high-value jobs assigned to you before other partners.';
+      'Get high-value jobs assigned to you before other taskers.';
 
   @override
   String get provVipPerkAreaTitle => 'Expanded coverage';
@@ -1445,13 +1465,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'A higher bonus multiplier for the same performance.';
 
   @override
-  String get provVipWelcome => 'Welcome, VIP partner';
+  String get provVipWelcome => 'Welcome, VIP tasker';
 
   @override
   String get provVipPerksTitle => 'VIP perks';
 
   @override
-  String get provVipPerksSubtitle => 'Benefits for Platinum-tier partners.';
+  String get provVipPerksSubtitle => 'Benefits for Platinum-tier taskers.';
 
   @override
   String get provVipReqJobs => 'Complete ≥ 800 jobs';
@@ -1606,7 +1626,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get provReferralsShare => 'Share';
 
   @override
-  String get provReferralsColPartner => 'Partner';
+  String get provReferralsColPartner => 'Tasker';
 
   @override
   String get provReferralsColArea => 'Area';
@@ -1806,7 +1826,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get provTaskerNotLiveBody =>
-      'Partner registration isn\'t live in the app yet, so your details were not submitted. Please finish signing up at kyco.vn or email tasker@kyco.vn.';
+      'Tasker registration isn\'t live in the app yet, so your details were not submitted. Please finish signing up at kyco.vn or email tasker@kyco.vn.';
 
   @override
   String get provTaskerRetake => 'Retake';
@@ -2790,4 +2810,101 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errorFallbackBody =>
       'This part hit a problem. Go back and try again.';
+
+  @override
+  String get provJdPhaseTravelling => 'On the way to the customer';
+
+  @override
+  String get provJdTravellingNote =>
+      'You are on the way. Tap Check-in when you arrive.';
+
+  @override
+  String get moneyCancelBlockedGeneric =>
+      'This booking cannot be cancelled in its current state. Contact support if you need help.';
+
+  @override
+  String get stepUpPasswordDeleteAccount =>
+      'Enter your password to confirm deleting your account.';
+
+  @override
+  String get stepUpOtpDeleteAccount =>
+      'Enter the OTP just sent to your phone to confirm deleting your account.';
+
+  @override
+  String get stepUpPasswordChangePhone =>
+      'Enter your password to confirm changing your phone number.';
+
+  @override
+  String get stepUpOtpChangePhone =>
+      'Enter the OTP just sent to your phone to confirm changing your phone number.';
+
+  @override
+  String get stepUpPasswordGeneric =>
+      'Enter your password to confirm this action.';
+
+  @override
+  String get stepUpOtpGeneric =>
+      'Enter the OTP just sent to your phone to confirm this action.';
+
+  @override
+  String get taskerReviewTitle => 'Your application is under review';
+
+  @override
+  String get taskerReviewIntro =>
+      'Kyco has received your application and documents and is reviewing them.';
+
+  @override
+  String get taskerReviewNextTitle => 'What happens next';
+
+  @override
+  String get taskerReviewNext1 =>
+      'The Kyco team checks your ID card and selfie.';
+
+  @override
+  String get taskerReviewNext2 =>
+      'Once approved, you can open the Tasker workspace and start taking jobs.';
+
+  @override
+  String get taskerReviewNext3 =>
+      'If a document needs to be replaced, you can send it again below.';
+
+  @override
+  String get taskerReviewReupload => 'Retake documents';
+
+  @override
+  String get taskerReviewRefresh => 'Check status again';
+
+  @override
+  String get taskerReviewStillPending =>
+      'Your application is still under review.';
+
+  @override
+  String get taskerUpgradeIntro =>
+      'You already have a Kyco account: just add your details and documents. No need to verify your phone again.';
+
+  @override
+  String get taskerPhoneExistsLogin =>
+      'This phone number already has a Kyco account. Sign in first, then open Account and choose Become a tasker to apply.';
+
+  @override
+  String get taskerUpgradePhoneUnverified =>
+      'Verify your account\'s phone number before applying as a tasker.';
+
+  @override
+  String get subscriptionsEmptyMine => 'You have no subscription yet.';
+
+  @override
+  String otpResendInMinutes(int minutes) {
+    return 'Resend code in about $minutes min';
+  }
+
+  @override
+  String get serviceDescriptionHeading => 'About this service';
+
+  @override
+  String get provTaskerCaptured => 'Captured';
+
+  @override
+  String get taskerDoneSignInHint =>
+      'To track your application, sign in with the phone number you registered.';
 }

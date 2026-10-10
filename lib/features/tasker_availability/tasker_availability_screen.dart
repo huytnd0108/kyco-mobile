@@ -9,6 +9,7 @@ import '../../core/di.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
 import '../../theme/app_semantics.dart';
+import '../tasker_jobs/tasker_jobs_providers.dart' show assignedJobsControllerProvider;
 import 'tasker_availability_providers.dart';
 
 /// Weekday short label (e.g. `CN`/`Sun`), indexed by `dow % 7` (0 = Sunday).
@@ -204,6 +205,22 @@ class _EditorState extends ConsumerState<_Editor> {
     }
   }
 
+  /// "Service dd/MM HH:mm, ..." for the conflicting jobs the assigned list
+  /// already knows; the bare "#id" only for the ones it does not.
+  String _describeJobs(BuildContext ctx, List<int> jobIds) {
+    final known = {
+      for (final j in ref.read(assignedJobsControllerProvider).valueOrNull?.items ?? const <TaskerJob>[])
+        j.jobId: j,
+    };
+    return jobIds.map((id) {
+      final j = known[id];
+      if (j == null) return '#$id';
+      final when = (j.scheduledAt ?? '').isEmpty ? '' : vnDateTime(ctx, j.scheduledAt);
+      final name = (j.serviceName ?? '').isEmpty ? '#$id' : j.serviceName!;
+      return when.isEmpty ? name : '$name ($when)';
+    }).join(', ');
+  }
+
   Future<bool?> _confirmConflict(List<int> jobIds) {
     final s = AppLocalizations.of(context);
     return showDialog<bool>(
@@ -211,7 +228,7 @@ class _EditorState extends ConsumerState<_Editor> {
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.warning_amber_rounded),
         title: Text(s.provAvailConflictTitle),
-        content: Text(s.provAvailConflictBody(jobIds.map((e) => '#$e').join(', '))),
+        content: Text(s.provAvailConflictBody(_describeJobs(ctx, jobIds))),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.provAvailCancel)),
           FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(s.provAvailSaveAnyway)),
@@ -260,7 +277,7 @@ class _EditorState extends ConsumerState<_Editor> {
       isScrollControlled: true,
       showDragHandle: true,
       builder: (_) => _SlotSheet(
-        title: iso,
+        title: vnDateKeyLabel(context, iso),
         initial: existing.isEmpty ? const [] : existing.first.slots,
       ),
     );
@@ -273,7 +290,7 @@ class _EditorState extends ConsumerState<_Editor> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => _SlotSheet(title: o.date, initial: o.slots),
+      builder: (_) => _SlotSheet(title: vnDateKeyLabel(context, o.date), initial: o.slots),
     );
     if (slots == null) return;
     await _saveDate(o.date, slots);

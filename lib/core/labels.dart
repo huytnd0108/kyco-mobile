@@ -96,7 +96,7 @@ String fineKindLabel(AppLocalizations l, String? kind) {
   if (k.isEmpty) return _dash;
   return switch (k) {
     'cancel_late' => l.fineKindCancelLate,
-    'late' => l.fineKindLate,
+    'late' || 'late_arrival' => l.fineKindLate,
     'extra_charge' => l.fineKindExtraCharge,
     'private_client' => l.fineKindPrivateClient,
     'bad_attitude' => l.fineKindBadAttitude,

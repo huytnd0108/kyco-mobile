@@ -16,6 +16,8 @@ class LocaleController extends Notifier<Locale?> {
   }
 
   Future<void> set(Locale? locale) async {
+    // Re-selecting the active language is a no-op (no rebuild storm, no refetch).
+    if (state?.languageCode == locale?.languageCode) return;
     state = locale;
     final p = ref.read(sharedPrefsProvider);
     if (locale == null) {

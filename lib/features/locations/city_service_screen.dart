@@ -239,7 +239,7 @@ class _HeroImage extends StatelessWidget {
       fallbackServiceId: serviceId,
       builder: (context, resolved, resolving) => resolved == null
           ? placeholder(loading: resolving)
-          : Image.network(
+          : SizedNetworkImage(
               resolved,
               fit: BoxFit.cover,
               semanticLabel: label,

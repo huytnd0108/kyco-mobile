@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
+import '../../core/person_name.dart';
 
 import '../../core/adaptive.dart';
 import '../../core/format.dart';
@@ -179,7 +180,7 @@ class _RankRow extends StatelessWidget {
                 Row(
                   children: [
                     Flexible(
-                      child: Text(row.name ?? '—',
+                      child: Text(isPlaceholderPersonName(row.name) ? '—' : row.name!.trim(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),

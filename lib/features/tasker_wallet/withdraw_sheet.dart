@@ -39,9 +39,9 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
   @override
   void initState() {
     super.initState();
-    // Web parity: default to min(balance, 1.000.000₫).
-    final preset = widget.balanceVnd < 1000000 ? widget.balanceVnd : 1000000;
-    _controller = TextEditingController(text: '$preset');
+    // The tasker types the amount: the field starts EMPTY (no balance prefill,
+    // no "fill max" shortcut; the max is display-only hint text; OCD-062).
+    _controller = TextEditingController();
   }
 
   @override
@@ -63,6 +63,11 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
     if (amount > kPayoutMaxVnd) {
       setState(() => _error =
           l.provWalletWithdrawMaxError(formatVnd(kPayoutMaxVnd)));
+      return;
+    }
+    // Advisory only (the server stays authoritative): above the balance shown.
+    if (amount > widget.balanceVnd) {
+      setState(() => _error = l.provWalletWithdrawInvalidAmount);
       return;
     }
     Navigator.of(context).pop(amount);
@@ -114,7 +119,7 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
             decoration: InputDecoration(
               labelText: l.provWalletAmountLabel,
               border: const OutlineInputBorder(),
-              prefixIcon: const Icon(Icons.attach_money),
+              suffixText: '₫',
             ),
             onSubmitted: (_) => _submit(),
           ),
@@ -194,7 +199,7 @@ Future<String?> _runWithdrawFlow(
   if (!status.fresh) {
     if (!context.mounted) return null;
     final ok = await showStepUpSheet(context,
-        hasUsablePassword: status.hasUsablePassword);
+        hasUsablePassword: status.hasUsablePassword, purpose: StepUpPurpose.withdraw);
     if (!ok) return null;
   }
 

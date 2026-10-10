@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
@@ -73,6 +74,9 @@ class LocationService {
     }
   }
 }
+
+/// Injectable so widget tests can supply a fix without the geolocator plugin.
+final locationServiceProvider = Provider<LocationService>((_) => const LocationService());
 
 /// Result of a full capture→upload round-trip. On success [mediaId] is the
 /// finalized asset id to hand to `uploadJobPhotos`.

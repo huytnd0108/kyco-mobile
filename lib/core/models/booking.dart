@@ -288,6 +288,18 @@ class BookingDetail {
     add('cashReceived', b['cashReceivedAt']);
     add('settled', b['settledAt']);
 
+    // Chronological order (OCD-045): the server timestamps decide, not the order
+    // the events were collected in. Unparseable times keep their relative place.
+    final indexed = [for (var i = 0; i < events.length; i++) (i, events[i])];
+    indexed.sort((x, y) {
+      final a = DateTime.tryParse(x.$2.at), c = DateTime.tryParse(y.$2.at);
+      final r = (a != null && c != null) ? a.compareTo(c) : 0;
+      return r != 0 ? r : x.$1.compareTo(y.$1);
+    });
+    events
+      ..clear()
+      ..addAll(indexed.map((e) => e.$2));
+
     return BookingDetail(
       id: (b['id'] as num).toInt(),
       status: _s(b['status']) ?? 'PENDING',
@@ -334,8 +346,13 @@ class BookingDetail {
 
 /// `actions: {canCancel, canConfirm, canPay, canDispute}` — each flag optional.
 class ServerActions {
-  const ServerActions({this.canCancel, this.canConfirm, this.canPay, this.canDispute});
+  const ServerActions(
+      {this.canCancel, this.canConfirm, this.canPay, this.canDispute, this.cancelBlockedReason});
   final bool? canCancel;
+
+  /// Server text explaining why [canCancel] is false (`actions.cancelBlockedReason`),
+  /// when the backend sends one. Display-only.
+  final String? cancelBlockedReason;
   final bool? canConfirm;
   final bool? canPay;
   final bool? canDispute;
@@ -343,8 +360,13 @@ class ServerActions {
   static ServerActions? tryParse(Object? raw) {
     if (raw is! Map) return null;
     bool? f(String k) => raw[k] is bool ? raw[k] as bool : null;
+    final why = raw['cancelBlockedReason'] ?? raw['cancelBlockedMessage'];
     final a = ServerActions(
-        canCancel: f('canCancel'), canConfirm: f('canConfirm'), canPay: f('canPay'), canDispute: f('canDispute'));
+        canCancel: f('canCancel'),
+        canConfirm: f('canConfirm'),
+        canPay: f('canPay'),
+        canDispute: f('canDispute'),
+        cancelBlockedReason: why is String && why.trim().isNotEmpty ? why.trim() : null);
     return (a.canCancel ?? a.canConfirm ?? a.canPay ?? a.canDispute) == null ? null : a;
   }
 }
@@ -523,7 +545,14 @@ class BookingActions {
     this.disputeWaiting = false,
     this.canPay = false,
     this.awaitingCashConfirm = false,
+    this.cancelBlocked = false,
+    this.cancelBlockedReason,
   });
+
+  /// The booking is in a normally-cancellable state but cancelling is refused
+  /// (24h lock, tasker already arrived ...): the UI explains instead of hiding.
+  final bool cancelBlocked;
+  final String? cancelBlockedReason;
 
   final bool canCancel;
   final bool canConfirm;
@@ -548,9 +577,12 @@ class BookingActions {
         b.customerDisputedAt != null &&
         !(disputedAt != null && resubmittedAt != null && resubmittedAt.isAfter(disputedAt));
     final sa = b.serverActions;
+    final canCancel = sa?.canCancel ?? (_cancellable.contains(status) && !b.ctvHasCheckedIn);
     return BookingActions(
+      cancelBlocked: !canCancel && _cancellable.contains(status),
+      cancelBlockedReason: sa?.cancelBlockedReason,
       // Server flags win when present; else the status table (MONEY-CONTRACT 5.3).
-      canCancel: sa?.canCancel ?? (_cancellable.contains(status) && !b.ctvHasCheckedIn),
+      canCancel: canCancel,
       canConfirm: sa?.canConfirm ?? confirming,
       canDispute: sa?.canDispute ?? (confirming && !waiting),
       disputeWaiting: waiting,

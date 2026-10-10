@@ -137,7 +137,7 @@ class _ServiceImage extends StatelessWidget {
       fallbackServiceId: serviceId,
       builder: (context, resolved, resolving) {
         if (resolved == null) return _placeholder(cs, loading: resolving);
-        return Image.network(
+        return SizedNetworkImage(
           resolved,
           fit: BoxFit.cover,
           excludeFromSemantics: true,

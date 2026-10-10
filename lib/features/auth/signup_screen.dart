@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
+import '../../core/ui/consent_checkbox.dart';
 import '../../core/widgets.dart';
 import 'auth_controller.dart';
-import 'login_screen.dart' show authErrorText, authFromParam;
+import 'login_screen.dart' show authErrorText, authFromParam, kFromLoginExtra;
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -19,6 +20,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _obscure = true;
+  bool _consent = false;
+  bool _consentTouched = false;
 
   @override
   void initState() {
@@ -40,6 +43,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Future<void> _submit() async {
+    if (!_consent) {
+      setState(() => _consentTouched = true);
+      return;
+    }
     if (!_form.currentState!.validate()) return;
     final ok = await ref.read(authControllerProvider.notifier).signup(
           email: _email.text.trim(),
@@ -52,6 +59,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     }
   }
 
+  /// Back out of the signup screen: pop when it was pushed, else go home.
+  void _leave() => context.canPop() ? context.pop() : context.go('/');
+
+  /// "I already have an account": return to the login this screen was pushed
+  /// over; otherwise replace signup with login (never stack a second login).
+  void _toLogin(String loginPath) {
+    final extra = GoRouterState.of(context).extra;
+    if (extra == kFromLoginExtra && context.canPop()) {
+      context.pop();
+    } else {
+      context.pushReplacement(loginPath);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -60,7 +81,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final auth = ref.watch(authControllerProvider);
     final errorText = authErrorText(l, auth);
     return Scaffold(
-      appBar: AppBar(title: Text(l.signup)),
+      appBar: AppBar(
+        title: Text(l.signup),
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          key: const ValueKey('signup-close'),
+          tooltip: l.closeAction,
+          icon: const Icon(Icons.close),
+          onPressed: _leave,
+        ),
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -113,15 +143,24 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       const SizedBox(height: 14),
                       ErrorBanner(errorText),
                     ],
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 14),
+                    ConsentCheckbox(
+                      value: _consent,
+                      showError: _consentTouched,
+                      onChanged: (v) => setState(() {
+                        _consent = v;
+                        _consentTouched = true;
+                      }),
+                    ),
+                    const SizedBox(height: 8),
                     FilledButton(
-                      onPressed: auth.busy ? null : _submit,
+                      onPressed: (auth.busy || !_consent) ? null : _submit,
                       child: auth.busy
                           ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
                           : Text(l.createAccount),
                     ),
                     TextButton(
-                      onPressed: auth.busy ? null : () => context.go(loginPath),
+                      onPressed: auth.busy ? null : () => _toLogin(loginPath),
                       child: Text(l.haveAccountLogin),
                     ),
                   ],

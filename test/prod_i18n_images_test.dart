@@ -179,8 +179,11 @@ void main() {
       expect(find.text('Dọn nhà theo giờ'), findsNothing);
       expect(find.text('Linh hoạt, theo giờ'), findsNothing);
       final img = t.widget<Image>(find.byType(Image));
-      expect(img.image, isA<NetworkImage>());
-      expect((img.image as NetworkImage).url, withImage.imageUrl);
+      // Decoded at layout size (cacheWidth), so wrapped in a ResizeImage.
+      expect(img.image, isA<ResizeImage>());
+      final inner = (img.image as ResizeImage).imageProvider;
+      expect(inner, isA<NetworkImage>());
+      expect((inner as NetworkImage).url, withImage.imageUrl);
     });
 
     testWidgets('CategoryTile vi: nameVi + subtitle', (t) async {
@@ -211,7 +214,7 @@ void main() {
       expect(find.text('Deep Cleaning · 2-Bedroom Apartment'), findsOneWidget);
       expect(find.text('Deep cleaning'), findsOneWidget); // localized category pill
       expect(find.text('deep'), findsNothing); // raw slug never shown
-      expect((t.widget<Image>(find.byType(Image)).image as NetworkImage).url, https.imageUrl);
+      expect(((t.widget<Image>(find.byType(Image)).image as ResizeImage).imageProvider as NetworkImage).url, https.imageUrl);
 
       final none = svcs.firstWhere((s) => s.id == 78);
       await pump(t, SizedBox(width: 220, height: 330, child: ServiceCard(none)),

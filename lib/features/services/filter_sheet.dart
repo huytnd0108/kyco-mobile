@@ -24,6 +24,8 @@ Future<FilterSelection?> showServicesFilterSheet(
 }) {
   return showModalBottomSheet<FilterSelection>(
     context: context,
+    // Root navigator: the sheet covers the floating "book now" pill + tab bar.
+    useRootNavigator: true,
     isScrollControlled: true,
     showDragHandle: true,
     builder: (context) => _FilterSheet(

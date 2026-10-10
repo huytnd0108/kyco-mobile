@@ -47,9 +47,14 @@ void main() {
       expect(find.textContaining('30 ngày'), findsWidgets);
       final submit = find.byKey(const ValueKey('delete-submit'));
       expect(t.widget<FilledButton>(submit).onPressed, isNull, reason: 'disabled until confirmed');
-      await _type(t, 'xoa');
+      await _type(t, 'xyz');
       expect(t.widget<FilledButton>(submit).onPressed, isNull, reason: 'wrong word');
       await _type(t, 'xóa'); // case-insensitive match of XÓA
+      expect(t.widget<FilledButton>(submit).onPressed, isNotNull);
+      // OCD-028: a keyboard without Vietnamese accents ("xoa") must work too.
+      await _type(t, 'xoa');
+      expect(t.widget<FilledButton>(submit).onPressed, isNotNull);
+      await _type(t, 'XOA');
       expect(t.widget<FilledButton>(submit).onPressed, isNotNull);
     });
 

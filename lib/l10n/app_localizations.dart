@@ -164,6 +164,30 @@ abstract class AppLocalizations {
   /// **'Họ tên'**
   String get fullName;
 
+  /// No description provided for @consentAgree.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tôi đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư'**
+  String get consentAgree;
+
+  /// No description provided for @consentTermsLink.
+  ///
+  /// In vi, this message translates to:
+  /// **'Điều khoản sử dụng'**
+  String get consentTermsLink;
+
+  /// No description provided for @consentPrivacyLink.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chính sách quyền riêng tư'**
+  String get consentPrivacyLink;
+
+  /// No description provided for @consentRequired.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vui lòng đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư để tiếp tục.'**
+  String get consentRequired;
+
   /// No description provided for @createAccount.
   ///
   /// In vi, this message translates to:
@@ -335,7 +359,7 @@ abstract class AppLocalizations {
   /// No description provided for @navBookings.
   ///
   /// In vi, this message translates to:
-  /// **'Đơn của tôi'**
+  /// **'Đơn đặt'**
   String get navBookings;
 
   /// No description provided for @navAccount.
@@ -533,7 +557,7 @@ abstract class AppLocalizations {
   /// No description provided for @providersAvailable.
   ///
   /// In vi, this message translates to:
-  /// **'Đối tác sẵn sàng'**
+  /// **'Cộng tác viên sẵn sàng'**
   String get providersAvailable;
 
   /// No description provided for @checkoutTitle.
@@ -647,7 +671,7 @@ abstract class AppLocalizations {
   /// No description provided for @providerTitle.
   ///
   /// In vi, this message translates to:
-  /// **'Hồ sơ đối tác'**
+  /// **'Hồ sơ cộng tác viên'**
   String get providerTitle;
 
   /// No description provided for @verifiedBadge.
@@ -719,7 +743,7 @@ abstract class AppLocalizations {
   /// No description provided for @becomePartner.
   ///
   /// In vi, this message translates to:
-  /// **'Trở thành đối tác'**
+  /// **'Trở thành cộng tác viên'**
   String get becomePartner;
 
   /// No description provided for @contactUs.
@@ -773,7 +797,7 @@ abstract class AppLocalizations {
   /// No description provided for @partnerNotFound.
   ///
   /// In vi, this message translates to:
-  /// **'Không tìm thấy đối tác'**
+  /// **'Không tìm thấy cộng tác viên'**
   String get partnerNotFound;
 
   /// No description provided for @noNotifications.
@@ -845,7 +869,7 @@ abstract class AppLocalizations {
   /// No description provided for @provWorkspace.
   ///
   /// In vi, this message translates to:
-  /// **'Khu vực đối tác'**
+  /// **'Khu vực cộng tác viên'**
   String get provWorkspace;
 
   /// No description provided for @provTabHome.
@@ -1073,7 +1097,7 @@ abstract class AppLocalizations {
   /// No description provided for @provAvailCancel.
   ///
   /// In vi, this message translates to:
-  /// **'Huỷ'**
+  /// **'Hủy'**
   String get provAvailCancel;
 
   /// No description provided for @provAvailSaved.
@@ -1337,7 +1361,7 @@ abstract class AppLocalizations {
   /// No description provided for @provKpiAcceptanceLabel.
   ///
   /// In vi, this message translates to:
-  /// **'Nhận job'**
+  /// **'Tỷ lệ nhận việc'**
   String get provKpiAcceptanceLabel;
 
   /// No description provided for @provKpiCompletionLabel.
@@ -1421,19 +1445,19 @@ abstract class AppLocalizations {
   /// No description provided for @provStatusPending.
   ///
   /// In vi, this message translates to:
-  /// **'đang chờ'**
+  /// **'Đang chờ'**
   String get provStatusPending;
 
   /// No description provided for @provStatusActive.
   ///
   /// In vi, this message translates to:
-  /// **'đang làm'**
+  /// **'Đang làm'**
   String get provStatusActive;
 
   /// No description provided for @provStatusClosed.
   ///
   /// In vi, this message translates to:
-  /// **'đã đóng'**
+  /// **'Đã đóng'**
   String get provStatusClosed;
 
   /// No description provided for @provWalletExportTooltip.
@@ -1829,13 +1853,13 @@ abstract class AppLocalizations {
   /// No description provided for @provJdGpsOff.
   ///
   /// In vi, this message translates to:
-  /// **'Vui lòng bật Dịch vụ vị trí (GPS) để check-in.'**
+  /// **'Vui lòng bật Dịch vụ vị trí (GPS) để xác nhận đã đến nơi.'**
   String get provJdGpsOff;
 
   /// No description provided for @provJdGpsPermNeeded.
   ///
   /// In vi, this message translates to:
-  /// **'Ứng dụng cần quyền vị trí để check-in tại địa điểm khách.'**
+  /// **'Ứng dụng cần quyền vị trí để xác nhận bạn đã đến địa điểm của khách.'**
   String get provJdGpsPermNeeded;
 
   /// No description provided for @provJdGpsPermOff.
@@ -1895,31 +1919,31 @@ abstract class AppLocalizations {
   /// No description provided for @provJdCancelTitle.
   ///
   /// In vi, this message translates to:
-  /// **'Huỷ công việc'**
+  /// **'Hủy công việc'**
   String get provJdCancelTitle;
 
   /// No description provided for @provJdCancelWarning.
   ///
   /// In vi, this message translates to:
-  /// **'Huỷ đơn đã nhận có thể phát sinh phí phạt theo chính sách. Mức phí do Kyco tính và hiển thị sau khi xác nhận.'**
+  /// **'Hủy đơn đã nhận có thể phát sinh phí phạt theo chính sách. Mức phí do Kyco tính và hiển thị sau khi xác nhận.'**
   String get provJdCancelWarning;
 
   /// No description provided for @provJdCancelReason.
   ///
   /// In vi, this message translates to:
-  /// **'Lý do huỷ'**
+  /// **'Lý do hủy'**
   String get provJdCancelReason;
 
   /// No description provided for @provJdCancelJob.
   ///
   /// In vi, this message translates to:
-  /// **'Huỷ đơn'**
+  /// **'Hủy đơn'**
   String get provJdCancelJob;
 
   /// No description provided for @provJdCancelled.
   ///
   /// In vi, this message translates to:
-  /// **'Đã huỷ công việc'**
+  /// **'Đã hủy công việc'**
   String get provJdCancelled;
 
   /// No description provided for @provJdEnRouteSnack.
@@ -1931,7 +1955,7 @@ abstract class AppLocalizations {
   /// No description provided for @provJdCheckedOutSnack.
   ///
   /// In vi, this message translates to:
-  /// **'Đã check-out. Đơn được chuyển sang chờ khách xác nhận & thanh toán.'**
+  /// **'Đã kết thúc ca. Đơn được chuyển sang chờ khách xác nhận & thanh toán.'**
   String get provJdCheckedOutSnack;
 
   /// No description provided for @provJdPhotoUploaded.
@@ -2021,7 +2045,7 @@ abstract class AppLocalizations {
   /// No description provided for @provJdCheckedIn.
   ///
   /// In vi, this message translates to:
-  /// **'Đã check-in'**
+  /// **'Đã xác nhận đến nơi'**
   String get provJdCheckedIn;
 
   /// No description provided for @provJdWithinGeofence.
@@ -2201,7 +2225,7 @@ abstract class AppLocalizations {
   /// No description provided for @provJdPhaseCancelled.
   ///
   /// In vi, this message translates to:
-  /// **'Đã huỷ'**
+  /// **'Đã hủy'**
   String get provJdPhaseCancelled;
 
   /// No description provided for @provJdPhaseUnknown.
@@ -2285,13 +2309,13 @@ abstract class AppLocalizations {
   /// No description provided for @provJdCheckIn.
   ///
   /// In vi, this message translates to:
-  /// **'Check-in tại địa điểm (GPS)'**
+  /// **'Xác nhận đã đến nơi (GPS)'**
   String get provJdCheckIn;
 
   /// No description provided for @provJdBeforePhotoGate.
   ///
   /// In vi, this message translates to:
-  /// **'Cần ≥ {need} ảnh \"trước ca\" mới được check-out (hiện {have}/{need}). Chụp ở khung ảnh bên dưới.'**
+  /// **'Cần ≥ {need} ảnh \"trước ca\" mới được kết thúc ca (hiện {have}/{need}). Chụp ở khung ảnh bên dưới.'**
   String provJdBeforePhotoGate(Object need, Object have);
 
   /// No description provided for @provJdFaceVerify.
@@ -2303,7 +2327,7 @@ abstract class AppLocalizations {
   /// No description provided for @provJdCheckOut.
   ///
   /// In vi, this message translates to:
-  /// **'Check-out (GPS)'**
+  /// **'Kết thúc ca làm (GPS)'**
   String get provJdCheckOut;
 
   /// No description provided for @provJdCashReceivedAction.
@@ -2339,7 +2363,7 @@ abstract class AppLocalizations {
   /// No description provided for @provJdCancelledInfo.
   ///
   /// In vi, this message translates to:
-  /// **'Công việc đã huỷ.'**
+  /// **'Công việc đã hủy.'**
   String get provJdCancelledInfo;
 
   /// No description provided for @provJdNoActions.
@@ -2519,7 +2543,7 @@ abstract class AppLocalizations {
   /// No description provided for @provBonusKindRating.
   ///
   /// In vi, this message translates to:
-  /// **'Thưởng rating cao'**
+  /// **'Thưởng đánh giá cao'**
   String get provBonusKindRating;
 
   /// No description provided for @provBonusKindReferral.
@@ -2597,7 +2621,7 @@ abstract class AppLocalizations {
   /// No description provided for @provGoalCancel.
   ///
   /// In vi, this message translates to:
-  /// **'Huỷ'**
+  /// **'Hủy'**
   String get provGoalCancel;
 
   /// No description provided for @provLbYourRank.
@@ -2651,7 +2675,7 @@ abstract class AppLocalizations {
   /// No description provided for @provVipPerkPriorityBody.
   ///
   /// In vi, this message translates to:
-  /// **'Được ưu tiên phân bổ các đơn giá trị cao trước các CTV khác.'**
+  /// **'Được ưu tiên phân bổ các đơn giá trị cao trước những cộng tác viên khác.'**
   String get provVipPerkPriorityBody;
 
   /// No description provided for @provVipPerkAreaTitle.
@@ -2699,7 +2723,7 @@ abstract class AppLocalizations {
   /// No description provided for @provVipPerkGiftBody.
   ///
   /// In vi, this message translates to:
-  /// **'Nhận quà tri ân và các ưu đãi độc quyền dành cho CTV VIP.'**
+  /// **'Nhận quà tri ân và các ưu đãi độc quyền dành cho cộng tác viên VIP.'**
   String get provVipPerkGiftBody;
 
   /// No description provided for @provVipPerkBonusTitle.
@@ -2717,7 +2741,7 @@ abstract class AppLocalizations {
   /// No description provided for @provVipWelcome.
   ///
   /// In vi, this message translates to:
-  /// **'Chào mừng CTV VIP'**
+  /// **'Chào mừng cộng tác viên VIP'**
   String get provVipWelcome;
 
   /// No description provided for @provVipPerksTitle.
@@ -2729,7 +2753,7 @@ abstract class AppLocalizations {
   /// No description provided for @provVipPerksSubtitle.
   ///
   /// In vi, this message translates to:
-  /// **'Những quyền lợi dành cho CTV hạng Bạch kim.'**
+  /// **'Những quyền lợi dành cho cộng tác viên hạng Bạch kim.'**
   String get provVipPerksSubtitle;
 
   /// No description provided for @provVipReqJobs.
@@ -2777,7 +2801,7 @@ abstract class AppLocalizations {
   /// No description provided for @provVipBackDashboard.
   ///
   /// In vi, this message translates to:
-  /// **'Về trang chủ CTV'**
+  /// **'Về trang chủ cộng tác viên'**
   String get provVipBackDashboard;
 
   /// No description provided for @provVipTierPlatinum.
@@ -2903,7 +2927,7 @@ abstract class AppLocalizations {
   /// No description provided for @provCancels30d.
   ///
   /// In vi, this message translates to:
-  /// **'Huỷ trong 30 ngày'**
+  /// **'Hủy trong 30 ngày'**
   String get provCancels30d;
 
   /// No description provided for @provCancelsPenaltyPoints.
@@ -2921,7 +2945,7 @@ abstract class AppLocalizations {
   /// No description provided for @provCancelsSuspend30Body.
   ///
   /// In vi, this message translates to:
-  /// **'Bạn đã huỷ {count} lần trong 30 ngày. Đạt {limit} lần sẽ bị tạm khoá 30 ngày.'**
+  /// **'Bạn đã hủy {count} lần trong 30 ngày. Đạt {limit} lần sẽ bị tạm khoá 30 ngày.'**
   String provCancelsSuspend30Body(Object count, Object limit);
 
   /// No description provided for @provCancelsSuspend7Title.
@@ -2933,13 +2957,13 @@ abstract class AppLocalizations {
   /// No description provided for @provCancelsSuspend7Body.
   ///
   /// In vi, this message translates to:
-  /// **'Bạn đã huỷ {count} lần trong 30 ngày. Đạt {limit} lần sẽ bị tạm khoá 7 ngày.'**
+  /// **'Bạn đã hủy {count} lần trong 30 ngày. Đạt {limit} lần sẽ bị tạm khoá 7 ngày.'**
   String provCancelsSuspend7Body(Object count, Object limit);
 
   /// No description provided for @provCancelsHistory.
   ///
   /// In vi, this message translates to:
-  /// **'Lịch sử huỷ'**
+  /// **'Lịch sử hủy'**
   String get provCancelsHistory;
 
   /// No description provided for @provOrderNoNumber.
@@ -3011,7 +3035,7 @@ abstract class AppLocalizations {
   /// No description provided for @provReferralsColPartner.
   ///
   /// In vi, this message translates to:
-  /// **'Đối tác'**
+  /// **'Cộng tác viên'**
   String get provReferralsColPartner;
 
   /// No description provided for @provReferralsColArea.
@@ -3563,7 +3587,7 @@ abstract class AppLocalizations {
   /// No description provided for @cust2StatusCheckedIn.
   ///
   /// In vi, this message translates to:
-  /// **'Đã check-in'**
+  /// **'Đã đến nơi'**
   String get cust2StatusCheckedIn;
 
   /// No description provided for @cust2StatusActive.
@@ -3665,7 +3689,7 @@ abstract class AppLocalizations {
   /// No description provided for @cust2TlClaimed.
   ///
   /// In vi, this message translates to:
-  /// **'CTV nhận việc'**
+  /// **'Cộng tác viên nhận việc'**
   String get cust2TlClaimed;
 
   /// No description provided for @cust2TlStarted.
@@ -3677,7 +3701,7 @@ abstract class AppLocalizations {
   /// No description provided for @cust2TlFinished.
   ///
   /// In vi, this message translates to:
-  /// **'CTV báo hoàn tất'**
+  /// **'Cộng tác viên báo hoàn tất'**
   String get cust2TlFinished;
 
   /// No description provided for @cust2TlCompleted.
@@ -3881,7 +3905,7 @@ abstract class AppLocalizations {
   /// No description provided for @cust2Cancel.
   ///
   /// In vi, this message translates to:
-  /// **'Huỷ'**
+  /// **'Hủy'**
   String get cust2Cancel;
 
   /// No description provided for @cust2Required.
@@ -3971,7 +3995,7 @@ abstract class AppLocalizations {
   /// No description provided for @prov2LiveShareNotEnRoute.
   ///
   /// In vi, this message translates to:
-  /// **'Chỉ chia sẻ được khi đang di chuyển tới nhà khách (trước khi check-in).'**
+  /// **'Chỉ chia sẻ được khi đang di chuyển tới nhà khách (trước khi xác nhận đã đến nơi).'**
   String get prov2LiveShareNotEnRoute;
 
   /// No description provided for @prov2LiveShareStopped.
@@ -4547,7 +4571,7 @@ abstract class AppLocalizations {
   /// Tasker fine kind cancel_late
   ///
   /// In vi, this message translates to:
-  /// **'Huỷ muộn'**
+  /// **'Hủy muộn'**
   String get fineKindCancelLate;
 
   /// Tasker fine kind late
@@ -4673,7 +4697,7 @@ abstract class AppLocalizations {
   /// Account role pending_tasker
   ///
   /// In vi, this message translates to:
-  /// **'CTV chờ duyệt'**
+  /// **'Cộng tác viên (chờ duyệt)'**
   String get rolePendingTasker;
 
   /// Account role admin
@@ -4835,7 +4859,7 @@ abstract class AppLocalizations {
   /// Delete not available for tasker/admin
   ///
   /// In vi, this message translates to:
-  /// **'Tài khoản Cộng tác viên và quản trị không tự xóa được. Vui lòng liên hệ hỗ trợ để được xử lý.'**
+  /// **'Tài khoản cộng tác viên và quản trị không tự xóa được. Vui lòng liên hệ hỗ trợ để được xử lý.'**
   String get deleteSupportOnly;
 
   /// Contact support button
@@ -4919,7 +4943,7 @@ abstract class AppLocalizations {
   /// Live tracking card title
   ///
   /// In vi, this message translates to:
-  /// **'Vị trí người làm'**
+  /// **'Vị trí cộng tác viên'**
   String get trackCardTitle;
 
   /// Last update time (VN)
@@ -4955,7 +4979,7 @@ abstract class AppLocalizations {
   /// Tracking empty state
   ///
   /// In vi, this message translates to:
-  /// **'Chưa có vị trí. Vị trí sẽ hiện khi người làm bắt đầu di chuyển.'**
+  /// **'Chưa có vị trí. Vị trí sẽ hiện khi cộng tác viên bắt đầu di chuyển.'**
   String get trackNoPosition;
 
   /// Stale position note
@@ -4973,7 +4997,7 @@ abstract class AppLocalizations {
   /// Open map semantics label
   ///
   /// In vi, this message translates to:
-  /// **'Mở vị trí người làm trong ứng dụng bản đồ'**
+  /// **'Mở vị trí cộng tác viên trong ứng dụng bản đồ'**
   String get trackOpenMapLabel;
 
   /// Tracking transient error
@@ -4991,7 +5015,7 @@ abstract class AppLocalizations {
   /// Chat empty state
   ///
   /// In vi, this message translates to:
-  /// **'Chưa có tin nhắn. Hãy gửi tin nhắn cho người làm.'**
+  /// **'Chưa có tin nhắn. Hãy gửi tin nhắn cho cộng tác viên.'**
   String get chatEmpty;
 
   /// Chat input label
@@ -5015,13 +5039,13 @@ abstract class AppLocalizations {
   /// Chat sender: tasker
   ///
   /// In vi, this message translates to:
-  /// **'Người làm'**
+  /// **'Cộng tác viên'**
   String get chatFromTasker;
 
   /// Messages list empty
   ///
   /// In vi, this message translates to:
-  /// **'Chưa có cuộc trò chuyện. Hãy đặt dịch vụ để nhắn tin với người làm.'**
+  /// **'Chưa có cuộc trò chuyện. Hãy đặt dịch vụ để nhắn tin với cộng tác viên.'**
   String get chatNoConversations;
 
   /// Customer SOS button on booking detail
@@ -5101,6 +5125,162 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Phần này gặp sự cố. Hãy quay lại và thử lại.'**
   String get errorFallbackBody;
+
+  /// OCD fix
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang di chuyển đến chỗ khách'**
+  String get provJdPhaseTravelling;
+
+  /// OCD fix
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã bắt đầu di chuyển. Đến nơi, hãy bấm Xác nhận đã đến nơi.'**
+  String get provJdTravellingNote;
+
+  /// OCD fix
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thể hủy ở trạng thái này. Liên hệ hỗ trợ nếu cần.'**
+  String get moneyCancelBlockedGeneric;
+
+  /// Step-up sheet purpose copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập mật khẩu để xác nhận xóa tài khoản.'**
+  String get stepUpPasswordDeleteAccount;
+
+  /// Step-up sheet purpose copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập mã OTP vừa gửi tới điện thoại để xác nhận xóa tài khoản.'**
+  String get stepUpOtpDeleteAccount;
+
+  /// Step-up sheet purpose copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập mật khẩu để xác nhận đổi số điện thoại.'**
+  String get stepUpPasswordChangePhone;
+
+  /// Step-up sheet purpose copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập mã OTP vừa gửi tới điện thoại để xác nhận đổi số điện thoại.'**
+  String get stepUpOtpChangePhone;
+
+  /// Step-up sheet purpose copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập mật khẩu để xác nhận thao tác này.'**
+  String get stepUpPasswordGeneric;
+
+  /// Step-up sheet purpose copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Nhập mã OTP vừa gửi tới điện thoại để xác nhận thao tác này.'**
+  String get stepUpOtpGeneric;
+
+  /// Become-tasker status / upgrade copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ đang được duyệt'**
+  String get taskerReviewTitle;
+
+  /// Become-tasker status / upgrade copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Kyco đã nhận hồ sơ và giấy tờ của bạn và đang kiểm tra.'**
+  String get taskerReviewIntro;
+
+  /// Become-tasker status / upgrade copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Điều gì xảy ra tiếp theo'**
+  String get taskerReviewNextTitle;
+
+  /// Become-tasker status / upgrade copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đội ngũ Kyco kiểm tra CCCD và ảnh chân dung của bạn.'**
+  String get taskerReviewNext1;
+
+  /// Become-tasker status / upgrade copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Khi được duyệt, bạn có thể vào Khu vực cộng tác viên để nhận việc.'**
+  String get taskerReviewNext2;
+
+  /// Become-tasker status / upgrade copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Nếu cần bổ sung hoặc chụp lại giấy tờ, bạn có thể gửi lại ngay bên dưới.'**
+  String get taskerReviewNext3;
+
+  /// Become-tasker status / upgrade copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Chụp lại giấy tờ'**
+  String get taskerReviewReupload;
+
+  /// Become-tasker status / upgrade copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Kiểm tra lại trạng thái'**
+  String get taskerReviewRefresh;
+
+  /// Become-tasker status / upgrade copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Hồ sơ của bạn vẫn đang được duyệt.'**
+  String get taskerReviewStillPending;
+
+  /// Become-tasker status / upgrade copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đã có tài khoản Kyco, chỉ cần bổ sung thông tin và giấy tờ. Không cần xác minh lại số điện thoại.'**
+  String get taskerUpgradeIntro;
+
+  /// Become-tasker status / upgrade copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Số điện thoại này đã có tài khoản Kyco. Hãy đăng nhập trước, rồi vào Tài khoản và chọn Trở thành cộng tác viên để gửi hồ sơ.'**
+  String get taskerPhoneExistsLogin;
+
+  /// Become-tasker status / upgrade copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Hãy xác minh số điện thoại của tài khoản trước khi đăng ký làm cộng tác viên.'**
+  String get taskerUpgradePhoneUnverified;
+
+  /// My subscriptions empty state
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn chưa đăng ký gói nào.'**
+  String get subscriptionsEmptyMine;
+
+  /// Resend countdown for a long lock (>= 2 min)
+  ///
+  /// In vi, this message translates to:
+  /// **'Gửi lại mã sau khoảng {minutes} phút'**
+  String otpResendInMinutes(int minutes);
+
+  /// Service detail: description section heading
+  ///
+  /// In vi, this message translates to:
+  /// **'Mô tả dịch vụ'**
+  String get serviceDescriptionHeading;
+
+  /// Become-tasker copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã chụp'**
+  String get provTaskerCaptured;
+
+  /// Become-tasker copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Để theo dõi trạng thái hồ sơ, hãy đăng nhập bằng số điện thoại bạn đã đăng ký.'**
+  String get taskerDoneSignInHint;
 }
 
 class _AppLocalizationsDelegate
