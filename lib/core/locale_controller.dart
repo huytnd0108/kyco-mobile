@@ -29,11 +29,20 @@ class LocaleController extends Notifier<Locale?> {
 final localeControllerProvider =
     NotifierProvider<LocaleController, Locale?>(LocaleController.new);
 
-/// The language code the backend should serve (`content_translations`): the
-/// explicit override if set, else the device locale — 'en' only when English,
-/// otherwise 'vi'. Read outside the widget tree (dio interceptor).
-String resolvedLocaleCode(Ref ref) {
-  final l = ref.read(localeControllerProvider) ??
-      PlatformDispatcher.instance.locale;
+/// The device (system) locale, kept current by [KycoApp] on
+/// `didChangeLocales` so "follow system" users also trigger a refetch.
+final deviceLocaleProvider = StateProvider<Locale>((ref) => PlatformDispatcher.instance.locale);
+
+/// The language code the backend should serve and the UI shows: the explicit
+/// override if set, else the device locale ('en' only when English, otherwise
+/// 'vi' — the same rule the MaterialApp resolution callback applies). This is
+/// the SINGLE source for both the Accept-Language header and the UI locale, and
+/// every locale-dependent provider depends on it (via [kycoApiProvider]) so a
+/// language switch refetches instead of keeping the old-language payload.
+final appLocaleCodeProvider = Provider<String>((ref) {
+  final Locale l = ref.watch(localeControllerProvider) ?? ref.watch(deviceLocaleProvider);
   return l.languageCode == 'en' ? 'en' : 'vi';
-}
+});
+
+/// Non-reactive read for the dio interceptor (always the current code).
+String resolvedLocaleCode(Ref ref) => ref.read(appLocaleCodeProvider);

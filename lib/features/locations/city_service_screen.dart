@@ -141,7 +141,7 @@ class _Intro extends StatelessWidget {
       children: [
         AspectRatio(
           aspectRatio: 16 / 9,
-          child: _HeroImage(service.imageUrl, label: service.name),
+          child: _HeroImage(service.imageUrl, label: service.name, serviceId: service.id),
         ),
         Padding(
           padding: const EdgeInsets.all(16),
@@ -215,7 +215,8 @@ class _Intro extends StatelessWidget {
 }
 
 class _HeroImage extends StatelessWidget {
-  const _HeroImage(this.url, {required this.label});
+  const _HeroImage(this.url, {required this.label, this.serviceId});
+  final int? serviceId;
   final String? url;
   final String label;
   @override
@@ -235,6 +236,7 @@ class _HeroImage extends StatelessWidget {
         );
     return ResolvedImageUrl(
       url: url,
+      fallbackServiceId: serviceId,
       builder: (context, resolved, resolving) => resolved == null
           ? placeholder(loading: resolving)
           : Image.network(

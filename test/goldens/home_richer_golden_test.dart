@@ -23,17 +23,17 @@ HomeComposite _rich() => const HomeComposite(
         ServiceSummary(
             id: 101,
             name: 'Vệ sinh nhà theo giờ',
-            category: 'Vệ sinh nhà',
+            category: 'home',
             basePriceVnd: 480000,
             durationMinutes: 120),
         ServiceSummary(
             id: 102,
             name: 'Vệ sinh máy lạnh treo tường 2 chiều công suất lớn',
-            category: 'Máy lạnh',
+            category: 'ac-units',
             basePriceVnd: 250000,
             durationMinutes: 60),
         ServiceSummary(
-            id: 103, name: 'Giặt thảm', category: 'Giặt', basePriceVnd: 350000),
+            id: 103, name: 'Giặt thảm', category: 'rugs', basePriceVnd: 350000),
       ],
       how: [
         ContentSection(id: 1, slug: 'home_how_1', title: 'Chọn dịch vụ', body: 'Chọn dịch vụ bạn cần trong vài giây.', orderIndex: 0),

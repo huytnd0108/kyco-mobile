@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/kyco_api.dart';
 import '../../core/di.dart';
+import '../../core/locale_controller.dart';
 import '../../core/models.dart';
 
 /// Catalog megamenu tree (drives category + subcategory chips). Public/anon,
@@ -9,6 +10,13 @@ import '../../core/models.dart';
 final catalogTreeProvider = FutureProvider.autoDispose<List<CatalogCategory>>(
   (ref) => ref.watch(kycoApiProvider).catalogTree(),
 );
+
+/// Slug -> localized name lookup built from [catalogTreeProvider]; empty until
+/// the tree loads (labels then simply hide).
+final catalogLabelsProvider = Provider.autoDispose<CatalogLabels>((ref) {
+  final tree = ref.watch(catalogTreeProvider).valueOrNull;
+  return tree == null ? CatalogLabels.empty : CatalogLabels(tree);
+});
 
 /// The active services filter — the (category, subcategory, q) triple the screen
 /// deep-links from `?category=&subcategory=&q=` and mutates as chips/search fire.
@@ -95,6 +103,7 @@ class ServicesFeedController
   @override
   Future<ServicesFeed> build(ServicesFilter arg) async {
     ref.onDispose(() => _disposed = true);
+    ref.watch(appLocaleCodeProvider); // language switch -> refetch in the new Accept-Language
     final sub = await _resolveSub(arg);
     if (arg.isSearching) return _searchFeed(arg, sub);
 

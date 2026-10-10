@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/kyco_api.dart';
 import '../../core/api/problem.dart';
 import '../../core/di.dart';
+import '../../core/locale_controller.dart';
 import '../../core/models.dart';
 
 /// The tasker's accumulated assigned-jobs page + opaque forward cursor.
@@ -52,6 +53,7 @@ class AssignedJobsController extends AutoDisposeAsyncNotifier<AssignedJobsData> 
 
   @override
   Future<AssignedJobsData> build() async {
+    ref.watch(appLocaleCodeProvider); // language switch -> refetch in the new Accept-Language
     ref.onDispose(() => _disposed = true);
     final page = await _api.taskerJobs();
     return AssignedJobsData(

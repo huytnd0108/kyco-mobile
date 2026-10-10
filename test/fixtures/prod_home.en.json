@@ -1,0 +1,120 @@
+{
+ "ok": true,
+ "data": {
+  "categories": [
+   {
+    "id": 6,
+    "slug": "home-cleaning",
+    "nameVi": "Dọn nhà theo giờ",
+    "nameEn": "Home cleaning",
+    "icon": "cleaning",
+    "imageUrl": "https://storage.googleapis.com/kyco-website-content/product-images/6/2026/06/08/c6a9e2f4-0889-4842-94ef-60e646cfeb33-iStock-1278632179.jpg?X-Goog-Expires=3600&X-Goog-Signature=REDACTED",
+    "subtitle": "Linh hoạt, theo giờ",
+    "orderIndex": 10,
+    "isActive": true
+   },
+   {
+    "id": 1,
+    "slug": "hourly",
+    "nameVi": "Vệ sinh theo giờ",
+    "nameEn": "Hourly cleaning",
+    "icon": "timer",
+    "imageUrl": "https://storage.googleapis.com/kyco-website-content/product-images/1/2026/07/10/5300ad21-3dbf-4b3e-ae5f-d4143e2520a1-legacy-base64.webp?X-Goog-Expires=3600&X-Goog-Signature=REDACTED",
+    "subtitle": null,
+    "orderIndex": 10,
+    "isActive": true
+   },
+   {
+    "id": 8,
+    "slug": "ac-cleaning",
+    "nameVi": "Vệ sinh máy lạnh",
+    "nameEn": "AC cleaning",
+    "icon": "snowflake",
+    "imageUrl": null,
+    "subtitle": "Vệ sinh, gas, sửa chữa",
+    "orderIndex": 30,
+    "isActive": true
+   }
+  ],
+  "services": [
+   {
+    "name": "Deep Cleaning · 2-Bedroom Apartment",
+    "slug": "tvs-can-ho-2pn",
+    "category": "deep",
+    "subcategory": "house",
+    "description": "Deep cleaning of a 2-bedroom apartment, including vacuuming, wiping down furniture, cleaning the kitchen + bathroom, glass and balcony. A team of 2, with specialist equipment and chemicals.",
+    "basePriceVnd": 350000,
+    "durationMinutes": 240,
+    "imageUrl": "https://www.doforms.com/wp-content/uploads/2023/10/professional-house-cleaning-checklist.jpeg%E2%80%8B.jpg",
+    "isActive": true,
+    "userId": 1,
+    "id": 61,
+    "createdAt": "2026-05-16T16:54:01.225Z",
+    "visible": true,
+    "hiddenReason": null,
+    "categoryActive": true,
+    "subcategoryActive": true
+   },
+   {
+    "name": "Home Cleaning · 2 Hours",
+    "slug": "home-cleaning-2h",
+    "category": "home-cleaning",
+    "subcategory": null,
+    "description": "Floor mopping, vacuuming, room tidy-up — suited to apartments under 60m².",
+    "basePriceVnd": 160000,
+    "durationMinutes": 120,
+    "imageUrl": "media:23",
+    "isActive": true,
+    "userId": null,
+    "id": 73,
+    "createdAt": "2026-05-24T08:27:55.059Z",
+    "visible": true,
+    "hiddenReason": null,
+    "categoryActive": true,
+    "subcategoryActive": null
+   },
+   {
+    "name": "Deep Cleaning · Apartment",
+    "slug": "deep-clean-apartment",
+    "category": "deep-cleaning",
+    "subcategory": null,
+    "description": "Specialist kit — glass, tiles, kitchen, bathroom, balcony. 6-8h.",
+    "basePriceVnd": 1200000,
+    "durationMinutes": 480,
+    "imageUrl": null,
+    "isActive": true,
+    "userId": null,
+    "id": 78,
+    "createdAt": "2026-05-24T08:27:55.098Z",
+    "visible": true,
+    "hiddenReason": null,
+    "categoryActive": true,
+    "subcategoryActive": null
+   }
+  ],
+  "content": {
+   "why": [],
+   "how": []
+  },
+  "geo": {
+   "provinces": [
+    {
+     "code": 79,
+     "name": "Thành phố Hồ Chí Minh"
+    }
+   ],
+   "wardRows": [
+    {
+     "code": 27316,
+     "name": "Phường An Đông",
+     "provinceCode": 79
+    },
+    {
+     "code": 27094,
+     "name": "Phường An Khánh",
+     "provinceCode": 79
+    }
+   ]
+  }
+ }
+}

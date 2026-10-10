@@ -1,0 +1,14 @@
+{
+ "ok": true,
+ "data": {
+  "id": 62,
+  "slug": "don-nha-phoi-3h",
+  "name": "Townhouse Cleaning · 3 Hours",
+  "category": "hourly",
+  "subcategory": "general",
+  "description": "Hourly cleaning — floor mopping, vacuuming, tidying and taking out the rubbish. Suited to apartments or small townhouses. Flat 3-hour package, no surcharges.",
+  "basePriceVnd": 180000,
+  "durationMinutes": 180,
+  "imageUrl": "https://www.shutterstock.com/image-photo/vacuuming-cleaning-housekeeping-asian-young-600nw-2608238593.jpg"
+ }
+}

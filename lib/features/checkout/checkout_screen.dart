@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kyco_mobile/core/datetime.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
+import '../services/services_providers.dart' show catalogLabelsProvider;
 
 import '../../core/di.dart';
 import '../../core/models.dart';
@@ -178,7 +179,12 @@ class _CheckoutBody extends ConsumerWidget {
           _AnonBanner(serviceId: serviceId),
           const SizedBox(height: 16),
         ],
-        _ServiceHero(service: service),
+        _ServiceHero(
+          service: service,
+          categoryLabel: ref
+              .watch(catalogLabelsProvider)
+              .category(service.category, Localizations.localeOf(context).languageCode),
+        ),
         const SizedBox(height: 20),
         _SlotSection(serviceId: serviceId, keys: keys),
         const SizedBox(height: 20),
@@ -241,8 +247,9 @@ class _AnonBanner extends StatelessWidget {
 }
 
 class _ServiceHero extends StatelessWidget {
-  const _ServiceHero({required this.service});
+  const _ServiceHero({required this.service, this.categoryLabel});
   final ServiceDetail service;
+  final String? categoryLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -251,8 +258,8 @@ class _ServiceHero extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (service.category != null && service.category!.isNotEmpty)
-          Text(service.category!.toUpperCase(),
+        if (categoryLabel != null)
+          Text(categoryLabel!.toUpperCase(),
               style: Theme.of(context)
                   .textTheme
                   .labelSmall

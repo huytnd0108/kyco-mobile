@@ -381,10 +381,25 @@ class KycoApp extends ConsumerStatefulWidget {
   ConsumerState<KycoApp> createState() => _KycoAppState();
 }
 
-class _KycoAppState extends ConsumerState<KycoApp> {
+class _KycoAppState extends ConsumerState<KycoApp> with WidgetsBindingObserver {
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    // "Follow system" users: a system language change must refetch too.
+    if (locales != null && locales.isNotEmpty) {
+      ref.read(deviceLocaleProvider.notifier).state = locales.first;
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(authControllerProvider.notifier).bootstrap();
     });
@@ -393,7 +408,9 @@ class _KycoAppState extends ConsumerState<KycoApp> {
   @override
   Widget build(BuildContext context) {
     // Re-fetch server content in the new language when the locale changes.
-    ref.listen(localeControllerProvider, (_, _) {
+    ref.listen(appLocaleCodeProvider, (_, _) {
+      // (kycoApiProvider depends on the locale, so every provider watching it is
+      // already rebuilt; these are the belt-and-braces for read()-based ones.)
       ref.invalidate(homeProvider);
       ref.invalidate(bookingsProvider);
       // Kept-alive shell branches (Services) must re-fetch in the new language.

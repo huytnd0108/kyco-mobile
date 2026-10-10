@@ -12,6 +12,7 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 import 'package:kyco_mobile/theme/color_schemes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:kyco_mobile/features/services/services_providers.dart' show catalogTreeProvider;
 import '_fakes.dart';
 import '_harness.dart';
 
@@ -26,7 +27,7 @@ class _FakeCheckoutApi extends KycoApi {
   Future<ServiceDetail> serviceDetail(int id) async => const ServiceDetail(
         id: 101,
         name: 'Vệ sinh nhà theo giờ',
-        category: 'Vệ sinh',
+        category: 'cleaning',
         basePriceVnd: 480000,
         durationMinutes: 120,
         description: 'Dọn dẹp nhà cửa theo giờ, đội ngũ được đào tạo bài bản.',
@@ -65,6 +66,9 @@ Future<void> pumpCheckout(
       tokenStoreProvider.overrideWithValue(tokens),
       authControllerProvider.overrideWith(() => FakeAuthController(auth)),
       kycoApiProvider.overrideWithValue(fakeApi),
+      catalogTreeProvider.overrideWith((ref) => Future.value(const [
+        CatalogCategory(slug: 'cleaning', nameVi: 'Vệ sinh', nameEn: 'Cleaning'),
+      ])),
     ],
     child: MaterialApp(
       debugShowCheckedModeBanner: false,

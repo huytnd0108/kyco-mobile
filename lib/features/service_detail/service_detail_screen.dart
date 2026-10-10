@@ -7,6 +7,7 @@ import '../../core/adaptive.dart';
 import '../../core/api/problem.dart';
 import '../../core/models.dart';
 import '../../core/widgets.dart';
+import '../services/services_providers.dart' show catalogLabelsProvider;
 import 'review_list.dart';
 import 'service_detail_providers.dart';
 import '../../theme/app_semantics.dart';
@@ -67,8 +68,13 @@ class _DetailBody extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     final reviews = ref.watch(reviewsControllerProvider(id)).valueOrNull;
     final agg = reviews?.aggregate ?? ReviewAggregate.empty;
-    final cat =
-        (detail.category?.isNotEmpty ?? false) ? detail.category! : l.servicesTitle;
+    // The row carries category/subcategory SLUGS; show the localized names from
+    // the catalogue tree (hidden until known - never the raw slug).
+    final labels = ref.watch(catalogLabelsProvider);
+    final lc = Localizations.localeOf(context).languageCode;
+    final catLabel = labels.category(detail.category, lc);
+    final subLabel = labels.subcategory(detail.category, detail.subcategory, lc);
+    final cat = catLabel ?? l.servicesTitle;
 
     return Scaffold(
       appBar: AppBar(title: Text(cat)),
@@ -101,8 +107,8 @@ class _DetailBody extends ConsumerWidget {
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              SliverToBoxAdapter(child: _Hero(detail: detail, agg: agg)),
-              SliverToBoxAdapter(child: _Overview(detail: detail, agg: agg)),
+              SliverToBoxAdapter(child: _Hero(detail: detail, agg: agg, catLabel: catLabel, subLabel: subLabel)),
+              SliverToBoxAdapter(child: _Overview(detail: detail, agg: agg, catLabel: catLabel, subLabel: subLabel)),
               SliverToBoxAdapter(child: ReviewList(id)),
               SliverToBoxAdapter(child: _RelatedRail(id: id)),
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -117,7 +123,9 @@ class _DetailBody extends ConsumerWidget {
 /// Hero: cover image + bottom scrim + category/subcategory pills + name +
 /// compact (white) rating line. Mirrors the web hero.
 class _Hero extends StatelessWidget {
-  const _Hero({required this.detail, required this.agg});
+  const _Hero({required this.detail, required this.agg, this.catLabel, this.subLabel});
+  final String? catLabel;
+  final String? subLabel;
   final ServiceDetail detail;
   final ReviewAggregate agg;
 
@@ -129,7 +137,7 @@ class _Hero extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          _HeroImage(detail.imageUrl, label: detail.name),
+          _HeroImage(detail.imageUrl, label: detail.name, serviceId: detail.id),
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -150,10 +158,8 @@ class _Hero extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    if (detail.category?.isNotEmpty ?? false)
-                      _GlassPill(detail.category!),
-                    if (detail.subcategory?.isNotEmpty ?? false)
-                      _GlassPill(detail.subcategory!),
+                    if (catLabel != null) _GlassPill(catLabel!),
+                    if (subLabel != null) _GlassPill(subLabel!),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -195,7 +201,8 @@ class _Hero extends StatelessWidget {
 }
 
 class _HeroImage extends StatelessWidget {
-  const _HeroImage(this.url, {required this.label});
+  const _HeroImage(this.url, {required this.label, this.serviceId});
+  final int? serviceId;
   final String? url;
   final String label;
   @override
@@ -215,6 +222,7 @@ class _HeroImage extends StatelessWidget {
         );
     return ResolvedImageUrl(
       url: url,
+      fallbackServiceId: serviceId,
       builder: (context, resolved, _) => resolved == null
           ? placeholder()
           : Image.network(
@@ -247,7 +255,9 @@ class _GlassPill extends StatelessWidget {
 /// Pills (category / subcategory / duration), price + rating, description, and
 /// the verified-partners trust line.
 class _Overview extends StatelessWidget {
-  const _Overview({required this.detail, required this.agg});
+  const _Overview({required this.detail, required this.agg, this.catLabel, this.subLabel});
+  final String? catLabel;
+  final String? subLabel;
   final ServiceDetail detail;
   final ReviewAggregate agg;
 
@@ -264,10 +274,8 @@ class _Overview extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              if (detail.category?.isNotEmpty ?? false)
-                _Chip(detail.category!, tone: _ChipTone.primary),
-              if (detail.subcategory?.isNotEmpty ?? false)
-                _Chip(detail.subcategory!),
+              if (catLabel != null) _Chip(catLabel!, tone: _ChipTone.primary),
+              if (subLabel != null) _Chip(subLabel!),
               if (detail.durationMinutes != null)
                 _Chip(l.minutesShort(detail.durationMinutes!), icon: Icons.schedule),
             ],

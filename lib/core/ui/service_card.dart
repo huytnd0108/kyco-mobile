@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show SliverConstraints, SliverGridLayout;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
+import '../../features/services/services_providers.dart' show catalogLabelsProvider;
 import '../models.dart';
 import 'price_text.dart';
 import 'media_image.dart';
@@ -28,26 +30,14 @@ class ServiceCard extends StatelessWidget {
           children: [
             AspectRatio(
               aspectRatio: 16 / 9,
-              child: _ServiceImage(service.imageUrl, label: service.name),
+              child: _ServiceImage(service.imageUrl, label: service.name, serviceId: service.id),
             ),
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (service.category != null && service.category!.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: cs.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(service.category!,
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelSmall
-                              ?.copyWith(color: cs.primary, fontWeight: FontWeight.w600)),
-                    ),
+                  _CategoryPill(service),
                   const SizedBox(height: 8),
                   Text(service.name,
                       maxLines: 2,
@@ -104,15 +94,47 @@ class ServiceCard extends StatelessWidget {
   }
 }
 
+/// Category pill: the category SLUG on the row is resolved to its localized
+/// name via the catalogue tree; unresolved (tree loading / unknown) -> hidden,
+/// never the raw slug.
+class _CategoryPill extends ConsumerWidget {
+  const _CategoryPill(this.service);
+  final ServiceSummary service;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final slug = service.category;
+    if (slug == null || slug.isEmpty) return const SizedBox.shrink();
+    final text = ref
+        .watch(catalogLabelsProvider)
+        .category(slug, Localizations.localeOf(context).languageCode);
+    if (text == null) return const SizedBox.shrink();
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: cs.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(text,
+          style: Theme.of(context)
+              .textTheme
+              .labelSmall
+              ?.copyWith(color: cs.primary, fontWeight: FontWeight.w600)),
+    );
+  }
+}
+
 class _ServiceImage extends StatelessWidget {
-  const _ServiceImage(this.url, {required this.label});
+  const _ServiceImage(this.url, {required this.label, this.serviceId});
   final String? url;
+  final int? serviceId;
   final String label;
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return ResolvedImageUrl(
       url: url,
+      fallbackServiceId: serviceId,
       builder: (context, resolved, resolving) {
         if (resolved == null) return _placeholder(cs, loading: resolving);
         return Image.network(

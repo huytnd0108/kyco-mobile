@@ -1,0 +1,104 @@
+{
+ "ok": true,
+ "data": [
+  {
+   "slug": "home-cleaning",
+   "nameVi": "Dọn nhà theo giờ",
+   "nameEn": "Home cleaning",
+   "icon": "cleaning",
+   "subcategories": [],
+   "looseServices": [
+    {
+     "id": 73,
+     "name": "Dọn nhà 2 giờ",
+     "nameEn": "Home Cleaning · 2 Hours"
+    },
+    {
+     "id": 74,
+     "name": "Dọn nhà 3 giờ",
+     "nameEn": "Home Cleaning · 3 Hours"
+    },
+    {
+     "id": 75,
+     "name": "Dọn nhà 4 giờ",
+     "nameEn": "Home Cleaning · 4 Hours"
+    },
+    {
+     "id": 76,
+     "name": "Gói dọn nhà hàng tuần",
+     "nameEn": "Weekly Home-Cleaning Plan"
+    },
+    {
+     "id": 77,
+     "name": "Dọn văn phòng nhỏ",
+     "nameEn": "Small Office Cleaning"
+    }
+   ]
+  },
+  {
+   "slug": "hourly",
+   "nameVi": "Vệ sinh theo giờ",
+   "nameEn": "Hourly cleaning",
+   "icon": "timer",
+   "subcategories": [
+    {
+     "slug": "general",
+     "nameVi": "Dọn dẹp thông thường",
+     "nameEn": "General",
+     "services": [
+      {
+       "id": 62,
+       "name": "Dọn dẹp nhà phố 3 giờ",
+       "nameEn": "Townhouse Cleaning · 3 Hours"
+      }
+     ]
+    }
+   ],
+   "looseServices": [
+    {
+     "id": 71,
+     "name": "Dọn dẹp nhà phố 1 giờ",
+     "nameEn": "Townhouse cleaning — 1 hour"
+    },
+    {
+     "id": 72,
+     "name": "Dọn dẹp nhà phố 8 giờ",
+     "nameEn": "Townhouse cleaning — 8 hours"
+    }
+   ]
+  },
+  {
+   "slug": "deep",
+   "nameVi": "Tổng vệ sinh",
+   "nameEn": "Deep cleaning",
+   "icon": "deepClean",
+   "subcategories": [
+    {
+     "slug": "house",
+     "nameVi": "Căn hộ / nhà ở",
+     "nameEn": "House",
+     "services": [
+      {
+       "id": 61,
+       "name": "Tổng vệ sinh căn hộ 2 phòng ngủ",
+       "nameEn": "Deep Cleaning · 2-Bedroom Apartment"
+      }
+     ]
+    },
+    {
+     "slug": "post_build",
+     "nameVi": "Sau xây dựng",
+     "nameEn": "Post-construction",
+     "services": [
+      {
+       "id": 69,
+       "name": "Vệ sinh sau xây dựng",
+       "nameEn": "Post-construction cleaning"
+      }
+     ]
+    }
+   ],
+   "looseServices": []
+  }
+ ]
+}

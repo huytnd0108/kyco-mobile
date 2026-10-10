@@ -4,6 +4,15 @@ import 'package:kyco_mobile/features/auth/auth_controller.dart';
 
 /// Fixed, boundary-hunting fake data for goldens — never random.
 class Fakes {
+  /// Category slugs carried by service rows -> display names (as the real
+  /// catalogue tree). Rows hold slugs; widgets never print them raw.
+  static const catalogTree = <CatalogCategory>[
+    CatalogCategory(slug: 'cleaning', nameVi: 'Vệ sinh', nameEn: 'Cleaning'),
+    CatalogCategory(slug: 'home', nameVi: 'Vệ sinh nhà', nameEn: 'Home cleaning'),
+    CatalogCategory(slug: 'ac-units', nameVi: 'Máy lạnh', nameEn: 'AC'),
+    CatalogCategory(slug: 'rugs', nameVi: 'Giặt', nameEn: 'Laundry'),
+  ];
+
   static const user = AuthUser(id: 7, role: 'customer', name: 'Ngọc Anh');
   static const signedIn = AuthState(status: AuthStatus.signedIn, user: user);
   static const signedOut = AuthState(status: AuthStatus.signedOut);
@@ -14,12 +23,23 @@ class Fakes {
   /// pins the maxLines:2 ellipsis.
   static HomeComposite home({int count = 8}) => HomeComposite(categories: [
         for (var i = 0; i < count; i++)
-          ServiceCategory(id: i + 1, name: _catNames[i % _catNames.length]),
+          ServiceCategory(
+            id: i + 1,
+            nameVi: _catNames[i % _catNames.length],
+            nameEn: _catNamesEn[i % _catNamesEn.length],
+          ),
       ]);
   static const _catNames = [
     'Vệ sinh nhà theo giờ', 'Tổng vệ sinh', 'Vệ sinh máy lạnh',
     'Vệ sinh sofa – nệm – rèm cửa cao cấp định kỳ', // ellipsis canary
     'Giặt thảm', 'Vệ sinh kính', 'Khử khuẩn', 'Vệ sinh văn phòng',
+  ];
+  // Real prod categories carry both names (/v1/home nameVi + nameEn): the _en
+  // goldens must prove the English side renders, not fall back to Vietnamese.
+  static const _catNamesEn = [
+    'Hourly home cleaning', 'Deep cleaning', 'AC cleaning',
+    'Premium sofa – mattress – curtain cleaning, recurring', // ellipsis canary
+    'Carpet washing', 'Window cleaning', 'Disinfection', 'Office cleaning',
   ];
   static HomeComposite homeEmpty() => const HomeComposite(categories: []);
 

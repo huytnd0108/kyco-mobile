@@ -32,11 +32,11 @@ List<CatalogCategory> _cats() => const [
 // pins the maxLines:2 ellipsis; null duration + a big price exercise the footer.
 ServicesFeed _feed() => const ServicesFeed(
       items: [
-        ServiceSummary(id: 1, name: 'Vệ sinh nhà theo giờ', category: 'Vệ sinh', basePriceVnd: 120000, durationMinutes: 120),
-        ServiceSummary(id: 2, name: 'Vệ sinh sofa – nệm – rèm cửa cao cấp định kỳ trọn gói', category: 'Vệ sinh', basePriceVnd: 990000),
-        ServiceSummary(id: 3, name: 'Vệ sinh máy lạnh treo tường', category: 'Vệ sinh', basePriceVnd: 250000),
-        ServiceSummary(id: 4, name: 'Tổng vệ sinh', category: 'Vệ sinh', basePriceVnd: 1200000),
-        ServiceSummary(id: 5, name: 'Giặt thảm', category: 'Giặt', basePriceVnd: 350000, durationMinutes: 60),
+        ServiceSummary(id: 1, name: 'Vệ sinh nhà theo giờ', category: 'cleaning', basePriceVnd: 120000, durationMinutes: 120),
+        ServiceSummary(id: 2, name: 'Vệ sinh sofa – nệm – rèm cửa cao cấp định kỳ trọn gói', category: 'cleaning', basePriceVnd: 990000),
+        ServiceSummary(id: 3, name: 'Vệ sinh máy lạnh treo tường', category: 'cleaning', basePriceVnd: 250000),
+        ServiceSummary(id: 4, name: 'Tổng vệ sinh', category: 'cleaning', basePriceVnd: 1200000),
+        ServiceSummary(id: 5, name: 'Giặt thảm', category: 'laundry', basePriceVnd: 350000, durationMinutes: 60),
       ],
       hasMore: true,
     );

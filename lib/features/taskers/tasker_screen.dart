@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/ui/media_image.dart' show resolveImageUrl;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
@@ -57,7 +58,7 @@ class _ProfileBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
-    final avatar = profile.avatarUrl;
+    final avatar = resolveImageUrl(profile.avatarUrl);
 
     return CenteredMaxWidth(
       maxWidth: 600,

@@ -254,7 +254,7 @@
   "provWalletWithdrawMaxError": "The maximum per withdrawal is {max}.",
   "provWalletSheetBalance": "Available balance: {amount}",
   "provWalletAmountLabel": "Amount (₫)",
-  "provWalletAmountHint": "From {min} to {max} · whole đồng. Kyco verifies and deducts on the server.",
+  "provWalletAmountHint": "From {min} to {max} · whole VND. Kyco verifies and deducts on the server.",
   "provWalletContinue": "Continue",
   "provWalletMaintenance": "Withdrawals are coming soon.",
   "provWalletWithdrawSubmitted": "Withdrawal request for {amount} to {bank} ••••{tail} sent. Kyco transfers within 1-2 business days.",

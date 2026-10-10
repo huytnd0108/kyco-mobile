@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/app_semantics.dart';
 import '../models.dart';
 import 'media_image.dart';
 
@@ -13,12 +14,32 @@ class CategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final locale = Localizations.localeOf(context).languageCode;
+    final name = category.displayName(locale);
+    final subtitle = category.displaySubtitle(locale);
+    // Photo-less / failed / still-loading tiles show the dark brand gradient
+    // (white text on it >= 5.9:1) with the category icon - never a blank tile.
+    Widget placeholder() => DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: context.semantics.brandGradient,
+            ),
+          ),
+          child: const Align(
+            alignment: Alignment.topRight,
+            child: Padding(
+              padding: EdgeInsets.all(12),
+              child: Icon(Icons.cleaning_services, color: Colors.white54, size: 28),
+            ),
+          ),
+        );
     // One labelled button per tile: the title Text, the decorative photo and the
     // InkWell overlay would otherwise be three separate (and unnamed) nodes.
     return Semantics(
       button: true,
-      label: category.name,
+      label: subtitle == null ? name : '$name, $subtitle',
       onTap: onTap,
       excludeSemantics: true,
       child: ClipRRect(
@@ -29,11 +50,12 @@ class CategoryTile extends StatelessWidget {
           ResolvedImageUrl(
             url: category.imageUrl,
             builder: (context, resolved, _) => resolved == null
-                ? Container(color: cs.primaryContainer)
+                ? placeholder()
                 : Image.network(resolved,
                     fit: BoxFit.cover,
                     excludeFromSemantics: true,
-                    errorBuilder: (_, _, _) => Container(color: cs.primaryContainer)),
+                    errorBuilder: (_, _, _) => placeholder(),
+                    loadingBuilder: (c, child, p) => p == null ? child : placeholder()),
           ),
           const DecoratedBox(
             decoration: BoxDecoration(
@@ -48,15 +70,33 @@ class CategoryTile extends StatelessWidget {
             left: 12,
             right: 12,
             bottom: 12,
-            child: Text(
-              category.name,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: big ? 20 : 15,
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: big ? 20 : 15,
+                    shadows: const [Shadow(color: Color(0x99000000), blurRadius: 4)],
+                  ),
+                ),
+                if (subtitle != null)
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.92),
+                      fontSize: big ? 14 : 12,
+                      shadows: const [Shadow(color: Color(0x99000000), blurRadius: 4)],
+                    ),
+                  ),
+              ],
             ),
           ),
           Positioned.fill(

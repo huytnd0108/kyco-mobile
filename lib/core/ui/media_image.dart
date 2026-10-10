@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/auth_controller.dart';
+import '../config.dart';
 import '../di.dart';
 
 /// The numeric id of an internal `media:<id>` image reference, else null.
@@ -41,25 +42,58 @@ final mediaReadUrlProvider = FutureProvider.autoDispose.family<String?, MediaRea
   }
 });
 
-/// Gives [builder] a loadable image URL for [url]: plain http(s) URLs pass
-/// through; `media:<id>` is resolved through [mediaReadUrlProvider]. While
-/// resolving (or when it cannot be resolved) [builder] gets a null URL.
+/// Normalises a raw `imageUrl` into something `Image.network` can load, or
+/// null: absolute http(s) (any host) passes through; protocol-relative
+/// `//host/x` becomes https; a root-relative `/images/x` resolves against the
+/// website origin (as the browser does on kyco.vn). `media:<id>` and anything
+/// unrecognised return null (media ids go through [mediaReadUrlProvider]).
+String? resolveImageUrl(String? raw) {
+  final u = raw?.trim();
+  if (u == null || u.isEmpty) return null;
+  final lower = u.toLowerCase();
+  if (lower.startsWith('https://') || lower.startsWith('http://')) {
+    return Uri.tryParse(u)?.hasAuthority == true ? u : null;
+  }
+  if (u.startsWith('//')) return 'https:$u';
+  if (u.startsWith('/')) return '${AppConfig.webBase}$u';
+  return null;
+}
+
+/// Last resort for a `media:<id>` list/home image the anonymous media endpoint
+/// could not sign: the service detail endpoint resolves it server-side (that is
+/// what the website renders). Null when it has no loadable image either.
+final serviceImageFallbackProvider =
+    FutureProvider.autoDispose.family<String?, int>((ref, serviceId) async {
+  try {
+    final d = await ref.watch(kycoApiProvider).serviceDetail(serviceId);
+    return resolveImageUrl(d.imageUrl);
+  } catch (_) {
+    return null;
+  }
+});
+
+/// Gives [builder] a loadable image URL for [url] (see [resolveImageUrl];
+/// `media:<id>` is resolved through [mediaReadUrlProvider], falling back to the
+/// service detail when [fallbackServiceId] is given). While resolving (or when
+/// it cannot be resolved) [builder] gets a null URL.
 class ResolvedImageUrl extends ConsumerWidget {
-  const ResolvedImageUrl({super.key, required this.url, required this.builder});
+  const ResolvedImageUrl({super.key, required this.url, required this.builder, this.fallbackServiceId});
   final String? url;
+  final int? fallbackServiceId;
   final Widget Function(BuildContext context, String? resolvedUrl, bool loading) builder;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final raw = url;
-    if (raw == null || raw.isEmpty) return builder(context, null, false);
+    if (raw == null || raw.trim().isEmpty) return builder(context, null, false);
     final id = mediaIdOf(raw);
-    if (id == null) {
-      // Any other non-http scheme is not loadable by Image.network.
-      return builder(context, raw.startsWith('media:') ? null : raw, false);
-    }
+    if (id == null) return builder(context, resolveImageUrl(raw), false);
     final signedIn = ref.watch(authUserIdProvider) != null;
     final async = ref.watch(mediaReadUrlProvider((id: id, signedIn: signedIn)));
-    return builder(context, async.valueOrNull, async.isLoading);
+    if (async.isLoading) return builder(context, null, true);
+    final direct = async.valueOrNull;
+    if (direct != null || fallbackServiceId == null) return builder(context, direct, false);
+    final fb = ref.watch(serviceImageFallbackProvider(fallbackServiceId!));
+    return builder(context, fb.valueOrNull, fb.isLoading);
   }
 }

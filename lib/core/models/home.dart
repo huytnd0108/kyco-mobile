@@ -1,18 +1,64 @@
+import '../localized.dart';
 import 'catalog.dart';
 
-/// A service category from the /v1/home composite (image resolved server-side).
+/// A service category from the /v1/home composite.
+///
+/// Prod payload: `{id, slug, nameVi, nameEn, icon, imageUrl, subtitle,
+/// orderIndex, isActive}` - the names are NOT localized server-side (both
+/// halves are sent) and `subtitle` is Vietnamese only. Display through
+/// [displayName] / [displaySubtitle] with the current UI locale. A legacy
+/// single `name` is still read (older/lab backends).
 class ServiceCategory {
-  const ServiceCategory({required this.id, required this.name, this.imageUrl, this.slug});
+  const ServiceCategory({
+    required this.id,
+    this.name = '',
+    this.nameVi,
+    this.nameEn,
+    this.imageUrl,
+    this.slug,
+    this.subtitle,
+    this.subtitleVi,
+    this.subtitleEn,
+    this.icon,
+  });
   final int id;
+
+  /// Legacy single-language name (`name`); prefer [displayName].
   final String name;
+  final String? nameVi;
+  final String? nameEn;
   final String? imageUrl;
   final String? slug;
+
+  /// `subtitle` is Vietnamese-only in the current API; `subtitleVi`/`subtitleEn`
+  /// are read if/when the backend adds them.
+  final String? subtitle;
+  final String? subtitleVi;
+  final String? subtitleEn;
+  final String? icon;
+
+  String displayName(String locale) => pickLocalizedOr(locale,
+      vi: (nameVi?.isNotEmpty ?? false) ? nameVi : name,
+      en: (nameEn?.isNotEmpty ?? false) ? nameEn : name);
+
+  /// Localized subtitle, or null. The bare `subtitle` is Vietnamese, so it is
+  /// shown in `vi` only: in `en` without a `subtitleEn` it is hidden rather
+  /// than mixing Vietnamese into an English screen (backend gap).
+  String? displaySubtitle(String locale) => locale == 'en'
+      ? pickLocalized('en', en: subtitleEn)
+      : pickLocalized('vi', vi: subtitleVi ?? subtitle, en: subtitleEn);
 
   factory ServiceCategory.fromJson(Map<String, dynamic> j) => ServiceCategory(
         id: (j['id'] as num).toInt(),
         name: (j['name'] as String?) ?? '',
+        nameVi: j['nameVi'] as String?,
+        nameEn: j['nameEn'] as String?,
         imageUrl: j['imageUrl'] as String? ?? j['image_url'] as String?,
         slug: j['slug'] as String?,
+        subtitle: j['subtitle'] as String?,
+        subtitleVi: j['subtitleVi'] as String?,
+        subtitleEn: j['subtitleEn'] as String?,
+        icon: j['icon'] as String?,
       );
 }
 

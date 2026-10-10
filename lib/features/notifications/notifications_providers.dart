@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/kyco_api.dart';
 import '../../core/di.dart';
+import '../../core/locale_controller.dart';
 import '../../core/models.dart';
 import '../auth/auth_controller.dart';
 
@@ -56,6 +57,7 @@ class NotificationsController
 
   @override
   Future<NotificationsData> build() async {
+    ref.watch(appLocaleCodeProvider); // language switch -> refetch in the new Accept-Language
     ref.onDispose(() => _disposed = true);
     // User-scoped: a sign-out / account switch rebuilds (drops the old feed).
     ref.watch(authUserIdProvider);

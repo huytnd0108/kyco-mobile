@@ -9,6 +9,7 @@ import 'package:kyco_mobile/core/prefs.dart';
 import 'package:kyco_mobile/features/auth/auth_controller.dart';
 import 'package:kyco_mobile/features/bookings/bookings_providers.dart';
 import 'package:kyco_mobile/features/home/home_providers.dart';
+import 'package:kyco_mobile/features/services/services_providers.dart' show catalogTreeProvider;
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 import 'package:kyco_mobile/theme/color_schemes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -61,6 +62,7 @@ Future<void> pumpGoldenScreen(
       sharedPrefsProvider.overrideWithValue(prefs),
       tokenStoreProvider.overrideWithValue(InMemoryTokenStore()),
       authControllerProvider.overrideWith(() => FakeAuthController(auth)),
+      catalogTreeProvider.overrideWith((ref) => Future.value(Fakes.catalogTree)),
       homeProvider.overrideWith((ref) => Future.value(home ?? Fakes.home())),
       bookingsProvider.overrideWith((ref) => Future.value(bookings ?? Fakes.bookings())),
       if (selectedBookingId != null)

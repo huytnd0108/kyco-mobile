@@ -12,6 +12,7 @@ import 'package:kyco_mobile/theme/color_schemes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '_fakes.dart';
+import 'package:kyco_mobile/features/services/services_providers.dart' show catalogTreeProvider;
 import '_harness.dart';
 
 // Fixed, boundary-hunting fakes (never network). imageUrl null → deterministic
@@ -20,8 +21,8 @@ const _detail = ServiceDetail(
   id: 3,
   slug: 've-sinh-nha',
   name: 'Vệ sinh sofa – nệm – rèm cửa cao cấp định kỳ theo tháng',
-  category: 'Vệ sinh nhà',
-  subcategory: 'Sofa & nệm',
+  category: 'home-cleaning',
+  subcategory: 'sofa',
   basePriceVnd: 480000,
   durationMinutes: 120,
   description:
@@ -30,10 +31,19 @@ const _detail = ServiceDetail(
 
 const _related = <ServiceSummary>[
   ServiceSummary(
-      id: 11, name: 'Tổng vệ sinh', category: 'Vệ sinh nhà', basePriceVnd: 350000, durationMinutes: 90),
+      id: 11, name: 'Tổng vệ sinh', category: 'home-cleaning', basePriceVnd: 350000, durationMinutes: 90),
   ServiceSummary(
-      id: 12, name: 'Vệ sinh máy lạnh', category: 'Điện lạnh', basePriceVnd: 250000, durationMinutes: 60),
-  ServiceSummary(id: 13, name: 'Giặt thảm', category: 'Vệ sinh nhà', basePriceVnd: 150000),
+      id: 12, name: 'Vệ sinh máy lạnh', category: 'ac', basePriceVnd: 250000, durationMinutes: 60),
+  ServiceSummary(id: 13, name: 'Giặt thảm', category: 'home-cleaning', basePriceVnd: 150000),
+];
+
+/// Category slugs on service rows resolve to these display names (as the real
+/// catalogue tree does) - the card/detail never prints the raw slug.
+const _tree = <CatalogCategory>[
+  CatalogCategory(slug: 'home-cleaning', nameVi: 'Vệ sinh nhà', nameEn: 'Home cleaning', subcategories: [
+    CatalogSubcategory(slug: 'sofa', nameVi: 'Sofa & nệm', nameEn: 'Sofa & mattress'),
+  ]),
+  CatalogCategory(slug: 'ac', nameVi: 'Điện lạnh', nameEn: 'Air conditioning'),
 ];
 
 /// A reviews controller with fixed data + a non-null cursor → the "load more"
@@ -82,6 +92,7 @@ Future<void> pumpServiceDetail(
       serviceDetailProvider.overrideWith((ref, id) => Future.value(_detail)),
       relatedServicesProvider.overrideWith((ref, id) => Future.value(_related)),
       reviewsControllerProvider.overrideWith(_FakeReviews.new),
+      catalogTreeProvider.overrideWith((ref) => Future.value(_tree)),
     ],
     child: MaterialApp(
       debugShowCheckedModeBanner: false,

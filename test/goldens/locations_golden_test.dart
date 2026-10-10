@@ -12,6 +12,7 @@ import 'package:kyco_mobile/l10n/app_localizations.dart';
 import 'package:kyco_mobile/theme/color_schemes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:kyco_mobile/features/services/services_providers.dart' show catalogTreeProvider;
 import '_fakes.dart';
 import '_harness.dart';
 
@@ -45,17 +46,17 @@ CityLanding _landing() => const CityLanding(
             id: 101,
             slug: 'don-nha-theo-gio',
             name: 'Vệ sinh nhà theo giờ',
-            category: 'Vệ sinh',
+            category: 'cleaning',
             basePriceVnd: 480000,
             durationMinutes: 120),
         ServiceSummary(
             id: 102,
             name: 'Vệ sinh sofa – nệm – rèm cửa cao cấp định kỳ', // ellipsis canary
-            category: 'Vệ sinh',
+            category: 'cleaning',
             basePriceVnd: 12345678,
             durationMinutes: 240),
         ServiceSummary(
-            id: 103, name: 'Tổng vệ sinh', category: 'Vệ sinh', basePriceVnd: 2400000),
+            id: 103, name: 'Tổng vệ sinh', category: 'cleaning', basePriceVnd: 2400000),
       ],
     );
 
@@ -80,6 +81,7 @@ Future<void> _pump(
       tokenStoreProvider.overrideWithValue(InMemoryTokenStore()),
       // Guest-first: locations are fully public — render signed-out.
       authControllerProvider.overrideWith(() => FakeAuthController(Fakes.signedOut)),
+      catalogTreeProvider.overrideWith((ref) => Future.value(Fakes.catalogTree)),
       ...overrides,
     ],
     child: MaterialApp(

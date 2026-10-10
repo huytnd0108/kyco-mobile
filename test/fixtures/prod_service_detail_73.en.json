@@ -1,0 +1,14 @@
+{
+ "ok": true,
+ "data": {
+  "id": 73,
+  "slug": "home-cleaning-2h",
+  "name": "Home Cleaning · 2 Hours",
+  "category": "home-cleaning",
+  "subcategory": null,
+  "description": "Floor mopping, vacuuming, room tidy-up — suited to apartments under 60m².",
+  "basePriceVnd": 160000,
+  "durationMinutes": 120,
+  "imageUrl": "https://storage.googleapis.com/kyco-website-content/product-images/73/2026/06/08/7467f31b-b805-4b12-82b1-3f17effde05f-len-lich-ve-sinh-nha-cua-cuc-tien-loi-cho-moi-nguoi-noi-tro-1_800x450.jpg?X-Goog-Expires=3600&X-Goog-Signature=REDACTED"
+ }
+}

@@ -1,0 +1,36 @@
+{
+ "ok": true,
+ "data": [
+  {
+   "id": 102,
+   "slug": "housekeep-monthly",
+   "name": "Monthly Housekeeping Package",
+   "category": "housekeeping",
+   "basePriceVnd": 3600000,
+   "durationMinutes": 960,
+   "imageUrl": null
+  },
+  {
+   "id": 101,
+   "slug": "housekeep-weekly",
+   "name": "Weekly Housekeeper",
+   "category": "housekeeping",
+   "basePriceVnd": 1200000,
+   "durationMinutes": 720,
+   "imageUrl": null
+  },
+  {
+   "id": 100,
+   "slug": "disinfect-office",
+   "name": "Office Disinfection",
+   "category": "disinfection",
+   "basePriceVnd": 800000,
+   "durationMinutes": 180,
+   "imageUrl": null
+  }
+ ],
+ "meta": {
+  "nextCursor": "eyJrIjoiMTAwIiwiaSI6MTAwfQ",
+  "hasMore": true
+ }
+}

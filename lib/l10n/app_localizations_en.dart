@@ -841,7 +841,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String provWalletAmountHint(String min, String max) {
-    return 'From $min to $max · whole đồng. Kyco verifies and deducts on the server.';
+    return 'From $min to $max · whole VND. Kyco verifies and deducts on the server.';
   }
 
   @override

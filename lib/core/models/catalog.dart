@@ -1,3 +1,5 @@
+import '../localized.dart';
+
 // Catalog + service-listing models. Field names mirror the /v1 handlers
 // (ServiceItem / RelatedService / MegamenuCategory). All parsing tolerant.
 
@@ -75,8 +77,7 @@ class CatalogService {
   final String name;
   final String? nameEn;
 
-  String displayName(String locale) =>
-      (locale == 'en' && nameEn != null && nameEn!.isNotEmpty) ? nameEn! : name;
+  String displayName(String locale) => pickLocalizedOr(locale, vi: name, en: nameEn);
 
   factory CatalogService.fromJson(Map<String, dynamic> j) => CatalogService(
         id: (j['id'] as num?)?.toInt() ?? 0,
@@ -97,8 +98,7 @@ class CatalogSubcategory {
   final String? nameEn;
   final List<CatalogService> services;
 
-  String displayName(String locale) =>
-      (locale == 'en' && nameEn != null && nameEn!.isNotEmpty) ? nameEn! : nameVi;
+  String displayName(String locale) => pickLocalizedOr(locale, vi: nameVi, en: nameEn);
 
   factory CatalogSubcategory.fromJson(Map<String, dynamic> j) => CatalogSubcategory(
         slug: (j['slug'] as String?) ?? '',
@@ -127,8 +127,7 @@ class CatalogCategory {
   final List<CatalogSubcategory> subcategories;
   final List<CatalogService> looseServices;
 
-  String displayName(String locale) =>
-      (locale == 'en' && nameEn != null && nameEn!.isNotEmpty) ? nameEn! : nameVi;
+  String displayName(String locale) => pickLocalizedOr(locale, vi: nameVi, en: nameEn);
 
   factory CatalogCategory.fromJson(Map<String, dynamic> j) => CatalogCategory(
         slug: (j['slug'] as String?) ?? '',
@@ -144,6 +143,44 @@ class CatalogCategory {
             .map(CatalogService.fromJson)
             .toList(growable: false),
       );
+}
+
+/// Resolves the raw category / subcategory SLUGS carried by service rows
+/// (`category: "hourly"`, `subcategory: "general"`) to the localized display
+/// names from the catalogue tree. Returns null when unknown - callers hide the
+/// label instead of printing the raw slug.
+class CatalogLabels {
+  const CatalogLabels(this.tree);
+  static const empty = CatalogLabels(<CatalogCategory>[]);
+  final List<CatalogCategory> tree;
+
+  CatalogCategory? _cat(String? slug) {
+    for (final c in tree) {
+      if (c.slug == slug) return c;
+    }
+    return null;
+  }
+
+  String? category(String? slug, String locale) {
+    final c = _cat(slug);
+    if (c == null) return null;
+    final n = c.displayName(locale);
+    return n.isEmpty ? null : n;
+  }
+
+  String? subcategory(String? categorySlug, String? slug, String locale) {
+    if (slug == null || slug.isEmpty) return null;
+    final cats = categorySlug == null ? tree : [?_cat(categorySlug)];
+    for (final c in cats) {
+      for (final s in c.subcategories) {
+        if (s.slug == slug) {
+          final n = s.displayName(locale);
+          return n.isEmpty ? null : n;
+        }
+      }
+    }
+    return null;
+  }
 }
 
 /// A search hit from /v1/search (kind = service|tasker|city).
