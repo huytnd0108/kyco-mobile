@@ -6,6 +6,9 @@
 // (bcfb263/12ea497), subscriptions durationHours (6cb73a9), MQA-45 weekly-availability conflict (1e37fc4),
 // MQA-24/41 unverified check-in + events.user_id (478e453), MQA-40 fund floor (39cc604),
 // booking scheduledAt with an hour-only offset, VRF-5 anonymous public-page burst (d8a9eff).
+// fe-audit sync (≥ ac0d5e5): --only=kyc (MQA-58 every KYC door + read headers), pool (Z2 privacy, distanceKm,
+//   taskerNetVnd 8edc05d), window (FE-06 check-in/out window + admin override), export (ae0cc41), mqa56 (MQA-56/57).
+//   needs RT2_FIXTURES dir with real.jpg/png/webp (≥10 KB) and the lab fake GCS (GCS_API_ENDPOINT/GCS_BUCKET).
 // Fixtures are created by SQL (docker exec appdroid-pg psql) and refuse any other DB.
 import { execFileSync, spawn } from 'node:child_process';
 import net from 'node:net';
@@ -581,6 +584,439 @@ async function main() {
     const nrow = nb ? sql(`select b.status||'|'||b.notes||'|'||p.provider_tx_id||'|'||p.status from bookings b join payments p on p.id=${s3.json.payments.cancellable} where b.id=${nb}`) : '-';
     rec('seed', 're-run creates a fresh cancellable pair', s3.code === 0 && nb && nb !== cb && /^PENDING\|\[QA-MONEY\] cancellable #\d+\|QA-MONEY-PAY-CANCELLABLE-\d+\|paid$/.test(nrow), `old=${cb} new=${nb} ${nrow}`);
     if (s3.json) fs.writeFileSync(process.env.QA_MONEY_FIXTURES || new URL('./.qa-money-fixtures.json', import.meta.url).pathname, JSON.stringify(s3.json, null, 2));
+  }
+
+  // ════════ fe-audit sync (feat/fe-audit ≥ ac0d5e5): MQA-58 KYC, Z2 pool, FE-06 work window, data export, MQA-56/57 ════════
+  const GCS = process.env.GCS_API_ENDPOINT || 'http://localhost:4443';
+  const BUCKET = process.env.GCS_BUCKET || 'kyco-mqa-media';
+  const gcsList = async (prefix = '') => {
+    const r = await fetch(`${GCS}/storage/v1/b/${BUCKET}/o?prefix=${encodeURIComponent(prefix)}`);
+    const j = await r.json().catch(() => ({}));
+    return (j.items ?? []).map((o) => ({ name: o.name, contentType: o.contentType, size: Number(o.size) }));
+  };
+  const gcsPut = (name, body, contentType) => fetch(`${GCS}/upload/storage/v1/b/${BUCKET}/o?uploadType=media&name=${encodeURIComponent(name)}`, { method: 'POST', headers: { 'Content-Type': contentType }, body });
+  const envLocal = Object.fromEntries(fs.readFileSync(`${WT}/.env.local`, 'utf8').split('\n').filter((l) => /^[A-Z_]+=/.test(l)).map((l) => { const i = l.indexOf('='); return [l.slice(0, i), l.slice(i + 1).replace(/^['"]|['"]$/g, '')]; }));
+  const crypto = await import('node:crypto');
+  // ── fixtures: real images (generated), HTML/SVG renamed .png (padded past 10 KB so only the TYPE fails), 134 B PNG ──
+  const FX = (() => {
+    const pad = (s) => Buffer.from(s + ' '.repeat(Math.max(0, 12 * 1024 - s.length)));
+    const html = pad('<html><body><h1>rt2</h1><script>alert(document.domain)</script></body></html><!--') ;
+    const svg = pad('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg><!--');
+    // 1×1 PNG padded with a tEXt chunk to exactly 134 bytes (valid PNG magic, < 10 KB)
+    const crc32 = (b) => { let c, crc = 0xffffffff; for (const x of b) { c = (crc ^ x) & 0xff; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; crc = (crc >>> 8) ^ c; } return (crc ^ 0xffffffff) >>> 0; };
+    const base = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+    const iend = base.subarray(base.length - 12);
+    const textLen = 134 - base.length - 12;
+    const data = Buffer.concat([Buffer.from('tEXt'), Buffer.from('c\0' + 'x'.repeat(textLen - 2))]);
+    const len = Buffer.alloc(4); len.writeUInt32BE(textLen); const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(data));
+    const tiny = Buffer.concat([base.subarray(0, base.length - 12), len, data, crc, iend]);
+    const dir = process.env.RT2_FIXTURES || '/tmp/claude-1000/-home-bi-w-AppDroid1-ori/e83cad69-666e-4383-b5b7-0d5045b1a7d0/scratchpad/fx';
+    const rd = (f) => { try { return fs.readFileSync(`${dir}/${f}`); } catch { return null; } };
+    const pdf = Buffer.concat([Buffer.from('%PDF-1.4\n%rt2\n'), Buffer.alloc(11 * 1024, 0x20), Buffer.from('\n%%EOF\n')]);
+    return { html, svg, tiny, jpeg: rd('real.jpg'), png: rd('real.png'), webp: rd('real.webp'), pdf };
+  })();
+  const blob = (buf, type = 'image/png') => new Blob([buf], { type });
+  const BAD = [['html-as-png', FX.html, 'unsupported-mime'], ['svg-as-png', FX.svg, 'unsupported-mime'], ['134B-png', FX.tiny, 'too-small']];
+  const kycHdrOk = (r, wantInline) => {
+    const h = r.headers; const cd = h.get('content-disposition') ?? ''; const csp = h.get('content-security-policy') ?? '';
+    const ok = h.get('x-content-type-options') === 'nosniff' && /sandbox/.test(csp) && /no-store/.test(h.get('cache-control') ?? '')
+      && (wantInline ? /^inline/.test(cd) : /^attachment/.test(cd));
+    return { ok, d: `HTTP ${r.status} ct=${h.get('content-type')} cd=${cd} nosniff=${h.get('x-content-type-options')} csp=${/sandbox/.test(csp) ? 'sandbox' : csp.slice(0, 40)} cc=${h.get('cache-control')}` };
+  };
+  const cookieJar = (cs) => [...new Map(cs.map((c) => c.split(';')[0]).map((kv) => [kv.split('=')[0], kv])).values()].join('; ');
+  const webLogin = async (email, password) => {
+    const w = lastLogin + LOGIN_GAP - Date.now(); if (w > 0) await sleep(w); lastLogin = Date.now();
+    const c0 = await fetch(ORIGIN + '/api/auth/csrf'); const csrf = (await c0.json()).csrfToken; let cs = c0.headers.getSetCookie();
+    const lg = await fetch(ORIGIN + '/api/auth/callback/credentials', { method: 'POST', redirect: 'manual', headers: { Cookie: cookieJar(cs), 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ csrfToken: csrf, email, password, json: 'true' }) });
+    cs = [...cs, ...lg.headers.getSetCookie()]; const ck = cookieJar(cs);
+    const sess = await (await fetch(ORIGIN + '/api/auth/session', { headers: { Cookie: ck } })).json().catch(() => null);
+    return sess?.user ? ck : null;
+  };
+  // tok = Bearer token, or { cookie } for a web session
+  const rawGet = (path, tok, extra = {}) => sleep(PACE).then(() => fetch(ORIGIN + path, { headers: { ...(tok?.cookie ? { Cookie: tok.cookie } : tok ? { Authorization: `Bearer ${tok}` } : {}), ...extra }, redirect: 'manual' }));
+
+  if (on('kyc')) {
+    if (!FX.jpeg || !FX.png || !FX.webp) rec('kyc', 'fixtures real.jpg/png/webp missing (RT2_FIXTURES)', false, '');
+    rec('kyc', 'fixture sizes', null, `html=${FX.html.length} svg=${FX.svg.length} tiny=${FX.tiny.length} jpeg=${FX.jpeg?.length} png=${FX.png?.length} webp=${FX.webp?.length} pdf=${FX.pdf.length}`);
+    // lab applicants: a fresh customer with a verified phone (upgrade door) and a fresh phone (public door)
+    const bcrypt = createRequire(`${WT}/package.json`)('bcryptjs');
+    const stamp = Date.now().toString().slice(-7);
+    const upEmail = `rt2-upgrade-${stamp}@qa.local`, upPw = 'RetestQa12345!';
+    sql(`insert into users (email,password_hash,name,role,is_active,token_version,phone,phone_verified_at) values (${lit(upEmail)},${lit(bcrypt.hashSync(upPw, 10))},'RT2 Upgrade','customer',true,0,'+8498${stamp}',now())`);
+    const upId = Number(sql(`select id from users where email=${lit(upEmail)}`));
+    const lu = await req('POST', '/api/v1/auth/login', { body: { email: upEmail, password: upPw } });
+    const U = lu.data?.accessToken;
+    rec('kyc', 'login fresh customer (upgrade applicant)', !!U, `users.id=${upId} ${U ? '' : ev(lu)}`);
+    const pubPhone = (n) => `+849${stamp}${n}`;   // +84 + 9 digits (lib/otp normalizePhone)
+    // public door verifies an OTP first (purpose register): lab-only challenge row hashed with the lab pepper
+    const otpFor = (phone) => {
+      const code = String(100000 + Math.floor(Math.random() * 899999));
+      const h = crypto.createHmac('sha256', envLocal.ZALO_OTP_HASH_PEPPER || '').update(`${code}:${phone}:register`, 'utf8').digest('hex');
+      sql(`insert into otp_challenges (phone,code_hash,expires_at,purpose) values (${lit(phone)},${lit(h)},now()+interval '5 minutes','register')`);
+      return code;
+    };
+    const docsCount = (uid) => Number(sql(`select count(*) from kyc_documents where user_id=${uid}`));
+    const objCount = async () => (await gcsList()).length;
+    const files3 = (fd, bad) => { // two real JPEGs + the probe in `selfie`
+      fd.set('cccd_front', blob(FX.jpeg, 'image/jpeg'), 'front.jpg'); fd.set('cccd_back', blob(FX.jpeg, 'image/jpeg'), 'back.jpg');
+      fd.set('selfie', blob(bad, 'image/png'), 'selfie.png');
+    };
+    const profile = (fd) => { fd.set('name', 'RT2 KYC'); fd.set('city', 'Hồ Chí Minh'); fd.set('district', 'Quận 1'); };
+    const custId = Number(sql(`select id from users where email=${lit(ACC.customer[0])}`));
+    // web /api/kyc/upload (the old form door) — must not exist any more (or must share the validator)
+    // /api/* outside v1 is cookie-gated by middleware (a Bearer gets 401) → admin/customer web sessions
+    const AW = await webLogin(...ACC.admin); const CW = await webLogin(...ACC.customer);
+    rec('kyc', 'admin + customer web cookie sessions', !!AW && !!CW, `admin=${!!AW} customer=${!!CW}`);
+    {
+      const fd = new FormData(); fd.set('cccd_front', blob(FX.html), 'a.png');
+      await sleep(PACE);
+      const r = await fetch(ORIGIN + '/api/kyc/upload', { method: 'POST', headers: { Cookie: CW ?? '', Origin: ORIGIN, Accept: 'application/json' }, body: fd, redirect: 'manual' });
+      const t = await r.text();
+      // no upload handler any more: /api/kyc/[id] (GET only) answers 405 for POST /api/kyc/upload
+      rec('kyc', 'web /api/kyc/upload (customer cookie) gone → 404/405, no 4th door', [404, 405].includes(r.status), `HTTP ${r.status} ${t.slice(0, 100) || '(empty body)'}`);
+    }
+    // three doors × [html, svg, 134 B]; signup limiter = 3/60 s per door → one probe per door per round, 21 s apart
+    let round = 0;
+    for (const [label, bytes, reason] of BAD) {
+      if (round++) await sleep(21_000);
+      const o0 = await objCount();
+      // (a) /v1/kyc/upload (customer Bearer)
+      {
+        const d0 = docsCount(custId);
+        const fd = new FormData(); fd.set('cccd_front', blob(bytes), 'cccd_front.png');
+        const r = await req('POST', '/api/v1/kyc/upload', { token: C, raw: fd });
+        const fieldOk = r.status === 422 && Object.values(r.json?.fields ?? {}).includes(reason);
+        const perFile = r.status === 200 && r.data?.results?.[0]?.ok === false && r.data?.results?.[0]?.reason === reason;
+        // MQA-59: this door answers 200 {results:[{ok:false,reason}]} (partial-success contract, same as 8877d67);
+        // INFO until fixed, KYC_UPLOAD_FIX=1 asserts the 422 field contract of the other doors.
+        rec('kyc', `/v1/kyc/upload ${label} → 422 field ${reason}`, process.env.KYC_UPLOAD_FIX ? fieldOk : (fieldOk || null), `${ev(r)}${perFile ? ' [200 per-file results ok:false reason=' + reason + ']' : ''}`);
+        rec('kyc', `/v1/kyc/upload ${label} → rejected with reason ${reason} (422 field or per-file result)`, fieldOk || perFile, '');
+        rec('kyc', `/v1/kyc/upload ${label} → nothing stored`, docsCount(custId) === d0, `kyc_documents ${d0}→${docsCount(custId)}`);
+      }
+      // (b) public /v1/become-tasker
+      {
+        const phone = pubPhone(round);
+        const fd = new FormData(); fd.set('phone', phone); fd.set('otp_code', otpFor(phone)); profile(fd); files3(fd, bytes);
+        const r = await req('POST', '/api/v1/become-tasker', { raw: fd });
+        rec('kyc', `public /v1/become-tasker ${label} → 422 selfie=${reason}`, r.status === 422 && r.json?.fields?.selfie === reason, ev(r));
+        const u = Number(sql(`select count(*) from users where phone=${lit(phone)}`));
+        const objs = await gcsList(`collaborator-kyc/pending-${phone.replace(/\D/g, '')}/`);
+        rec('kyc', `public /v1/become-tasker ${label} → no user, no object`, u === 0 && objs.length === 0, `users=${u} objects=${objs.map((o) => o.name).join(',') || 0}`);
+      }
+      // (c) /v1/become-tasker/upgrade (signed-in customer)
+      if (U) {
+        const d0 = docsCount(upId);
+        const ob0 = (await gcsList(`collaborator-kyc/user-${upId}/`)).length;   // the fake GCS outlives DB rebuilds
+        const fd = new FormData(); profile(fd); files3(fd, bytes);
+        const r = await req('POST', '/api/v1/become-tasker/upgrade', { token: U, raw: fd });
+        rec('kyc', `/v1/become-tasker/upgrade ${label} → 422 selfie=${reason}`, r.status === 422 && r.json?.fields?.selfie === reason, ev(r));
+        const role = sql(`select role from users where id=${upId}`);
+        rec('kyc', `/v1/become-tasker/upgrade ${label} → nothing stored, still customer`, docsCount(upId) === d0 && role === 'customer' && (await gcsList(`collaborator-kyc/user-${upId}/`)).length === ob0, `docs ${d0}→${docsCount(upId)} role=${role} objects ${ob0}→${(await gcsList(`collaborator-kyc/user-${upId}/`)).length}`);
+      }
+      rec('kyc', `bucket object count unchanged after ${label} round`, (await objCount()) === o0, `${o0}→${await objCount()}`);
+    }
+    // ── positive: real files on every door ──
+    await sleep(21_000);
+    const stored = {};
+    {
+      const fd = new FormData();
+      fd.set('cccd_front', blob(FX.jpeg, 'text/html'), 'x.html');     // declared type/name are ignored
+      fd.set('cccd_back', blob(FX.png, 'image/png'), 'b.png');
+      fd.set('selfie', blob(FX.webp, 'image/webp'), 's.webp');
+      fd.set('passport', blob(FX.pdf, 'application/pdf'), 'p.pdf');
+      const r = await req('POST', '/api/v1/kyc/upload', { token: C, raw: fd });
+      const res = r.data?.results ?? [];
+      rec('kyc', '/v1/kyc/upload jpeg(declared text/html)+png+webp+pdf → 200, 4 stored', r.status === 200 && res.filter((x) => x.ok).length === 4, ev(r));
+      for (const x of res.filter((x) => x.ok)) stored[x.docKind] = { id: x.documentId, key: x.storageKey };
+      const objs = (await gcsList(`customer-kyc/user-${custId}/`)).filter((o) => res.some((x) => x.ok && x.storageKey?.replace(/^kyc\//, 'customer-kyc/') === o.name));
+      const fr = objs.find((o) => o.name.includes('cccd_front'));
+      rec('kyc', '/v1/kyc/upload jpeg → customer-kyc/… image/jpeg (.jpg), not the declared type', !!fr && fr.contentType === 'image/jpeg' && /\.jpg$/.test(fr.name), JSON.stringify(objs.map((o) => `${o.name} ${o.contentType}`)));
+    }
+    {
+      const phone = pubPhone(9);
+      const fd = new FormData(); fd.set('phone', phone); fd.set('otp_code', otpFor(phone)); profile(fd); files3(fd, FX.jpeg);
+      const r = await req('POST', '/api/v1/become-tasker', { raw: fd });
+      const objs = await gcsList(`collaborator-kyc/pending-${phone.replace(/\D/g, '')}/`);
+      rec('kyc', 'public /v1/become-tasker 3 real JPEGs → 200/201 {userId}', [200, 201].includes(r.status) && r.data?.userId > 0, ev(r));
+      rec('kyc', 'public door objects under collaborator-kyc/pending-…/ as image/jpeg .jpg', objs.length === 3 && objs.every((o) => o.contentType === 'image/jpeg' && /\.jpg$/.test(o.name)), JSON.stringify(objs.map((o) => `${o.name} ${o.contentType}`)));
+    }
+    if (U) {
+      const pre = new Set((await gcsList(`collaborator-kyc/user-${upId}/`)).map((o) => o.name));
+      const fd = new FormData(); profile(fd); files3(fd, FX.jpeg);
+      const r = await req('POST', '/api/v1/become-tasker/upgrade', { token: U, raw: fd });
+      const objs = (await gcsList(`collaborator-kyc/user-${upId}/`)).filter((o) => !pre.has(o.name));
+      rec('kyc', '/v1/become-tasker/upgrade 3 real JPEGs → 201 pending_tasker', r.status === 201 && r.data?.status === 'pending_tasker', ev(r));
+      rec('kyc', 'upgrade door objects under collaborator-kyc/user-N/ as image/jpeg', objs.length === 3 && objs.every((o) => o.contentType === 'image/jpeg'), JSON.stringify(objs.map((o) => `${o.name} ${o.contentType}`)));
+    }
+    // ── legacy objects stored before the fix (HTML/SVG): served as attachment by every read door ──
+    const legacyHtml = `kyc-pending/rt2-${stamp}/selfie.html`, legacySvg = `kyc-pending/rt2-${stamp}/cccd_back.svg`;
+    await gcsPut(legacyHtml, FX.html, 'text/html'); await gcsPut(legacySvg, FX.svg, 'image/svg+xml');
+    const lid = Number(sql(`insert into kyc_documents (user_id,doc_kind,storage_key,status) values (${custId},'selfie',${lit(legacyHtml)},'pending') returning id`).split('\n')[0]);
+    const sid = Number(sql(`insert into kyc_documents (user_id,doc_kind,storage_key,status) values (${custId},'cccd_back',${lit(legacySvg)},'pending') returning id`).split('\n')[0]);
+    const cases = [
+      ['jpeg', stored.cccd_front, true], ['png', stored.cccd_back, true], ['webp', stored.selfie, true], ['pdf', stored.passport, false],
+      ['legacy html', { id: lid, key: legacyHtml }, false], ['legacy svg', { id: sid, key: legacySvg }, false],
+    ];
+    for (const [label, doc, inline] of cases) {
+      if (!doc) { rec('kyc', `read ${label}: no stored doc`, false, ''); continue; }
+      // the stored key for customer docs is kyc/… (bucket object customer-kyc/…)
+      for (const [door, path, tok] of [
+        ['admin /api/kyc/file?key=', `/api/kyc/file?key=${encodeURIComponent(doc.key)}`, { cookie: AW }],
+        ['admin /api/kyc/{id}', `/api/kyc/${doc.id}`, { cookie: AW }],
+        ['owner /v1/kyc/file/{id}', `/api/v1/kyc/file/${doc.id}`, C],
+      ]) {
+        const r = await rawGet(path, tok);
+        const h = kycHdrOk(r, inline);
+        const ct = r.headers.get('content-type') ?? '';
+        const typeOk = inline ? /^image\/(jpeg|png|webp)/.test(ct) : !/html|svg/.test(ct);
+        rec('kyc', `${door} ${label} → 200 ${inline ? 'inline' : 'attachment'}, nosniff, sandbox CSP, no-store`, r.status === 200 && h.ok && typeOk, h.d);
+        await r.arrayBuffer().catch(() => {});
+      }
+    }
+    {
+      const r = await rawGet(`/api/v1/kyc/file/${stored.cccd_front?.id}`, P2);
+      rec('kyc', 'other user /v1/kyc/file/{id} → 404', r.status === 404, `HTTP ${r.status}`);
+      for (const k of ['checkin/x.jpg', 'media/1/a.jpg', '../kyc/user-1/a.jpg']) {
+        const r2 = await rawGet(`/api/kyc/file?key=${encodeURIComponent(k)}`, { cookie: AW });
+        rec('kyc', `admin /api/kyc/file?key=${k} (non-KYC prefix) → 400`, r2.status === 400, `HTTP ${r2.status} ${(await r2.text()).slice(0, 80)}`);
+      }
+      const r3 = await rawGet(`/api/kyc/file?key=${encodeURIComponent(stored.cccd_front?.key ?? '')}`, { cookie: CW });
+      rec('kyc', 'customer web cookie /api/kyc/file → 403', r3.status === 403, `HTTP ${r3.status}`);
+      const r4 = await rawGet(`/api/kyc/${stored.cccd_front?.id}`, { cookie: CW });
+      rec('kyc', 'owner (customer) web cookie /api/kyc/{id} own doc → 200 inline', r4.status === 200 && kycHdrOk(r4, true).ok, kycHdrOk(r4, true).d);
+      const r5 = await rawGet(`/api/kyc/file?key=${encodeURIComponent(stored.cccd_front?.key ?? '')}`, A);
+      rec('kyc', 'admin Bearer /api/kyc/file → 401 (cookie-gated web path; no mobile admin door)', r5.status === 401, `HTTP ${r5.status}`);
+    }
+    sql(`delete from kyc_documents where id in (${lid},${sid})`);
+  }
+
+  // ── Z2 pool privacy + taskerNetVnd (8edc05d) + FE-06 work window + ping → distanceKm ──
+  if (on('pool') || on('window')) {
+    const vnDay = (d) => new Date(Date.now() + 7 * 3600_000 + d * 86_400_000).toISOString().slice(0, 10);
+    const mk = async (label, day, hhmm) => {
+      const body = { serviceId: svc, scheduledAt: `${vnDay(day)}T${hhmm}:00`, district: 'Quận 1', ward: 'Bến Nghé', addressLine: `12 Lê Lợi rt2-${label}`, notes: `rt2-secret-note-${label}`, paymentMethod: 'cash', idempotencyKey: randomUUID() };
+      const r = await req('POST', '/api/v1/bookings', { token: C, body });
+      const bid = r.data?.bookingId;
+      rec('pool', `create booking ${label}`, r.status === 201 && bid > 0, ev(r));
+      if (bid) sql(`update bookings set address_lat=10.7769, address_lng=106.7009 where id=${bid}`);
+      return bid;
+    };
+    const day = 4 + Math.floor(Math.random() * 15);
+    const b1 = await mk('z2a', day, '09:00');
+    const b2 = await mk('z2b', day, '15:00');
+    const b3 = await mk('z2c-assigned', day + 2, '18:00');   // another day: no JOB_TIME_CONFLICT with the claim
+    // let both taskers see the rows now (rank gate is not under test here)
+    sql(`update jobs set pool_broadcasted_at=now() - interval '10 minutes' where booking_id in (${b1},${b2})`);
+    const pingFresh = (tid) => Number(sql(`select count(*) from tasker_location_pings where tasker_id=${tid} and recorded_at >= now() - interval '24 hours'`)) > 0;
+    const PT = Number(sql(`select id from taskers where user_account_id=(select id from users where email=${lit(ACC.tasker[0])})`));
+    const checkPool = async (who, tok, tid, tag) => {
+      const r = await req('GET', '/api/v1/tasker/jobs/pool', { token: tok });
+      const rows = r.data?.pool ?? [];
+      const mine = rows.filter((x) => [b1, b2].includes(x.bookingId));
+      const leaks = rows.filter((x) => ['addressLine', 'notes', 'addressLat', 'addressLng'].some((k) => k in x));
+      rec('pool', `${tag} ${who} pool rows: no addressLine/notes/addressLat/addressLng`, r.status === 200 && rows.length > 0 && leaks.length === 0, `HTTP ${r.status} rows=${rows.length} leaking=${leaks.length} keys=${Object.keys(rows[0] ?? {}).join(',')}`);
+      rec('pool', `${tag} ${who} pool rows carry distanceKm`, rows.length > 0 && rows.every((x) => 'distanceKm' in x), '');
+      const fresh = pingFresh(tid);
+      const dk = mine.map((x) => x.distanceKm);
+      rec('pool', `${tag} ${who} distanceKm ${fresh ? 'number (ping ≤24 h)' : 'null (no ping ≤24 h)'}`, mine.length >= 1 && dk.every((v) => fresh ? typeof v === 'number' && v >= 0 : v === null), `fresh=${fresh} distanceKm=${JSON.stringify(dk)}`);
+      // 8edc05d — taskerNetVnd: server-computed JSON integer, 0 < net ≤ totalVnd for priced rows
+      const netBad = (xs) => xs.filter((x) => (x.totalVnd ?? 0) > 0 && !(Number.isInteger(x.taskerNetVnd) && x.taskerNetVnd > 0 && x.taskerNetVnd <= x.totalVnd));
+      const asg = r.data?.assigned ?? [];
+      rec('pool', `${tag} ${who} pool+assigned taskerNetVnd integer, 0 < net ≤ totalVnd`, netBad(rows).length === 0 && netBad(asg).length === 0 && rows.some((x) => 'taskerNetVnd' in x),
+        `pool=${rows.slice(0, 3).map((x) => `${x.jobId}:${x.taskerNetVnd}/${x.totalVnd}`).join(' ')} assigned=${asg.slice(0, 3).map((x) => `${x.jobId}:${x.taskerNetVnd}/${x.totalVnd}`).join(' ')} bad=${netBad(rows).length + netBad(asg).length}`);
+      return mine;
+    };
+    // an admin-assigned job (dispatch_mode 'assigned') so `assigned` has a priced row to check
+    if (b3) sql(`update jobs set dispatch_mode='assigned', tasker_id=${PT}, status='pending' where booking_id=${b3}`);
+    // null-distance case: age tasker2's pings past 24 h (lab fixture) so it has no known position
+    sql(`update tasker_location_pings set recorded_at = recorded_at - interval '25 hours' where tasker_id=${T2T} and recorded_at >= now() - interval '24 hours'`);
+    const before = await checkPool('tasker', P, PT, 'pre-ping');
+    await checkPool('tasker2', P2, T2T, 'pre-ping');
+    const j1 = before.find((x) => x.bookingId === b1)?.jobId ?? Number(sql(`select id from jobs where booking_id=${b1}`));
+    // a client-supplied net is ignored (query + body)
+    {
+      const r = await req('GET', '/api/v1/tasker/jobs/pool?taskerNetVnd=1&totalVnd=1', { token: P });
+      const row = (r.data?.pool ?? []).find((x) => x.jobId === j1);
+      const ref = before.find((x) => x.jobId === j1);
+      rec('pool', 'query ?taskerNetVnd=1 has no effect', !!row && row.taskerNetVnd === ref?.taskerNetVnd, `${row?.taskerNetVnd} vs ${ref?.taskerNetVnd}`);
+    }
+    // claim → owner sees address + notes; another tasker 404
+    const cl = await req('POST', `/api/v1/tasker/jobs/${j1}/claim`, { token: P });
+    rec('pool', `claim job ${j1}`, cl.status === 200, ev(cl));
+    const own = await req('GET', `/api/v1/tasker/jobs/${j1}`, { token: P });
+    const ojs = JSON.stringify(own.data ?? {});
+    rec('pool', 'owner GET /tasker/jobs/{id} shows addressLine + notes', own.status === 200 && ojs.includes('12 Lê Lợi rt2-z2a') && ojs.includes('rt2-secret-note-z2a'), `HTTP ${own.status} ${ojs.slice(0, 160)}`);
+    const oth = await req('GET', `/api/v1/tasker/jobs/${j1}`, { token: P2 });
+    rec('pool', 'tasker2 GET claimed job → 404 (no address)', oth.status === 404 && !JSON.stringify(oth.json).includes('rt2-z2a'), ev(oth));
+    const asg = await req('GET', '/api/v1/tasker/jobs/pool', { token: P });
+    const j3 = b3 ? Number(sql(`select id from jobs where booking_id=${b3}`)) : 0;
+    const arow = (asg.data?.assigned ?? []).find((x) => x.jobId === j3);
+    rec('pool', 'admin-assigned job in `assigned` with integer taskerNetVnd, 0 < net ≤ totalVnd', !!arow && Number.isInteger(arow.taskerNetVnd) && arow.taskerNetVnd > 0 && arow.taskerNetVnd <= arow.totalVnd, JSON.stringify(arow ?? {}).slice(0, 200));
+
+    // ── FE-06 work window on j1 ──
+    const setSched = (expr) => sql(`update bookings set scheduled_at=${expr} where id=${b1}`);
+    const geo = { lat: 10.7769, lon: 106.7009, accuracyM: 10 };
+    const st = await req('POST', `/api/v1/tasker/jobs/${j1}/start-tracking`, { token: P });
+    rec('window', 'start-tracking', st.status === 201, ev(st));
+    // a location ping via the tracking route (claimed job is 'active' + an open tracking session) → position ≤24 h
+    {
+      const r = await req('POST', `/api/v1/jobs/${j1}/location`, { token: P, body: { lat: 10.78, lng: 106.70, accuracy: 10 } });
+      rec('pool', 'POST /v1/jobs/{id}/location ping (tracking route, en route)', [200, 201].includes(r.status), ev(r));
+      // MQA-60: foreign job → 403 FORBIDDEN 'not your job' (checklist #4 wants 404). INFO until LOCATION_404_FIX=1.
+      const rf = await req('POST', `/api/v1/jobs/${j1}/location`, { token: P2, body: { lat: 10.78, lng: 106.70 } });
+      rec('pool', 'tasker2 ping on foreign job → 404 (checklist #4)', process.env.LOCATION_404_FIX ? rf.status === 404 : (rf.status === 404 || null), ev(rf));
+      rec('pool', 'tasker2 ping on foreign job wrote nothing', Number(sql(`select count(*) from tasker_location_pings where job_id=${j1} and tasker_id=${T2T}`)) === 0, '');
+      await checkPool('tasker', P, PT, 'post-ping');
+    }
+    const snap = () => sql(`select (select count(*) from tasker_check_ins where job_id=${j1})||'|'||(select status from jobs where id=${j1})||'|'||(select status from bookings where id=${b1})||'|'||(select count(*) from tasker_fines where tasker_id=${PT})`);
+    const vnHm = (ms) => { const d = new Date(ms + 7 * 3600_000); const p = (n) => String(n).padStart(2, '0'); return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())} ${p(d.getUTCDate())}/${p(d.getUTCMonth() + 1)}`; };
+    {
+      setSched(`now() - interval '2 hours 10 minutes'`);
+      const s0 = snap();
+      const r = await req('POST', `/api/v1/tasker/jobs/${j1}/check-in`, { token: P, body: geo });
+      rec('window', 'check-in 2h10m after scheduledAt → 409 CHECKIN_TOO_LATE, nothing written', r.status === 409 && r.json?.code === 'CHECKIN_TOO_LATE' && snap() === s0, `${ev(r)} ${r.json?.message ?? ''} snap ${s0}→${snap()}`);
+    }
+    {
+      const schedMs = Date.now() + 3 * 3600_000;
+      setSched(`to_timestamp(${schedMs / 1000})`);
+      const s0 = snap();
+      const r = await req('POST', `/api/v1/tasker/jobs/${j1}/check-in`, { token: P, body: geo });
+      const opens = vnHm(schedMs - 30 * 60_000);
+      rec('window', `check-in 3h before → 409 CHECKIN_TOO_EARLY, message has opening ${opens}, nothing written`, r.status === 409 && r.json?.code === 'CHECKIN_TOO_EARLY' && String(r.json?.message ?? '').includes(opens) && snap() === s0, `${ev(r)} msg=${r.json?.message} snap ${s0}→${snap()}`);
+    }
+    // admin override: staff without admin:dispatch:write → 403; customer → 403; admin + step-up → 201 + 1 audit row
+    const auditN = () => Number(sql(`select count(*) from admin_audit where action='admin.job.work_window_override' and target_id='${j1}'`));
+    const ov = (tok, body, k = key('rt2-ww')) => req('POST', `/api/admin/v1/jobs/${j1}/work-window-override`, { token: tok, body, headers: { 'Idempotency-Key': k } });
+    {
+      const a0 = auditN();
+      const r1 = await ov(S, { kind: 'check_in', reason: 'rt2 staff no scope' });
+      rec('window', 'override by staff without admin:dispatch:write → 403', r1.status === 403 && auditN() === a0, ev(r1));
+      const r2 = await ov(C, { kind: 'check_in', reason: 'rt2 customer' });
+      rec('window', 'override by customer → 403', r2.status === 403 && auditN() === a0, ev(r2));
+      const r3 = await ov(A, { kind: 'lunch', reason: 'rt2 bad kind' });
+      rec('window', 'override bad kind → 422 (or step-up first)', [422, 401, 403].includes(r3.status) && auditN() === a0, ev(r3));
+      const sus = await stepUp(A, ACC.admin[1]);
+      const r4 = await ov(A, { kind: 'check_in', reason: 'rt2 lab override check-in' });
+      rec('window', 'override check_in (admin + step-up) → 201, exactly 1 audit row, expiresAt ≈ +6 h', r4.status === 201 && auditN() === a0 + 1 && Math.abs(Date.parse(r4.data?.expiresAt) - Date.now() - 6 * 3600_000) < 120_000, `step-up ${sus} ${ev(r4)} audit ${a0}→${auditN()}`);
+      const r5 = await ov(A, { kind: 'check_in', reason: 'x' });
+      rec('window', 'override reason < 5 chars → 422, no audit', r5.status === 422 && auditN() === a0 + 1, ev(r5));
+    }
+    {
+      const r = await req('POST', `/api/v1/tasker/jobs/${j1}/check-in`, { token: P, body: geo });
+      rec('window', 'check-in 3h early after override → 201, no late fine', r.status === 201 && r.data?.lateFine?.fine === 0, ev(r));
+    }
+    // photos (prereq for check-out): 2 before + 1 mid via request-upload → PUT → finalize
+    const upload = async (category, name) => {
+      const ru = await req('POST', '/api/v1/media/request-upload', { token: P, body: { category, entityType: 'booking', entityId: b1, fileName: name, mimeType: 'image/jpeg', sizeBytes: FX.jpeg.length } });
+      if (!ru.data?.uploadUrl) { rec('window', `request-upload ${name}`, false, ev(ru)); return 0; }
+      const put = await fetch(ru.data.uploadUrl, { method: 'PUT', headers: { 'Content-Type': ru.data.requiredContentType || 'image/jpeg' }, body: FX.jpeg });
+      const fin = await req('POST', '/api/v1/media/finalize', { token: P, body: { mediaId: ru.data.assetId } });
+      if (fin.status !== 200) rec('window', `finalize ${name}`, false, `PUT ${put.status} ${ev(fin)}`);
+      return fin.status === 200 ? ru.data.assetId : 0;
+    };
+    const m1 = await upload('checkin', 'b1.jpg'), m2 = await upload('checkin', 'b2.jpg');
+    const ph1 = await req('POST', `/api/v1/tasker/jobs/${j1}/photos`, { token: P, body: { slot: 'before', mediaIds: [m1, m2] } });
+    const m3 = await upload('checkout', 'm1.jpg');
+    const ph2 = await req('POST', `/api/v1/tasker/jobs/${j1}/photos`, { token: P, body: { slot: 'mid', mediaIds: [m3] } });
+    rec('window', 'photos before x2 + mid x1', ph1.status === 200 && ph2.status === 200, `${ev(ph1)} | ${ev(ph2)}`);
+    const coSnap = () => sql(`select (select count(*) from tasker_check_ins where job_id=${j1})||'|'||(select status from jobs where id=${j1})||'|'||(select status from bookings where id=${b1})||'|'||(select count(*) from location_sessions where job_id=${j1} and is_active)`);
+    {
+      const s0 = coSnap();
+      const r = await req('POST', `/api/v1/tasker/jobs/${j1}/check-out`, { token: P, body: { lat: 10.7769, lng: 106.7009, accuracyM: 10 } });
+      rec('window', 'check-out right after check-in → 409 CHECKOUT_TOO_EARLY, nothing written', r.status === 409 && r.json?.code === 'CHECKOUT_TOO_EARLY' && coSnap() === s0, `${ev(r)} msg=${r.json?.message} snap ${s0}→${coSnap()}`);
+      const a0 = auditN();
+      const o = await ov(A, { kind: 'check_out', reason: 'rt2 lab override check-out' });
+      rec('window', 'override check_out → 201, +1 audit', o.status === 201 && auditN() === a0 + 1, ev(o));
+      const r2 = await req('POST', `/api/v1/tasker/jobs/${j1}/check-out`, { token: P, body: { lat: 10.7769, lng: 106.7009, accuracyM: 10 } });
+      rec('window', 'check-out after override → 200', r2.status === 200, ev(r2));
+    }
+    sql(`update jobs set status='closed' where (booking_id=${b2} and tasker_id is null) or booking_id=${b3 || 0}`);
+  }
+
+  // ── Data export (ae0cc41) ──
+  if (on('export')) {
+    const custId = Number(sql(`select id from users where email=${lit(ACC.customer[0])}`));
+    const r0 = await req('POST', '/api/v1/data-export', { token: C, body: { notes: 'rt2 export' } });
+    const xid = r0.data?.id;
+    rec('export', 'customer POST /v1/data-export → 201 {id}', r0.status === 201 && xid > 0, ev(r0));
+    const audit = () => Number(sql(`select count(*) from admin_audit where action='admin.data_export.fulfil' and target_id='${xid}'`));
+    const f1 = await req('POST', `/api/admin/v1/data-export-requests/${xid}/fulfil`, { token: S, headers: { 'Idempotency-Key': key('rt2-x') } });
+    rec('export', 'fulfil by staff without admin:customers:write → 403', f1.status === 403, ev(f1));
+    const f1b = await req('POST', `/api/admin/v1/data-export-requests/${xid}/fulfil`, { token: C, headers: { 'Idempotency-Key': key('rt2-x') } });
+    rec('export', 'fulfil by customer → 403', f1b.status === 403, ev(f1b));
+    const a0 = audit();
+    await stepUp(A, ACC.admin[1]);
+    const f2 = await req('POST', `/api/admin/v1/data-export-requests/${xid}/fulfil`, { token: A, headers: { 'Idempotency-Key': key('rt2-x') } });
+    rec('export', 'fulfil by admin + step-up → 200, 1 audit row', f2.status === 200 && audit() === a0 + 1, `${ev(f2)} audit ${a0}→${audit()}`);
+    const r1 = await rawGet(`/api/data-export/file/${xid}`, C);
+    const loc = r1.headers.get('location') ?? '';
+    rec('export', 'owner GET /api/data-export/file/{id} (Bearer) → 302 signed URL, no-store', r1.status === 302 && /expires=\d+&sig=[0-9a-f]{64}/.test(loc) && /no-store/.test(r1.headers.get('cache-control') ?? ''), `HTTP ${r1.status} loc=${loc.slice(0, 120)}`);
+    const u = new URL(loc, ORIGIN); const signedPath = u.pathname + u.search;
+    const r2 = await rawGet(signedPath, C);
+    const body = await r2.text();
+    rec('export', 'follow → 200 JSON attachment, no-store, nosniff', r2.status === 200 && /application\/json/.test(r2.headers.get('content-type') ?? '') && /^attachment/.test(r2.headers.get('content-disposition') ?? '') && /no-store/.test(r2.headers.get('cache-control') ?? ''),
+      `HTTP ${r2.status} ct=${r2.headers.get('content-type')} cd=${r2.headers.get('content-disposition')} cc=${r2.headers.get('cache-control')}`);
+    let j = null; try { j = JSON.parse(body); } catch { /* not json */ }
+    const keysDeep = []; const walk = (o, p = '') => { if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) { keysDeep.push(`${p}${k}`); walk(v, `${p}${k}.`); } }; walk(j);
+    const secretKeys = keysDeep.filter((k) => /(password|pass_hash|passwordhash|token|otp|code_hash|secret|pepper|mfa|totp|refresh)/i.test(k.split('.').pop()));
+    rec('export', 'file has no secret keys (password/token/otp/secret)', !!j && secretKeys.length === 0, `top=${Object.keys(j ?? {}).join(',')} secret=${secretKeys.slice(0, 8).join(',')}`);
+    const others = sql(`select string_agg(email, ',') from users where id <> ${custId} and email is not null`).split(',').filter(Boolean);
+    const leakedEmails = others.filter((e) => body.includes(e));
+    const otherBank = sql(`select string_agg(bank_account_number, ',') from taskers where bank_account_number is not null and bank_account_number <> ''`).split(',').filter((x) => x && x.length >= 6);
+    const leakedBank = otherBank.filter((b) => body.includes(b));
+    const uidVals = []; const walkU = (o) => { if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) { if (/^(userId|user_id|customerId|customer_id)$/.test(k) && v != null) uidVals.push(Number(v)); walkU(v); } }; walkU(j);
+    rec('export', 'only the owner\'s rows (no other user email / userId / tasker bank account)', leakedEmails.length === 0 && leakedBank.length === 0 && uidVals.every((v) => v === custId),
+      `emails=${leakedEmails.slice(0, 3)} bank=${leakedBank.length} userIds=${[...new Set(uidVals)].join(',')} size=${body.length}`);
+    const other = await rawGet(signedPath, P2);
+    rec('export', 'another user with the owner\'s signed URL → 404', other.status === 404, `HTTP ${other.status}`);
+    const otherMint = await rawGet(`/api/data-export/file/${xid}`, P2);
+    rec('export', 'another user mint → 404', otherMint.status === 404, `HTTP ${otherMint.status}`);
+    const sigT = signedPath.replace(/sig=([0-9a-f])/, (m, c) => `sig=${c === 'a' ? 'b' : 'a'}`);
+    const t1 = await rawGet(sigT, C);
+    rec('export', 'tampered sig → 404', t1.status === 404, `HTTP ${t1.status}`);
+    const t2 = await rawGet(signedPath.replace(`/file/${xid}?`, `/file/${xid + 1}?`), C);
+    rec('export', 'tampered id → 404', t2.status === 404, `HTTP ${t2.status}`);
+    const sec = envLocal.URL_SIGNING_SECRET || '';
+    const past = Math.floor(Date.now() / 1000) - 60;
+    const sigPast = crypto.createHmac('sha256', sec).update(`api/data-export/file/${xid}|${past}`).digest('hex');
+    const t3 = await rawGet(`/api/data-export/file/${xid}?expires=${past}&sig=${sigPast}`, C);
+    rec('export', 'expired (correctly signed, past expiry) → 404', sec.length >= 32 && t3.status === 404, `HTTP ${t3.status}`);
+    const anon = await rawGet(signedPath, null);
+    rec('export', 'no auth (signed URL only) → 404', anon.status === 404, `HTTP ${anon.status}`);
+  }
+
+  // ── MQA-56 / MQA-57: unknown /api/* (outside v1) → JSON 404 envelope for a signed-in web user; /api/reviews no 307 ──
+  if (on('mqa56')) {
+    const ck = await webLogin(...ACC.customer);
+    rec('mqa56', 'customer web cookie session', !!ck, '');
+    for (const p of ['/api/no-such-route', '/api/bookings/zzz/nothing', '/api/search', '/api/neighborhoods']) {
+      for (const [m, hdr] of [['GET', {}], ['POST', { 'Content-Type': 'application/json', Origin: ORIGIN }]]) {
+        await sleep(PACE);
+        const r = await fetch(ORIGIN + p, { method: m, headers: { Cookie: ck, Accept: 'text/html,application/json', ...hdr }, body: m === 'POST' ? '{}' : undefined, redirect: 'manual' });
+        const t = await r.text(); let jj = null; try { jj = JSON.parse(t); } catch { /* html */ }
+        rec('mqa56', `web cookie ${m} ${p} → 404 JSON envelope`, r.status === 404 && jj?.ok === false && jj?.code === 'NOT_FOUND' && !!r.headers.get('x-trace-id'), `HTTP ${r.status} ${jj ? JSON.stringify(jj).slice(0, 100) : 'non-JSON ' + t.slice(0, 40).replace(/\s+/g, ' ')}`);
+      }
+    }
+    {
+      // customer cookie in the legacy cookie-gated /api/admin/* namespace → 403 envelope (middleware admin gate), never HTML
+      await sleep(PACE);
+      const r = await fetch(ORIGIN + '/api/admin/no-such', { headers: { Cookie: ck, Accept: 'application/json' }, redirect: 'manual' });
+      const t = await r.text();
+      rec('mqa56', 'customer cookie GET /api/admin/no-such → 403/404 envelope', [403, 404].includes(r.status) && /"ok":false/.test(t), `HTTP ${r.status} ${t.slice(0, 80)}`);
+    }
+    // MQA-57: no page redirect on /api/reviews. Signed-in web user → catch-all 404 envelope; a request without
+    // a cookie session is stopped earlier by the middleware cookie gate (401 envelope) — either way never 307.
+    for (const [who, h, want] of [['web cookie', { Cookie: ck }, [404]], ['anonymous', {}, [401, 404]], ['Bearer', { Authorization: `Bearer ${C}` }, [401, 404]]]) {
+      await sleep(PACE);
+      const r = await fetch(ORIGIN + '/api/reviews', { headers: { Accept: 'application/json', ...h }, redirect: 'manual' });
+      const t = await r.text();
+      rec('mqa57', `${who} GET /api/reviews → no redirect, ${want.join('/')} envelope`, !r.headers.get('location') && want.includes(r.status) && /"ok":false/.test(t), `HTTP ${r.status} loc=${r.headers.get('location')} ${t.slice(0, 80)}`);
+    }
+    for (const p of ['/vi/reviews', '/en/reviews/x']) {
+      await sleep(PACE);
+      const r = await fetch(ORIGIN + p, { redirect: 'manual' });
+      rec('mqa57', `GET ${p} still redirects to bookings`, [307, 308].includes(r.status) && /\/bookings$/.test(r.headers.get('location') ?? ''), `HTTP ${r.status} ${r.headers.get('location')}`);
+    }
   }
 
   const fail = results.filter((r) => r.ok === false).length;

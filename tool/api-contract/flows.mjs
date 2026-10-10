@@ -37,6 +37,8 @@ const WT = process.env.KYCO_WT || '/home/bi/w/AppDroid1-ori/kyco-wt/mobile-qa';
 const ACC = {
   customer: [process.env.CUSTOMER_EMAIL || 'demo@demo.local', process.env.CUSTOMER_PASSWORD || 'demo12345'],
   tasker: [process.env.TASKER_EMAIL || 'tasker@qa.local', process.env.TASKER_PASSWORD || 'TaskerQa12345!'],
+  // FE-06: the lab lifts the check-out 50 % rule with the audited admin override (no sleep)
+  admin: [process.env.ADMIN_EMAIL || 'admin@qa.local', process.env.ADMIN_PASSWORD || 'Admin12345qa'],
 };
 const TEMP_PW = 'FlowsQa12345!';
 const TEMP = {
@@ -286,6 +288,11 @@ async function main() {
       await expect(g, 'claim again → 409', 'POST', `/tasker/jobs/${job1}/claim`, { token: P }, 409);
       await expect(g, 'claim missing job → 404', 'POST', '/tasker/jobs/99999999/claim', { token: P }, 404);
       await expect(g, 'GET own job detail', 'GET', `/tasker/jobs/${job1}`, { token: P }, 200);
+      // FE-06 (user decision 2026-10-10): check-in only from scheduledAt − 30 min to + 2 h. The booking
+      // door refuses past/near times, so the lab moves the claimed booking into the window: the tasker
+      // checks in 10 min before the appointment (on time → lateFine 0).
+      sql(`update bookings set scheduled_at=now() + interval '10 minutes' where id=${booking1}`);
+      info(g, 'FE-06 lab: booking moved into the check-in window', 'scheduled_at = now() + 10 min');
 
       // Geofence: mobile booking body has no coordinates → set them in QA DB.
       const lat = +(10.7769 + (Math.random() - 0.5) * 0.004).toFixed(6);
@@ -337,6 +344,17 @@ async function main() {
       await expect(g, 'photos mid x1', 'POST', `/tasker/jobs/${job1}/photos`, { token: P, body: { slot: 'mid', mediaIds: [m1] } }, 200, (d) => d?.stored === 1 || JSON.stringify(d));
       await expect(g, 'complete before check-out → 4xx', 'POST', `/tasker/jobs/${job1}/complete`, { token: P }, [409, 422]);
       await expect(g, 'check-out wrong key (lon instead of lng) → 422', 'POST', `/tasker/jobs/${job1}/check-out`, { token: P, body: { lat, lon: lng, accuracyM: 12 } }, 422);
+      // FE-06: check-out not before check-in + 50 % of the service duration → 409 CHECKOUT_TOO_EARLY;
+      // the lab lifts it with the audited admin override (admin:dispatch:write + step-up), not a sleep.
+      await expect(g, 'FE-06 check-out < 50% duration → 409 CHECKOUT_TOO_EARLY', 'POST', `/tasker/jobs/${job1}/check-out`, { token: P, body: { lat, lng, accuracyM: 12 } }, 409,
+        (_d, r) => r.json?.code === 'CHECKOUT_TOO_EARLY' || r.json?.code);
+      const adm = await loginAs(...ACC.admin, g, 'admin (FE-06 override)');
+      if (adm?.accessToken) {
+        await expect(g, 'admin step-up', 'POST', '/auth/step-up', { token: adm.accessToken, body: { method: 'password', password: ACC.admin[1] } }, 200);
+        await expect(g, 'FE-06 admin work-window-override check_out', 'POST', `/../admin/v1/jobs/${job1}/work-window-override`,
+          { token: adm.accessToken, body: { kind: 'check_out', reason: 'flows lab: lift the 50% rule' }, headers: { 'Idempotency-Key': randomUUID() } }, 201,
+          (d) => (d?.jobId === job1 && d?.kind === 'check_out') || JSON.stringify(d));
+      }
       await expect(g, 'mobile: check-out {lat,lng,accuracyM}', 'POST', `/tasker/jobs/${job1}/check-out`, { token: P, body: { lat, lng, accuracyM: 12 } }, 200,
         (d) => (d?.bookingId === booking1) || JSON.stringify(d));
       await expect(g, 'complete without after photos → 409/422', 'POST', `/tasker/jobs/${job1}/complete`, { token: P }, [409, 422]);

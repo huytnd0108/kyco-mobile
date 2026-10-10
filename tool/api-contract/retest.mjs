@@ -5,6 +5,7 @@
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
 
 const BASE = process.env.API_BASE || 'http://127.0.0.1:4142/api/v1';
 const ROOT = BASE.replace(/\/api\/v1$/, '');
@@ -95,6 +96,10 @@ const jobOf = (bid) => Number(sql(`select id from jobs where booking_id=${bid} o
 // tiny valid PNG (1x1)
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 const pngFile = (n) => new File([PNG], n, { type: 'image/png' });
+// MQA-58 (8c98156/8877d67): KYC files are typed by their bytes and must be ≥10 KB, so the 1×1 PNG is
+// `too-small` on every KYC door — a successful KYC submit needs a real image (RT2_FIXTURES/real.jpg).
+const JPEG_REAL = (() => { try { return fs.readFileSync(`${process.env.RT2_FIXTURES || '/tmp/claude-1000/-home-bi-w-AppDroid1-ori/e83cad69-666e-4383-b5b7-0d5045b1a7d0/scratchpad/fx'}/real.jpg`); } catch { return null; } })();
+const jpegFile = (n) => new File([JPEG_REAL ?? PNG], n, { type: 'image/jpeg' });
 
 async function main() {
   console.log(`retest against ${BASE} run date ${RUN_DATE}`);
@@ -127,6 +132,8 @@ async function main() {
     // force NULL coords → unverified check-in path
     sql(`update bookings set address_lat=null, address_lng=null where id=${bookingA}`);
     jobA = jobOf(bookingA);
+    // FE-06 (user decision 2026-10-10): check-in only from scheduledAt − 30 min to + 2 h → move into the window
+    sql(`update bookings set scheduled_at=now() + interval '10 minutes' where id=${bookingA}`);
     const cl = await call('POST', `/tasker/jobs/${jobA}/claim`, { token: P });
     if (cl.status !== 200) { info(g, 'claim failed, assigning in DB', short(cl)); sql(`update jobs set tasker_id=1, status='active' where id=${jobA}`); }
     const evBefore = Number(sql(`select count(*) from events where kind='checkin_geofence_unverified'`));
@@ -143,7 +150,7 @@ async function main() {
     // 2nd tasker (taskers.id has no matching users.id) — is the audit event persisted at all?
     const bookingT2 = await mkBooking(C, serviceId, '13:00');
     await sleep(3000);
-    sql(`update bookings set address_lat=null, address_lng=null where id=${bookingT2}`);
+    sql(`update bookings set address_lat=null, address_lng=null, scheduled_at=now() + interval '10 minutes' where id=${bookingT2}`);
     const jobT2 = jobOf(bookingT2);
     sql(`update jobs set tasker_id=${t2}, status='active' where id=${jobT2}`);
     const ev2b = Number(sql(`select count(*) from events where kind='checkin_geofence_unverified'`));
@@ -237,7 +244,7 @@ async function main() {
     const g = 'mqa10';
     const form = (files = ['cccd_front', 'cccd_back', 'selfie']) => {
       const f = new FormData(); f.set('name', 'Retest Upgrade'); f.set('city', 'Hồ Chí Minh'); f.set('district', 'Quận 1');
-      for (const k of files) f.set(k, pngFile(`${k}.png`));
+      for (const k of files) f.set(k, jpegFile(`${k}.jpg`));
       return f;
     };
     const up = (tok, f) => call('POST', '/become-tasker/upgrade', { token: tok, form: f });
@@ -283,8 +290,13 @@ async function main() {
     const f = new FormData(); f.set('file', pngFile('x.png'));
     const sid = Number(sql(`select min(id) from services`));
     const img0 = sql(`select coalesce(image_url,'') from services where id=${sid}`);
-    await expect('mqa29', `catalog service ${sid} image, storage unconfigured → 503`, await acall('POST', `/catalog/services/${sid}/image`, { token: A, form: f }), 503);
-    record('mqa29', 'service image_url unchanged', sql(`select coalesce(image_url,'') from services where id=${sid}`) === img0, img0);
+    // Lab storage is now the fake GCS (lab-fakegcs.sh): configured → 201 (image_url restored after);
+    // without it → 503 STORAGE_UNAVAILABLE. Never 500.
+    const gcsOn = !!process.env.GCS_API_ENDPOINT;
+    const ir = await acall('POST', `/catalog/services/${sid}/image`, { token: A, form: f });
+    await expect('mqa29', `catalog service ${sid} image, storage ${gcsOn ? 'configured → 201' : 'unconfigured → 503'}`, ir, gcsOn ? [201] : [503]);
+    if (ir.status === 201) { sql(`update services set image_url=${img0 ? `'${img0.replace(/'/g, "''")}'` : 'null'} where id=${sid}`); info('mqa29', 'image_url restored', img0); }
+    else record('mqa29', 'service image_url unchanged', sql(`select coalesce(image_url,'') from services where id=${sid}`) === img0, img0);
     await expect('mqa30', 'PUT /flags/not_a_flag → 404', await acall('PUT', '/flags/not_a_flag', { token: A, body: { value: true } }), 404);
     const wh = await expect('mqa31', 'POST /webhooks returns id', await acall('POST', '/webhooks', { token: A, body: { url: 'https://example.com/kyco-retest-hook', events: ['booking.created'] } }), 201, (d) => (Number(d?.id) > 0) || JSON.stringify(d));
     const whId = data(wh)?.id;
