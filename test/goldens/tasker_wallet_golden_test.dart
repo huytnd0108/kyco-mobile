@@ -86,7 +86,7 @@ class _FakePayouts extends PayoutsController {
   Future<void> loadMore() async {}
 }
 
-Future<void> _pump(
+Future<void> pumpTaskerWallet(
   WidgetTester tester, {
   required GoldenDevice device,
   Brightness brightness = Brightness.light,
@@ -132,20 +132,20 @@ void main() {
   // Full wallet — balance, tiles, withdraw CTA, ledger + payouts.
   for (final d in [GoldenDevice.iphone16, GoldenDevice.ipadAir]) {
     goldenTest('tasker_wallet full ${d.name}', (t) async {
-      await _pump(t, device: d);
+      await pumpTaskerWallet(t, device: d);
       await expectGolden(t, goldenName('tasker_wallet', 'full', d, Brightness.light));
     });
   }
 
   // Dark, full.
   goldenTest('tasker_wallet dark 393', (t) async {
-    await _pump(t, device: GoldenDevice.iphone16, brightness: Brightness.dark);
+    await pumpTaskerWallet(t, device: GoldenDevice.iphone16, brightness: Brightness.dark);
     await expectGolden(t, goldenName('tasker_wallet', 'full', GoldenDevice.iphone16, Brightness.dark));
   });
 
   // Empty ledger + payouts → dashed empty states.
   goldenTest('tasker_wallet empty 393', (t) async {
-    await _pump(t,
+    await pumpTaskerWallet(t,
         device: GoldenDevice.iphone16,
         txns: const WalletTxnsData(items: []),
         payouts: const PayoutsData(items: []),
@@ -156,14 +156,14 @@ void main() {
   // English locale (reused ARB strings render in en; wallet copy stays vi until
   // the ARB keys land — see the unit report).
   goldenTest('tasker_wallet en 393', (t) async {
-    await _pump(t, device: GoldenDevice.iphone16, locale: const Locale('en'));
+    await pumpTaskerWallet(t, device: GoldenDevice.iphone16, locale: const Locale('en'));
     await expectGolden(t,
         goldenName('tasker_wallet', 'full', GoldenDevice.iphone16, Brightness.light, locale: const Locale('en')));
   });
 
   // Withdrawal-requests section failed → ErrorRetry (rest of the wallet intact).
   goldenTest('tasker_wallet requests error 393', (t) async {
-    await _pump(t, device: GoldenDevice.iphone16, requestsError: true);
+    await pumpTaskerWallet(t, device: GoldenDevice.iphone16, requestsError: true);
     await expectGolden(t, goldenName('tasker_wallet', 'requests_error', GoldenDevice.iphone16, Brightness.light));
   });
 }

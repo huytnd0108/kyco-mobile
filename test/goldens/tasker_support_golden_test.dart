@@ -106,7 +106,7 @@ void main() {
         goldenName('tasker_support', 'empty', GoldenDevice.iphone16, Brightness.light));
   });
 
-  // A7 not deployed yet (503) → error read collapses to the empty state.
+  // A7 not deployed yet (503) → the history shows an inline error with Retry (never "no tickets").
   goldenTest('tasker_support error 393', (t) async {
     await _pump(t,
         device: GoldenDevice.iphone16,

@@ -44,7 +44,7 @@ class _FakeCheckoutApi extends KycoApi {
   Future<List<Neighborhood>> neighborhoods(int wardCode) async => const [];
 }
 
-Future<void> _pumpCheckout(
+Future<void> pumpCheckout(
   WidgetTester tester, {
   required GoldenDevice device,
   required AuthState auth,
@@ -84,24 +84,24 @@ void main() {
   // Anonymous checkout — the login gate shows in the submit slot.
   for (final d in [GoldenDevice.iphone16, GoldenDevice.se]) {
     goldenTest('checkout anon ${d.name}', (t) async {
-      await _pumpCheckout(t, device: d, auth: Fakes.signedOut);
+      await pumpCheckout(t, device: d, auth: Fakes.signedOut);
       await expectGolden(t, goldenName('checkout', 'anon', d, Brightness.light));
     });
   }
 
   // Signed-in checkout — the Confirm button shows.
   goldenTest('checkout signedin iphone16', (t) async {
-    await _pumpCheckout(t, device: GoldenDevice.iphone16, auth: Fakes.signedIn);
+    await pumpCheckout(t, device: GoldenDevice.iphone16, auth: Fakes.signedIn);
     await expectGolden(t, goldenName('checkout', 'signedin', GoldenDevice.iphone16, Brightness.light));
   });
 
   // Dark, both states.
   goldenTest('checkout anon dark se', (t) async {
-    await _pumpCheckout(t, device: GoldenDevice.se, auth: Fakes.signedOut, brightness: Brightness.dark);
+    await pumpCheckout(t, device: GoldenDevice.se, auth: Fakes.signedOut, brightness: Brightness.dark);
     await expectGolden(t, goldenName('checkout', 'anon', GoldenDevice.se, Brightness.dark));
   });
   goldenTest('checkout signedin dark iphone16', (t) async {
-    await _pumpCheckout(t, device: GoldenDevice.iphone16, auth: Fakes.signedIn, brightness: Brightness.dark);
+    await pumpCheckout(t, device: GoldenDevice.iphone16, auth: Fakes.signedIn, brightness: Brightness.dark);
     await expectGolden(t, goldenName('checkout', 'signedin', GoldenDevice.iphone16, Brightness.dark));
   });
 }

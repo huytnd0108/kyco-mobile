@@ -23,6 +23,10 @@ class _Tokens implements TokenStore {
   @override
   Future<void> setAccess(String access) async {}
   @override
+  Future<DateTime?> get accessExpiresAt async => null;
+  @override
+  Future<void> setAccessExpiresAt(DateTime? at) async {}
+  @override
   Future<void> clear() async {}
   @override
   Future<bool> get hasSession async => true;

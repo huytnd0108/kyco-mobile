@@ -13,6 +13,7 @@ class InMemoryTokenStore implements TokenStore {
         _r = refresh;
   String? _a;
   String? _r;
+  DateTime? _exp;
   @override
   Future<String?> get accessToken async => _a;
   @override
@@ -24,6 +25,10 @@ class InMemoryTokenStore implements TokenStore {
   }
   @override
   Future<void> setAccess(String access) async => _a = access;
+  @override
+  Future<DateTime?> get accessExpiresAt async => _exp;
+  @override
+  Future<void> setAccessExpiresAt(DateTime? at) async => _exp = at;
   @override
   Future<void> clear() async {
     _a = null;
@@ -151,7 +156,7 @@ void main() {
     expect(adapter.requests.where((r) => r.path.endsWith('/me')).length, 2); // original + one retry only
   });
 
-  test('a malformed refresh payload is treated as a failed refresh (no crash, auth-lost)', () async {
+  test('a malformed 2xx refresh payload is a server fault, not a revoked token: keep the session', () async {
     final tokens = InMemoryTokenStore(access: 'old', refresh: 'r1');
     var authLost = false;
     final adapter = _FakeAdapter((o) {
@@ -163,7 +168,114 @@ void main() {
     final c = _client(tokens, adapter, onAuthLost: () => authLost = true);
 
     await expectLater(() => c.get('/me'), throwsA(isA<ApiException>())); // NOT a raw TypeError
-    expect(authLost, isTrue);
+    expect(authLost, isFalse);
+    expect(await tokens.refreshToken, 'r1');
+  });
+
+  group('UX-M01 refresh failure matrix', () {
+    // Each row: how /auth/refresh answers, and whether the session must end.
+    final rows = <String, ({ResponseBody Function(RequestOptions) refresh, bool signOut, String? code})>{
+      '401': (refresh: (o) => _json({'ok': false, 'code': 'AUTH_REQUIRED'}, 401), signOut: true, code: null),
+      '403': (refresh: (o) => _json({'ok': false, 'code': 'FORBIDDEN'}, 403), signOut: true, code: null),
+      'invalid_grant (400)': (refresh: (o) => _json({'ok': false, 'code': 'invalid_grant'}, 400), signOut: true, code: null),
+      '500': (refresh: (o) => _json({'ok': false, 'code': 'INTERNAL'}, 500), signOut: false, code: 'INTERNAL'),
+      '503': (refresh: (o) => _json({'ok': false, 'code': 'MAINTENANCE'}, 503), signOut: false, code: 'MAINTENANCE'),
+      '429': (refresh: (o) => _json({'ok': false, 'code': 'RATE_LIMIT'}, 429), signOut: false, code: 'RATE_LIMIT'),
+      'timeout': (
+        refresh: (o) => throw DioException(requestOptions: o, type: DioExceptionType.receiveTimeout),
+        signOut: false,
+        code: 'network'
+      ),
+      'offline': (
+        refresh: (o) => throw DioException(requestOptions: o, type: DioExceptionType.connectionError),
+        signOut: false,
+        code: 'network'
+      ),
+    };
+    rows.forEach((name, row) {
+      test('refresh $name → ${row.signOut ? 'signs out' : 'keeps tokens, retryable error'}', () async {
+        final tokens = InMemoryTokenStore(access: 'old', refresh: 'r1');
+        var authLost = 0;
+        final adapter = _FakeAdapter((o) =>
+            o.path.endsWith('/auth/refresh') ? row.refresh(o) : _json({'ok': false, 'code': 'AUTH_REQUIRED'}, 401));
+        final c = _client(tokens, adapter, onAuthLost: () => authLost++);
+
+        if (row.signOut) {
+          await expectLater(() => c.get('/me'), throwsA(isA<ApiException>().having((e) => e.status, 'status', 401)));
+          expect(authLost, 1);
+          expect(await tokens.accessToken, isNull);
+          expect(await tokens.refreshToken, isNull);
+        } else {
+          await expectLater(() => c.get('/me'), throwsA(isA<ApiException>().having((e) => e.code, 'code', row.code)));
+          expect(authLost, 0, reason: 'a transient refresh failure must not sign the user out');
+          expect(await tokens.accessToken, 'old');
+          expect(await tokens.refreshToken, 'r1');
+        }
+      });
+    });
+
+    test('transient refresh failure on a binary download also keeps the session', () async {
+      final tokens = InMemoryTokenStore(access: 'old', refresh: 'r1');
+      var authLost = false;
+      final adapter = _FakeAdapter((o) => o.path.endsWith('/auth/refresh')
+          ? _json({'ok': false, 'code': 'INTERNAL'}, 502)
+          : _json({'ok': false, 'code': 'AUTH_REQUIRED'}, 401));
+      final c = _client(tokens, adapter, onAuthLost: () => authLost = true);
+      await expectLater(() => c.getBytes('/export'), throwsA(isA<ApiException>()));
+      expect(authLost, isFalse);
+      expect(await tokens.refreshToken, 'r1');
+    });
+
+    test('concurrent 401s during an outage share ONE refresh and all get the retryable error', () async {
+      final tokens = InMemoryTokenStore(access: 'old', refresh: 'r1');
+      final adapter = _FakeAdapter((o) => o.path.endsWith('/auth/refresh')
+          ? _json({'ok': false, 'code': 'INTERNAL'}, 500)
+          : _json({'ok': false, 'code': 'AUTH_REQUIRED'}, 401));
+      final c = _client(tokens, adapter);
+      final results = await Future.wait([
+        c.get('/me').then<Object?>((_) => null, onError: (e) => e),
+        c.get('/bookings').then<Object?>((_) => null, onError: (e) => e),
+      ]);
+      expect(results.every((e) => e is ApiException && e.code == 'INTERNAL'), isTrue);
+      expect(adapter.requests.where((r) => r.path.endsWith('/auth/refresh')).length, 1);
+      expect(await tokens.refreshToken, 'r1');
+    });
+
+    test('a transient failure does not poison the next attempt: it refreshes and retries', () async {
+      final tokens = InMemoryTokenStore(access: 'old', refresh: 'r1');
+      var refreshCalls = 0;
+      final adapter = _FakeAdapter((o) {
+        if (o.path.endsWith('/auth/refresh')) {
+          refreshCalls++;
+          return refreshCalls == 1
+              ? _json({'ok': false, 'code': 'INTERNAL'}, 500)
+              : _json({'ok': true, 'data': {'accessToken': 'new', 'refreshToken': 'r2'}}, 200);
+        }
+        return o.headers['authorization'] == 'Bearer new'
+            ? _json({'ok': true, 'data': {'id': 1}}, 200)
+            : _json({'ok': false, 'code': 'AUTH_REQUIRED'}, 401);
+      });
+      final c = _client(tokens, adapter);
+      await expectLater(() => c.get('/me'), throwsA(isA<ApiException>()));
+      expect(await c.get('/me'), {'id': 1});
+      expect(await tokens.refreshToken, 'r2');
+    });
+
+    test('429 keeps the server Retry-After on the typed error', () async {
+      final adapter = _FakeAdapter((o) => ResponseBody.fromString(
+            jsonEncode({'ok': false, 'code': 'RATE_LIMIT'}),
+            429,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+              'retry-after': ['42'],
+            },
+          ));
+      final c = _client(InMemoryTokenStore(), adapter);
+      await expectLater(
+        () => c.post('/auth/otp/request', auth: false, body: {}),
+        throwsA(isA<ApiException>().having((e) => e.retryAfter, 'retryAfter', const Duration(seconds: 42))),
+      );
+    });
   });
 
   test('accepts a paginated {items:[...]} envelope shape', () async {

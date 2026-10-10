@@ -60,7 +60,7 @@ class _FakeReviews extends ReviewsController {
       );
 }
 
-Future<void> _pumpDetail(
+Future<void> pumpServiceDetail(
   WidgetTester tester, {
   required GoldenDevice device,
   Brightness brightness = Brightness.light,
@@ -102,7 +102,7 @@ void main() {
   for (final d in devices) {
     for (final b in Brightness.values) {
       goldenTest('service_detail data ${d.name} ${b.name}', (t) async {
-        await _pumpDetail(t, device: d, brightness: b);
+        await pumpServiceDetail(t, device: d, brightness: b);
         await expectGolden(t, goldenName('service_detail', 'data', d, b));
       });
     }

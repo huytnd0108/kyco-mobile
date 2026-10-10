@@ -89,4 +89,31 @@ void main() {
     expect(IdempotencyLedger.textTag('a'), isNot(IdempotencyLedger.textTag('b')));
     expect(IdempotencyLedger.textTag('secret reason'), isNot(contains('secret')));
   });
+
+  test('S3b: concurrent runs of one action coalesce → ONE request, ONE key, shared outcome', () async {
+    final l = IdempotencyLedger();
+    var calls = 0;
+    final keys = <String>[];
+    Future<String> call(String k) async {
+      calls++;
+      keys.add(k);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      return 'payout-1';
+    }
+    final r = await Future.wait([l.run('payout:100000', call), l.run('payout:100000', call)]);
+    expect(calls, 1);
+    expect(r, ['payout-1', 'payout-1']);
+    // A later, separate confirmation is a new action with a new key.
+    await l.run('payout:100000', call);
+    expect(keys.toSet(), hasLength(2));
+  });
+
+  test('a run only forgets the key it used', () async {
+    final l = IdempotencyLedger();
+    final k1 = await l.keyFor('payout:7');
+    // Simulate the key being rotated by an expired TTL / other action meanwhile.
+    final out = await l.run('payout:7', (k) async => k);
+    expect(out, k1);
+    expect(await l.keyFor('payout:7'), isNot(k1));
+  });
 }

@@ -17,7 +17,7 @@ void main() {
     final dark = buildTheme(darkColorScheme);
     expect(light.extension<AppSemantics>(), isNotNull);
     expect(dark.extension<AppSemantics>(), isNotNull);
-    expect(light.colorScheme.primary, const Color(0xFF0284C7)); // sky-600
+    expect(light.colorScheme.primary, const Color(0xFF0369A1)); // sky-700 (white on it 5.93:1; sky-600 was 4.10:1)
     expect(dark.colorScheme.primary, const Color(0xFF3EBAF4));
     expect(dark.colorScheme.brightness, Brightness.dark);
   });

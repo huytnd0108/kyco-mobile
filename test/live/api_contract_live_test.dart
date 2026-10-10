@@ -45,6 +45,7 @@ class InMemoryTokenStore implements TokenStore {
         _r = refresh;
   String? _a;
   String? _r;
+  DateTime? _exp;
   @override
   Future<String?> get accessToken async => _a;
   @override
@@ -56,6 +57,10 @@ class InMemoryTokenStore implements TokenStore {
   }
   @override
   Future<void> setAccess(String access) async => _a = access;
+  @override
+  Future<DateTime?> get accessExpiresAt async => _exp;
+  @override
+  Future<void> setAccessExpiresAt(DateTime? at) async => _exp = at;
   @override
   Future<void> clear() async {
     _a = null;

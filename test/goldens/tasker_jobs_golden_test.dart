@@ -110,7 +110,7 @@ class _FakeAssignedController extends AssignedJobsController {
   Future<void> loadMore() async {}
 }
 
-Future<void> _pump(
+Future<void> pumpTaskerJobs(
   WidgetTester tester, {
   required GoldenDevice device,
   Brightness brightness = Brightness.light,
@@ -161,7 +161,7 @@ void main() {
     (GoldenDevice.se, Brightness.dark),
   ]) {
     goldenTest('tasker_jobs assigned ${d.name} ${b.name}', (t) async {
-      await _pump(t, device: d, brightness: b);
+      await pumpTaskerJobs(t, device: d, brightness: b);
       await expectGolden(t, goldenName('tasker_jobs', 'assigned', d, b));
     });
   }
@@ -172,7 +172,7 @@ void main() {
     (GoldenDevice.se, Brightness.dark),
   ]) {
     goldenTest('tasker_jobs available ${d.name} ${b.name}', (t) async {
-      await _pump(t, device: d, brightness: b);
+      await pumpTaskerJobs(t, device: d, brightness: b);
       await _openAvailable(t);
       await expectGolden(t, goldenName('tasker_jobs', 'available', d, b));
     });
@@ -180,7 +180,7 @@ void main() {
 
   // Available (pool) tab — ban gate closed (claim disabled + banner).
   goldenTest('tasker_jobs available_banned 393 light', (t) async {
-    await _pump(t,
+    await pumpTaskerJobs(t,
         device: GoldenDevice.iphone16,
         pool: _fakePool(canClaim: false, banReason: 'Bạn đã bị tạm khóa nhận đơn đến hết ngày 10/09.'));
     await _openAvailable(t);

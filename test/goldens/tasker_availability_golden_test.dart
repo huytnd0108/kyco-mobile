@@ -98,7 +98,7 @@ void main() {
             locale: const Locale('en')));
   });
 
-  // §A10 GET pending → retryable error state (light + dark).
+  // §A10 GET pending (503) → retryable error state with the typed maintenance copy (light + dark).
   goldenTest('tasker_availability error 393', (t) async {
     await _pump(t,
         device: GoldenDevice.iphone16,
