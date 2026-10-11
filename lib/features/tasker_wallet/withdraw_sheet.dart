@@ -168,6 +168,15 @@ Future<String?> runWithdrawFlow(
 
 bool _withdrawInFlight = false;
 
+/// Best-effort refetch after a payout 409 (ref may be disposed after unmount).
+void _refreshAfterConflict(WidgetRef ref) {
+  try {
+    ref.invalidate(walletSummaryProvider);
+    ref.invalidate(walletTxnsControllerProvider);
+    ref.invalidate(payoutRequestsControllerProvider);
+  } catch (_) {}
+}
+
 Future<String?> _runWithdrawFlow(
   BuildContext context,
   WidgetRef ref, {
@@ -226,11 +235,23 @@ Future<String?> _runWithdrawFlow(
     }
     switch (e.status) {
       case 409:
+        // Any 409 on payouts: refresh the wallet so the server's pending-payout
+        // gate (canRequestPayout) shows. PAYOUT_PENDING_EXISTS carries localized
+        // server copy; a lost race / in-progress 409 keeps the "processing" copy.
+        _refreshAfterConflict(ref);
+        if (e.code == 'PAYOUT_PENDING_EXISTS') {
+          final msg = e.message.trim();
+          return msg.isNotEmpty && msg != 'Request failed'
+              ? apiErrorText(l, e)
+              : l.provWalletWithdrawPendingExists;
+        }
         return l.provWalletWithdrawPending;
       case 422:
         // The server rejected the amount (e.g. above the live balance): friendly
         // localized copy; the raw field value / server text is never shown.
-        return e.fields?.containsKey('amount_vnd') == true
+        // Key is `amountVnd` (ff6198c3); `amount_vnd` kept for older servers.
+        return (e.fields?.containsKey('amountVnd') == true ||
+                e.fields?.containsKey('amount_vnd') == true)
             ? l.provWalletWithdrawInvalidAmount
             : apiErrorText(l, e);
       case 403:

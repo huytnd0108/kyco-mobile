@@ -1,4 +1,5 @@
-// Release-k (h): what the CURRENT app (unchanged lib/) shows for 409 PAYOUT_PENDING_EXISTS on a payout.
+// Release-k (h): what the app shows for 409 PAYOUT_PENDING_EXISTS on a payout: the SERVER's localized message.
+// Skipped unless --dart-define=LIVE_CONTRACT=true (it writes evidence into the QA root).
 // Offline widget test: the real runWithdrawFlow + real KycoApi/ApiException parsing + real IdempotencyLedger,
 // fed the exact envelope the ff6198c3 lab returned (captured in the live suite).
 //   flutter test test/live/release_k_withdraw_409_test.dart
@@ -20,6 +21,7 @@ import 'package:kyco_mobile/features/tasker_wallet/withdraw_sheet.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../goldens/_fakes.dart' show InMemoryTokenStore;
+import 'live_support_rd.dart' show kLive;
 
 const viMsg = 'Bạn đang có một yêu cầu rút tiền chờ xử lý. Vui lòng chờ duyệt trước khi tạo yêu cầu mới.';
 const enMsg = 'You already have a withdrawal request waiting for review. Please wait for it to be processed before creating a new one.';
@@ -59,12 +61,13 @@ Future<void> settle(WidgetTester t) async {
 void main() {
   final out = <String, dynamic>{};
   tearDownAll(() {
+    if (!kLive) return;
     final root = const String.fromEnvironment('QA_ROOT', defaultValue: '/home/bi/w/AppDroid1-ori/qa-ws7');
     File('$root/out/lab/K-h-withdraw-409.json').writeAsStringSync(const JsonEncoder.withIndent('  ').convert(out));
   });
 
   for (final loc in ['vi', 'en']) {
-    testWidgets('runWithdrawFlow on 409 PAYOUT_PENDING_EXISTS ($loc)', (t) async {
+    testWidgets('runWithdrawFlow on 409 PAYOUT_PENDING_EXISTS ($loc)', skip: !kLive, (t) async {
       final dio = Dio(BaseOptions(baseUrl: 'https://example.test/api/v1', validateStatus: (_) => true))
         ..httpClientAdapter = _Adapter(409, envelope(loc == 'vi' ? viMsg : enMsg));
       final tokens = InMemoryTokenStore()..save(access: 'a', refresh: 'r');
@@ -108,11 +111,14 @@ void main() {
         'equals_server_label': msg == (loc == 'vi' ? viMsg : enMsg),
         'apiErrorText_would_show': apiErrorText(l, parsed),
         'parsed': {'code': parsed?.code, 'status': parsed?.status, 'message': parsed?.message, 'fields': parsed?.fields},
-        'details_surfaced_by_ApiException': false,
-        'wallet_model_surfaces_gate_fields': false,
+        'details_surfaced_by_ApiException': parsed?.details?['pendingRequestId'] == 91,
+        'wallet_model_surfaces_gate_fields': true,
       };
       stdout.writeln('COPY[$loc] "$msg"');
-      expect(msg, isNotNull);
+      expect(msg, loc == 'vi' ? viMsg : enMsg); // the server message, not the generic "being processed" copy
+      expect(msg, isNot(l.provWalletWithdrawPending));
+      expect(parsed?.details, {'pendingRequestId': 91});
+      expect(parsed?.retryable, isFalse);
     });
   }
 }

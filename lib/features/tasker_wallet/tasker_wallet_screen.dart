@@ -42,10 +42,28 @@ class TaskerWalletScreen extends ConsumerWidget {
   }
 }
 
-class _WalletBody extends ConsumerWidget {
+class _WalletBody extends ConsumerStatefulWidget {
   const _WalletBody();
 
-  Future<void> _refresh(WidgetRef ref) async {
+  @override
+  ConsumerState<_WalletBody> createState() => _WalletBodyState();
+}
+
+class _WalletBodyState extends ConsumerState<_WalletBody> {
+  /// Anchor of the "Lệnh rút tiền" section; the blocked-state link scrolls here.
+  final _requestsKey = GlobalKey();
+  bool _highlightPending = false;
+
+  void _showPending() {
+    setState(() => _highlightPending = true);
+    final ctx = _requestsKey.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(ctx,
+          duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    }
+  }
+
+  Future<void> _refresh() async {
     ref.invalidate(walletSummaryProvider);
     ref.invalidate(walletTxnsControllerProvider);
     ref.invalidate(payoutsControllerProvider);
@@ -61,7 +79,7 @@ class _WalletBody extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final summary = ref.watch(walletSummaryProvider);
 
@@ -81,7 +99,7 @@ class _WalletBody extends ConsumerWidget {
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () => _refresh(ref),
+          onRefresh: _refresh,
           child: summary.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => ListView(children: [
@@ -100,6 +118,10 @@ class _WalletBody extends ConsumerWidget {
                 const SizedBox(height: 16),
                 _WithdrawCard(
                   balanceVnd: s.balanceVnd,
+                  canRequestPayout: s.canRequestPayout,
+                  blockedLabel: s.payoutBlockedReason?.label,
+                  hasPendingRequest: s.pendingPayoutRequestId != null,
+                  onShowPending: _showPending,
                   onWithdraw: () async {
                     final messenger = ScaffoldMessenger.of(context);
                     _snack(messenger,
@@ -108,12 +130,15 @@ class _WalletBody extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
                 Text(l.provWalletPayoutRequests,
+                    key: _requestsKey,
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
                         ?.copyWith(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
-                const _PayoutRequestList(),
+                _PayoutRequestList(
+                    highlightId:
+                        _highlightPending ? s.pendingPayoutRequestId : null),
                 const SizedBox(height: 24),
                 Text(l.provWalletTxns,
                     style: Theme.of(context)
@@ -292,9 +317,23 @@ class _StatTile extends StatelessWidget {
 
 /// Withdraw CTA — opens the step-up-gated payout flow.
 class _WithdrawCard extends StatelessWidget {
-  const _WithdrawCard({required this.balanceVnd, required this.onWithdraw});
+  const _WithdrawCard({
+    required this.balanceVnd,
+    required this.onWithdraw,
+    this.canRequestPayout = true,
+    this.blockedLabel,
+    this.hasPendingRequest = false,
+    this.onShowPending,
+  });
   final int balanceVnd;
   final VoidCallback onWithdraw;
+
+  /// Server gate (one pending payout request). false = button disabled and the
+  /// sheet cannot open; the server stays authoritative either way.
+  final bool canRequestPayout;
+  final String? blockedLabel;
+  final bool hasPendingRequest;
+  final VoidCallback? onShowPending;
 
   @override
   Widget build(BuildContext context) {
@@ -323,7 +362,30 @@ class _WithdrawCard extends StatelessWidget {
                   .bodySmall
                   ?.copyWith(color: cs.onSurfaceVariant)),
           const SizedBox(height: 12),
-          if (!canWithdraw)
+          if (!canRequestPayout) ...[
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: null,
+                icon: const Icon(Icons.account_balance),
+                label: Text(l.provWalletWithdrawAction),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+                (blockedLabel?.isNotEmpty ?? false)
+                    ? blockedLabel!
+                    : l.provWalletPayoutBlockedFallback,
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
+            if (hasPendingRequest && onShowPending != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: onShowPending,
+                  child: Text(l.provWalletViewPendingRequest),
+                ),
+              ),
+          ] else if (!canWithdraw)
             Text(l.provWalletWithdrawMin(formatVnd(kPayoutMinVnd)),
                 style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13))
           else
@@ -508,7 +570,8 @@ class _PayoutTile extends StatelessWidget {
 
 /// Withdrawal requests — pending / paid / rejected, cursor-paged.
 class _PayoutRequestList extends ConsumerWidget {
-  const _PayoutRequestList();
+  const _PayoutRequestList({this.highlightId});
+  final int? highlightId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -533,7 +596,8 @@ class _PayoutRequestList extends ConsumerWidget {
         }
         return Column(
           children: [
-            for (final r in data.items) _PayoutRequestTile(r),
+            for (final r in data.items)
+              _PayoutRequestTile(r, highlighted: r.id == highlightId),
             if (data.hasMore)
               _LoadMoreFooter(
                 loading: data.loadingMore,
@@ -548,8 +612,9 @@ class _PayoutRequestList extends ConsumerWidget {
 }
 
 class _PayoutRequestTile extends StatelessWidget {
-  const _PayoutRequestTile(this.request);
+  const _PayoutRequestTile(this.request, {this.highlighted = false});
   final PayoutRequest request;
+  final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
@@ -566,8 +631,16 @@ class _PayoutRequestTile extends StatelessWidget {
         : payoutRequestStatusLabel(l, request.status);
     final mutedStyle = TextStyle(fontSize: 12, color: cs.onSurfaceVariant);
     final reason = request.rejectReason;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+    return Container(
+      padding: highlighted
+          ? const EdgeInsets.symmetric(vertical: 10, horizontal: 8)
+          : const EdgeInsets.symmetric(vertical: 10),
+      decoration: highlighted
+          ? BoxDecoration(
+              color: cs.primaryContainer.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: cs.primary))
+          : null,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

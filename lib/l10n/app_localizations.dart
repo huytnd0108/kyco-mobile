@@ -5449,6 +5449,24 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Khóa đến {when} (giờ Việt Nam).'**
   String cancelPreviewBlockedUntil(String when);
+
+  /// Fallback when the server 409 PAYOUT_PENDING_EXISTS carries no message
+  ///
+  /// In vi, this message translates to:
+  /// **'Bạn đang có một yêu cầu rút tiền chờ xử lý. Vui lòng chờ duyệt trước khi tạo yêu cầu mới.'**
+  String get provWalletWithdrawPendingExists;
+
+  /// Shown when canRequestPayout is false but the server sent no reason label
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiện chưa thể tạo yêu cầu rút tiền mới.'**
+  String get provWalletPayoutBlockedFallback;
+
+  /// Link under the disabled withdraw button; scrolls to the pending payout request
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem yêu cầu đang chờ'**
+  String get provWalletViewPendingRequest;
 }
 
 class _AppLocalizationsDelegate

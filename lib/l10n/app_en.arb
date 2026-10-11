@@ -909,5 +909,8 @@
   "cancelPreviewConsequenceSuspend7d": "If you cancel, your account will be suspended for 7 days.",
   "cancelPreviewConsequenceSuspend30d": "If you cancel, your account will be suspended for 30 days.",
   "cancelPreviewConsequenceOther": "If you cancel, your account will be restricted.",
-  "cancelPreviewBlockedUntil": "Suspended until {when} (Vietnam time)."
+  "cancelPreviewBlockedUntil": "Suspended until {when} (Vietnam time).",
+  "provWalletWithdrawPendingExists": "You already have a withdrawal request waiting for review. Please wait for it to be processed before creating a new one.",
+  "provWalletPayoutBlockedFallback": "A new withdrawal request cannot be created right now.",
+  "provWalletViewPendingRequest": "View pending request"
 }

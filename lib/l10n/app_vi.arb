@@ -1539,5 +1539,11 @@
   "cancelPreviewConsequenceOther": "Nếu hủy, tài khoản sẽ bị hạn chế.",
   "@cancelPreviewConsequenceOther": {"description": "Release-i consequence unknown code"},
   "cancelPreviewBlockedUntil": "Khóa đến {when} (giờ Việt Nam).",
-  "@cancelPreviewBlockedUntil": {"description": "Release-i suspension end in VN time", "placeholders": {"when": {"type": "String"}}}
+  "@cancelPreviewBlockedUntil": {"description": "Release-i suspension end in VN time", "placeholders": {"when": {"type": "String"}}},
+  "provWalletWithdrawPendingExists": "Bạn đang có một yêu cầu rút tiền chờ xử lý. Vui lòng chờ duyệt trước khi tạo yêu cầu mới.",
+  "@provWalletWithdrawPendingExists": {"description": "Fallback when the server 409 PAYOUT_PENDING_EXISTS carries no message"},
+  "provWalletPayoutBlockedFallback": "Hiện chưa thể tạo yêu cầu rút tiền mới.",
+  "@provWalletPayoutBlockedFallback": {"description": "Shown when canRequestPayout is false but the server sent no reason label"},
+  "provWalletViewPendingRequest": "Xem yêu cầu đang chờ",
+  "@provWalletViewPendingRequest": {"description": "Link under the disabled withdraw button; scrolls to the pending payout request"}
 }

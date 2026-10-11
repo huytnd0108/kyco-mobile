@@ -3015,4 +3015,15 @@ class AppLocalizationsVi extends AppLocalizations {
   String cancelPreviewBlockedUntil(String when) {
     return 'Khóa đến $when (giờ Việt Nam).';
   }
+
+  @override
+  String get provWalletWithdrawPendingExists =>
+      'Bạn đang có một yêu cầu rút tiền chờ xử lý. Vui lòng chờ duyệt trước khi tạo yêu cầu mới.';
+
+  @override
+  String get provWalletPayoutBlockedFallback =>
+      'Hiện chưa thể tạo yêu cầu rút tiền mới.';
+
+  @override
+  String get provWalletViewPendingRequest => 'Xem yêu cầu đang chờ';
 }

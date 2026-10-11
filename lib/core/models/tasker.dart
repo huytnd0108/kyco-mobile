@@ -395,6 +395,9 @@ class WalletSummary {
     this.lifetimeFeeVnd = 0,
     this.jobCount = 0,
     this.monthEarningVnd = 0,
+    this.pendingPayoutRequestId,
+    this.canRequestPayout = true,
+    this.payoutBlockedReason,
   });
 
   final int balanceVnd;
@@ -404,6 +407,12 @@ class WalletSummary {
   final int jobCount;
   final int monthEarningVnd;
 
+  /// One-pending-payout rule (backend ff6198c3). All three are absent on an
+  /// older backend: then [canRequestPayout] stays true (the previous behaviour).
+  final int? pendingPayoutRequestId;
+  final bool canRequestPayout;
+  final PayoutBlockedReason? payoutBlockedReason;
+
   factory WalletSummary.fromJson(Map<String, dynamic> j) => WalletSummary(
         balanceVnd: _intd(j['balanceVnd']),
         currency: _str(j['currency']) ?? 'VND',
@@ -411,7 +420,22 @@ class WalletSummary {
         lifetimeFeeVnd: _intd(j['lifetimeFeeVnd']),
         jobCount: _intd(j['jobCount']),
         monthEarningVnd: _intd(j['monthEarningVnd']),
+        pendingPayoutRequestId: _int(j['pendingPayoutRequestId']),
+        canRequestPayout: j['canRequestPayout'] is bool ? j['canRequestPayout'] as bool : true,
+        payoutBlockedReason: j['payoutBlockedReason'] is Map<String, dynamic>
+            ? PayoutBlockedReason.fromJson(j['payoutBlockedReason'] as Map<String, dynamic>)
+            : null,
       );
+}
+
+/// Why the server refuses a new payout request (`{code,label}`; label is localized).
+class PayoutBlockedReason {
+  const PayoutBlockedReason({this.code, this.label});
+  final String? code;
+  final String? label;
+
+  factory PayoutBlockedReason.fromJson(Map<String, dynamic> j) =>
+      PayoutBlockedReason(code: _str(j['code']), label: _str(j['label']));
 }
 
 class Payout {

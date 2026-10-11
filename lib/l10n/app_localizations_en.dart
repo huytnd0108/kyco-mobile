@@ -3020,4 +3020,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String cancelPreviewBlockedUntil(String when) {
     return 'Suspended until $when (Vietnam time).';
   }
+
+  @override
+  String get provWalletWithdrawPendingExists =>
+      'You already have a withdrawal request waiting for review. Please wait for it to be processed before creating a new one.';
+
+  @override
+  String get provWalletPayoutBlockedFallback =>
+      'A new withdrawal request cannot be created right now.';
+
+  @override
+  String get provWalletViewPendingRequest => 'View pending request';
 }

@@ -1,7 +1,7 @@
 /// Typed error from the kyco API envelope: `{ ok:false, code, message, fields? }`.
 /// Also used for transport/HTTP failures (code = http_STATUS / network).
 class ApiException implements Exception {
-  ApiException(this.code, this.message, {this.status, this.fields, this.retryAfter});
+  ApiException(this.code, this.message, {this.status, this.fields, this.retryAfter, this.details, this.retryable});
 
   final String code;
   final String message;
@@ -10,6 +10,13 @@ class ApiException implements Exception {
 
   /// Server `Retry-After` (429 / 503) when present. Drives cooldown UI only.
   final Duration? retryAfter;
+
+  /// Optional envelope `details` object (e.g. `{pendingRequestId: 91}` on
+  /// PAYOUT_PENDING_EXISTS). Null when absent or not an object.
+  final Map<String, dynamic>? details;
+
+  /// Optional envelope `retryable` flag; null when absent or not a bool.
+  final bool? retryable;
 
   bool get isMaintenance => code == 'MAINTENANCE' || status == 503;
   bool get isUnauthorized => code == 'AUTH_REQUIRED' || status == 401;
@@ -38,7 +45,17 @@ class ApiException implements Exception {
     final fields = rawFields is Map
         ? rawFields.map((k, v) => MapEntry(k.toString(), v.toString()))
         : null;
-    return ApiException(code, message, status: status, fields: fields, retryAfter: retryAfter);
+    final rawDetails = body?['details'];
+    final details = rawDetails is Map
+        ? rawDetails.map((k, v) => MapEntry(k.toString(), v))
+        : null;
+    final rawRetryable = body?['retryable'];
+    return ApiException(code, message,
+        status: status,
+        fields: fields,
+        retryAfter: retryAfter,
+        details: details,
+        retryable: rawRetryable is bool ? rawRetryable : null);
   }
 
   @override
