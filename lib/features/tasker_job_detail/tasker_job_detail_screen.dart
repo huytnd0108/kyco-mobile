@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
@@ -8,6 +9,7 @@ import '../../core/ui/error_text.dart';
 import '../../core/api/kyco_api.dart';
 import '../../core/api/problem.dart';
 import '../../core/di.dart';
+import '../../core/datetime.dart';
 import '../../core/format.dart';
 import '../../core/labels.dart';
 import '../../core/models.dart';
@@ -227,9 +229,16 @@ class _TaskerJobDetailScreenState extends ConsumerState<TaskerJobDetailScreen> {
 
   Future<void> _cancel(int id) async {
     final l = AppLocalizations.of(context);
+    // Release-i: the server dry run (fine, strike consequence, reasons). The job
+    // detail's `cancelPreview` (possibly stale: the fine depends on the 4 h / 1 h
+    // thresholds) is shown at once, but GET .../cancel-preview is ALWAYS fetched on
+    // open (404 = older backend -> embedded preview, else the plain dialog).
+    // Nothing is computed on the device.
+    final detailPreview = ref.read(taskerJobDetailProvider(id)).valueOrNull?.cancelPreview;
+    final api = ref.read(kycoApiProvider);
     final picked = await showDialog<({String code, String text})>(
       context: context,
-      builder: (_) => const JobCancelDialog(),
+      builder: (_) => JobCancelDialog(preview: detailPreview, loadPreview: () => api.taskerCancelPreview(id)),
     );
     if (picked == null) return;
     // One idempotency key per (job, code, text): a retry of the same cancel
@@ -801,10 +810,23 @@ class _ReasonDialogState extends State<_ReasonDialog> {
   }
 }
 
-/// Tasker job cancel: pick one of the server reason codes (localized) and add
-/// an optional note (at most [kJobCancelNoteMax]). Pops `(code, trimmed text)`.
+/// Tasker job cancel: pick a reason and add an optional note (at most
+/// [kJobCancelNoteMax]). Pops `(code, trimmed text)`.
+///
+/// Release-i: when the server preview is available the dialog shows ITS fine
+/// ([TaskerCancelPreview.fineVnd]), reason and strike sentences, a prominent
+/// warning when the cancel would block the account, and the server's reason
+/// list; `canCancel == false` shows the server's refusal and disables confirm.
+/// Without a preview (older backend / [preview] and [loadPreview] both null)
+/// it is the plain dialog with the local reason codes. No amount is computed.
 class JobCancelDialog extends StatefulWidget {
-  const JobCancelDialog({super.key});
+  const JobCancelDialog({super.key, this.preview, this.loadPreview});
+
+  /// The job detail's `cancelPreview`, if the server sent one.
+  final TaskerCancelPreview? preview;
+
+  /// Fetches the preview when [preview] is null (null result = unsupported).
+  final Future<TaskerCancelPreview?> Function()? loadPreview;
   @override
   State<JobCancelDialog> createState() => _JobCancelDialogState();
 }
@@ -812,6 +834,45 @@ class JobCancelDialog extends StatefulWidget {
 class _JobCancelDialogState extends State<JobCancelDialog> {
   String? _code;
   final _note = TextEditingController();
+  TaskerCancelPreview? _preview;
+  bool _loading = false;
+  bool _loadFailed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _preview = widget.preview;
+    // Always refresh: the embedded preview may predate a fine threshold.
+    if (widget.loadPreview != null) _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _loadFailed = false;
+    });
+    try {
+      final p = await widget.loadPreview!();
+      if (!mounted) return;
+      setState(() {
+        // 404 (null): keep the embedded preview, else the plain dialog.
+        _preview = p ?? _preview;
+        _loading = false;
+      });
+    } catch (_) {
+      // Not a 404 (that is a null result): offline / 5xx. Offer a retry. Without
+      // any preview the plain dialog stays usable (the server enforces
+      // everything). With only the EMBEDDED (possibly stale) preview, confirm
+      // stays disabled until a retry succeeds: a wrong fine must not be accepted
+      // on the strength of old numbers (Cancel is always available).
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _loadFailed = true;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -819,10 +880,95 @@ class _JobCancelDialogState extends State<JobCancelDialog> {
     super.dispose();
   }
 
+  /// Server reasons when it sent any, else the local tasker codes.
+  List<({String code, String label})> _options(AppLocalizations l) {
+    final server = _preview?.reasons ?? const <TaskerCancelReason>[];
+    if (server.isNotEmpty) return [for (final r in server) (code: r.code, label: r.label)];
+    return [for (final c in kJobCancelReasonCodes) (code: c, label: cancelReasonLabel(l, c))];
+  }
+
+  String _consequenceText(AppLocalizations l, String? consequence) => switch (consequence) {
+        'permanent' => l.cancelPreviewConsequencePermanent,
+        'suspend_7d' => l.cancelPreviewConsequenceSuspend7d,
+        'suspend_30d' => l.cancelPreviewConsequenceSuspend30d,
+        _ => l.cancelPreviewConsequenceOther,
+      };
+
+  String? _untilText(AppLocalizations l, String? raw) {
+    final w = vnWall(raw);
+    return w == null ? null : l.cancelPreviewBlockedUntil(DateFormat('dd/MM/yyyy HH:mm').format(w));
+  }
+
+  List<Widget> _previewBody(AppLocalizations l, ColorScheme cs, TaskerCancelPreview p) {
+    if (!p.canCancel) {
+      return [
+        Container(
+          key: const ValueKey('job-cancel-blocked'),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: cs.errorContainer,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(p.blockedLabel ?? l.cancelPreviewCannotCancel,
+              style: TextStyle(color: cs.onErrorContainer, fontWeight: FontWeight.w600)),
+        ),
+        const SizedBox(height: 12),
+      ];
+    }
+    final until = p.willBlock ? _untilText(l, p.blockedUntil) : null;
+    return [
+      if (p.reasonLabel != null) Text(p.reasonLabel!, key: const ValueKey('job-cancel-reason-label')),
+      const SizedBox(height: 6),
+      Text(l.cancelPreviewFineLine(formatVnd(p.fineVnd)),
+          key: const ValueKey('job-cancel-fine'), style: const TextStyle(fontWeight: FontWeight.w600)),
+      if (p.strikeLabel != null) ...[
+        const SizedBox(height: 6),
+        Text(p.strikeLabel!, key: const ValueKey('job-cancel-strike')),
+      ],
+      if (p.willBlock) ...[
+        const SizedBox(height: 10),
+        Semantics(
+          container: true,
+          liveRegion: true,
+          child: Container(
+            key: const ValueKey('job-cancel-will-block'),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: cs.errorContainer,
+              border: Border.all(color: cs.error),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Icon(Icons.warning_amber_rounded, color: cs.onErrorContainer, size: 20),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(l.cancelPreviewWillBlockTitle,
+                        style: TextStyle(color: cs.onErrorContainer, fontWeight: FontWeight.w700)),
+                  ),
+                ]),
+                const SizedBox(height: 4),
+                Text(_consequenceText(l, p.consequence), style: TextStyle(color: cs.onErrorContainer)),
+                if (until != null)
+                  Text(until, key: const ValueKey('job-cancel-until'), style: TextStyle(color: cs.onErrorContainer)),
+              ],
+            ),
+          ),
+        ),
+      ],
+      const SizedBox(height: 12),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
+    final p = _preview;
+    final options = _options(l);
+    final canPick = p == null || p.canCancel;
     return AlertDialog(
       title: Text(l.provJdCancelTitle),
       content: SingleChildScrollView(
@@ -830,38 +976,85 @@ class _JobCancelDialogState extends State<JobCancelDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: cs.errorContainer.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(l.provJdCancelWarning, style: TextStyle(fontSize: 12, color: cs.onSurface)),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              key: const ValueKey('job-cancel-reason'),
-              initialValue: _code,
-              isExpanded: true,
-              decoration: InputDecoration(labelText: l.provJdCancelReasonPick),
-              items: [
-                for (final c in kJobCancelReasonCodes)
-                  DropdownMenuItem(value: c, child: Text(cancelReasonLabel(l, c))),
+            if (_loading && p == null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(children: [
+                  const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(l.cancelPreviewLoading, key: const ValueKey('job-cancel-loading'))),
+                ]),
+              )
+            else if (p != null) ...[
+              if (_loading)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(children: [
+                    const SizedBox(height: 12, width: 12, child: CircularProgressIndicator(strokeWidth: 1.5)),
+                    const SizedBox(width: 8),
+                    Text(l.cancelPreviewRefreshing,
+                        key: const ValueKey('job-cancel-refreshing'),
+                        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                  ]),
+                ),
+              ..._previewBody(l, cs, p),
+              if (_loadFailed) ...[
+                Row(children: [
+                  Expanded(child: Text(l.cancelPreviewLoadFailed, key: const ValueKey('job-cancel-load-failed'))),
+                  TextButton(
+                    key: const ValueKey('job-cancel-reload'),
+                    onPressed: _load,
+                    child: Text(l.retry),
+                  ),
+                ]),
+                const SizedBox(height: 8),
               ],
-              onChanged: (v) => setState(() => _code = v),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              key: const ValueKey('job-cancel-note'),
-              controller: _note,
-              maxLines: 3,
-              minLines: 1,
-              maxLength: kJobCancelNoteMax,
-              decoration: InputDecoration(
-                labelText: l.provJdCancelNoteLabel,
-                border: const OutlineInputBorder(),
+            ] else ...[
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: cs.errorContainer.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(l.provJdCancelWarning, style: TextStyle(fontSize: 12, color: cs.onSurface)),
               ),
-            ),
+              if (_loadFailed) ...[
+                const SizedBox(height: 8),
+                Row(children: [
+                  Expanded(child: Text(l.cancelPreviewLoadFailed, key: const ValueKey('job-cancel-load-failed'))),
+                  TextButton(
+                    key: const ValueKey('job-cancel-reload'),
+                    onPressed: _load,
+                    child: Text(l.retry),
+                  ),
+                ]),
+              ],
+              const SizedBox(height: 12),
+            ],
+            if (canPick && !(_loading && p == null)) ...[
+              DropdownButtonFormField<String>(
+                key: const ValueKey('job-cancel-reason'),
+                initialValue: _code != null && options.any((o) => o.code == _code) ? _code : null,
+                isExpanded: true,
+                decoration: InputDecoration(labelText: l.provJdCancelReasonPick),
+                items: [
+                  for (final o in options) DropdownMenuItem(value: o.code, child: Text(o.label)),
+                ],
+                onChanged: (v) => setState(() => _code = v),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const ValueKey('job-cancel-note'),
+                controller: _note,
+                maxLines: 3,
+                minLines: 1,
+                maxLength: kJobCancelNoteMax,
+                decoration: InputDecoration(
+                  labelText: l.provJdCancelNoteLabel,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -872,7 +1065,7 @@ class _JobCancelDialogState extends State<JobCancelDialog> {
         ),
         FilledButton(
           key: const ValueKey('job-cancel-submit'),
-          onPressed: _code == null
+          onPressed: _code == null || _loading || !canPick || (_loadFailed && p != null)
               ? null
               : () => Navigator.of(context).pop((code: _code!, text: _note.text.trim())),
           child: Text(l.provJdCancelJob),

@@ -18,6 +18,7 @@ import 'features/account/delete_account_screen.dart';
 import 'features/account/invite_screen.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/auth/login_screen.dart';
+import 'features/auth/reconsent_screen.dart';
 import 'features/auth/signup_screen.dart';
 import 'features/bookings/booking_detail_screen.dart';
 import 'features/bookings/bookings_providers.dart';
@@ -92,6 +93,20 @@ String? guestFirstRedirect({required AuthStatus status, required String loc, Str
   return null;
 }
 
+/// The blocking "Cập nhật điều khoản" screen (release-i re-consent gate).
+const kReconsentPath = '/reconsent';
+
+/// Where to go once the gate is cleared: the `from` the gate saved, if it is
+/// an in-app absolute path (never a scheme/host, never the gate itself), else
+/// home. Pure + table-testable.
+String reconsentResume(String? from) {
+  final f = from?.trim();
+  if (f == null || f.isEmpty || !f.startsWith('/') || f.startsWith('//')) return '/';
+  final uri = Uri.tryParse(f);
+  if (uri == null || uri.hasScheme || uri.hasAuthority || uri.path == kReconsentPath) return '/';
+  return f;
+}
+
 /// True for the tasker shell prefix ONLY — matches `/p` and `/p/*`, never the
 /// customer `/taskers/:id` route (which begins with `/p` but not `/p/`).
 bool isTaskerPath(String loc) => loc == '/p' || loc.startsWith('/p/');
@@ -105,7 +120,22 @@ String? appRedirect({
   required String loc,
   String? from,
   bool coldStart = false,
+  bool needsReconsent = false,
+  String? fullLoc,
 }) {
+  // RE-CONSENT GATE (release-i), before every other rule: a SIGNED-IN user whose
+  // /me says `consents.needsReconsent` is held on [kReconsentPath] (any role:
+  // customer, tasker, pending_tasker) and the place they were going is kept in
+  // `from`. Guests and an unresolved session are never gated, and the gate screen
+  // itself is unreachable to them. The gate depends ONLY on /me, never on the
+  // outcome of the accept POST, so a failing POST cannot loop.
+  if (loc == kReconsentPath) {
+    if (status != AuthStatus.signedIn) return '/';
+    return needsReconsent ? null : reconsentResume(from);
+  }
+  if (status == AuthStatus.signedIn && needsReconsent) {
+    return '$kReconsentPath?from=${Uri.encodeQueryComponent(fullLoc ?? loc)}';
+  }
   // COLD START (the first resolved session after launch): a tasker /
   // pending_tasker relaunching on the customer root lands in the /p area
   // (pending_tasker is then routed to the under-review screen by the /p gate).
@@ -160,7 +190,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final auth = ref.read(authControllerProvider);
       final role = auth.user?.role;
       var coldStart = false;
-      if (auth.status == AuthStatus.signedIn && role != null) {
+      final needsReconsent = auth.status == AuthStatus.signedIn && auth.user?.needsReconsent == true;
+      // The gate hop must not spend the one-shot cold-start routing: it runs on
+      // the first real destination after the gate clears.
+      if (auth.status == AuthStatus.signedIn &&
+          role != null &&
+          !needsReconsent &&
+          state.matchedLocation != kReconsentPath) {
         coldStart = !coldStartRouted;
         coldStartRouted = true;
       }
@@ -170,12 +206,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         loc: state.matchedLocation,
         from: state.uri.queryParameters['from'],
         coldStart: coldStart,
+        needsReconsent: needsReconsent,
+        fullLoc: state.uri.toString(),
       );
     },
     routes: [
       // Auth OUTSIDE the shell (full-screen, no tabs).
       GoRoute(path: '/login', parentNavigatorKey: _rootKey, builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/signup', parentNavigatorKey: _rootKey, builder: (_, _) => const SignupScreen()),
+      // Release-i re-consent gate (full-screen, root navigator, outside both shells).
+      GoRoute(path: kReconsentPath, parentNavigatorKey: _rootKey, builder: (_, _) => const ReconsentScreen()),
 
       // Full-screen flows on the ROOT navigator (over the tab shell).
       GoRoute(

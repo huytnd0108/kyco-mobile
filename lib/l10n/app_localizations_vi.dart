@@ -56,6 +56,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Vui lòng đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư để tiếp tục.';
 
   @override
+  String get consentVersionInvalid =>
+      'Phiên bản điều khoản không còn hợp lệ. Vui lòng cập nhật ứng dụng hoặc thử lại sau.';
+
+  @override
   String get createAccount => 'Tạo tài khoản';
 
   @override
@@ -2942,5 +2946,73 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String taskerAppDocReupload(String doc) {
     return 'Chụp lại $doc';
+  }
+
+  @override
+  String get reconsentTitle => 'Cập nhật điều khoản';
+
+  @override
+  String get reconsentIntro =>
+      'Chúng tôi vừa cập nhật Điều khoản sử dụng và Chính sách quyền riêng tư. Bạn vui lòng xem và xác nhận để tiếp tục dùng Kyco.';
+
+  @override
+  String reconsentTermsVersion(String version) {
+    return 'Điều khoản sử dụng - phiên bản $version';
+  }
+
+  @override
+  String reconsentPrivacyVersion(String version) {
+    return 'Chính sách quyền riêng tư - phiên bản $version';
+  }
+
+  @override
+  String get reconsentAccept => 'Đồng ý và tiếp tục';
+
+  @override
+  String get reconsentError =>
+      'Chưa lưu được xác nhận của bạn. Vui lòng thử lại.';
+
+  @override
+  String get cancelPreviewLoading =>
+      'Đang kiểm tra phí phạt và ảnh hưởng của việc hủy...';
+
+  @override
+  String get cancelPreviewRefreshing => 'đang cập nhật';
+
+  @override
+  String get cancelPreviewLoadFailed =>
+      'Chưa tải được thông tin phí phạt. Bạn có thể thử lại.';
+
+  @override
+  String cancelPreviewFineLine(String amount) {
+    return 'Phí phạt: $amount';
+  }
+
+  @override
+  String get cancelPreviewCannotCancel => 'Hiện không thể hủy công việc này.';
+
+  @override
+  String get cancelPreviewWillBlockTitle =>
+      'Cảnh báo: tài khoản của bạn sẽ bị hạn chế';
+
+  @override
+  String get cancelPreviewConsequencePermanent =>
+      'Nếu hủy, tài khoản sẽ bị khóa vĩnh viễn.';
+
+  @override
+  String get cancelPreviewConsequenceSuspend7d =>
+      'Nếu hủy, tài khoản sẽ bị khóa tạm thời 7 ngày.';
+
+  @override
+  String get cancelPreviewConsequenceSuspend30d =>
+      'Nếu hủy, tài khoản sẽ bị khóa tạm thời 30 ngày.';
+
+  @override
+  String get cancelPreviewConsequenceOther =>
+      'Nếu hủy, tài khoản sẽ bị hạn chế.';
+
+  @override
+  String cancelPreviewBlockedUntil(String when) {
+    return 'Khóa đến $when (giờ Việt Nam).';
   }
 }

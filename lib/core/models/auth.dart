@@ -1,5 +1,7 @@
 // Auth identity + token models. Tolerant parsing throughout.
 
+import 'consent.dart';
+
 /// One KYC document of a pending tasker's application (release-h
 /// `application.documents[]`). [status] is `pending | approved | rejected`.
 class ApplicationDocument {
@@ -85,7 +87,7 @@ class TaskerApplication {
 
 class AuthUser {
   const AuthUser(
-      {required this.id, required this.role, this.name, this.locale, this.application});
+      {required this.id, required this.role, this.name, this.locale, this.application, this.consents});
   final int id;
 
   /// The raw server role ('' when absent). Validate with [roleValidity].
@@ -96,6 +98,16 @@ class AuthUser {
   /// Release-h: the pending tasker's KYC application (`/me` `application`);
   /// null for every other role and on an older backend.
   final TaskerApplication? application;
+
+  /// Release-i: Terms / Privacy consent record (`/me` `consents`); null on an
+  /// older backend and on the login response (which carries no consents).
+  final ConsentStatus? consents;
+
+  /// `/me` says the user must accept newer Terms / Privacy before continuing.
+  bool get needsReconsent => consents?.needsReconsent == true;
+
+  AuthUser withConsents(ConsentStatus? c) =>
+      AuthUser(id: id, role: role, name: name, locale: locale, application: application, consents: c);
 
   /// Roles the app understands (post-rename; `provider` / `pending_provider`
   /// are stale pre-migration values). `staff` is a real server role that the
@@ -121,6 +133,7 @@ class AuthUser {
       name: name is String ? name : null,
       locale: locale is String ? locale : null,
       application: TaskerApplication.tryParse(j['application']),
+      consents: ConsentStatus.tryParse(j['consents']),
     );
   }
 }

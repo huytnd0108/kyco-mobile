@@ -1,0 +1,4 @@
+{"canCancel":true,"fineVnd":100000,
+ "strike":{"countAfter":2,"threshold":3,"willBlock":true,"blockedUntil":"2026-10-18T09:30:00.000Z","consequence":"suspend_7d","cancels30dAfter":5,"penaltyScoreAdd":3,"label":"Tài khoản sẽ bị khoá tạm 7 ngày do huỷ 5 job trong 30 ngày."},
+ "reason":{"code":"LATE_CANCEL_FINE","label":"Huỷ trước giờ hẹn dưới 4 giờ: bị phạt 100.000 ₫ trừ vào ví."},
+ "reasons":[{"code":"sick","label":"Tôi bị ốm / có việc đột xuất"},{"code":"flood","label":"Ngập nước, không đến được"},{"code":"other","label":"Khác (ghi rõ)"}],"repooled":true}

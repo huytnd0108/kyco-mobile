@@ -201,6 +201,19 @@ extension KycoApiTasker on KycoApi {
     return TaskerJobDetail.fromJson(data as Map<String, dynamic>);
   }
 
+  /// GET /tasker/jobs/{id}/cancel-preview — read-only dry run of the cancel
+  /// (fine, strike consequence, reasons). Null when the backend predates it
+  /// (404) so the caller keeps the plain dialog; any other failure rethrows.
+  Future<TaskerCancelPreview?> taskerCancelPreview(int id) async {
+    try {
+      final data = await _c.get('/tasker/jobs/$id/cancel-preview');
+      return TaskerCancelPreview.tryParse(data);
+    } on ApiException catch (e) {
+      if (e.status == 404) return null;
+      rethrow;
+    }
+  }
+
   /// GET /tasker/jobs/pool — pool + assigned pipeline + claim gate (A9).
   Future<PoolView> poolJobs() async {
     final data = await _c.get('/tasker/jobs/pool');
@@ -477,6 +490,7 @@ extension KycoApiTasker on KycoApi {
     required String district,
     String? referralCode,
     required List<KycUploadFile> files,
+    ConsentPayload? consent,
   }) async {
     final ref = referralCode?.trim();
     final form = FormData.fromMap({
@@ -486,6 +500,8 @@ extension KycoApiTasker on KycoApi {
       'city': city,
       'district': district,
       if (ref != null && ref.isNotEmpty) 'referral_code': ref,
+      // Only when GET /v1/legal answered 200 (release-i); never to an older backend.
+      ...?consent?.toFormFields(),
     });
     for (final f in files) {
       form.files.add(MapEntry(f.kind, f.toMultipart()));

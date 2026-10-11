@@ -1,0 +1,3 @@
+{"canCancel":false,"blockedReason":{"code":"TOO_LATE_1H","label":"Không thể huỷ trong vòng 1 giờ trước giờ hẹn. Hãy liên hệ hỗ trợ nếu có sự cố."},"fineVnd":0,
+ "strike":{"countAfter":1,"threshold":3,"willBlock":false,"cancels30dAfter":1,"penaltyScoreAdd":0,"label":""},
+ "reason":{"code":"FREE_CANCEL","label":""},"reasons":[{"code":"sick","label":"Tôi bị ốm / có việc đột xuất"},{"code":"address_unreach","label":"Địa chỉ không liên hệ được khách"},{"code":"wrong_scope","label":"Yêu cầu vượt khả năng / dụng cụ"},{"code":"safety","label":"Vấn đề an toàn"},{"code":"other","label":"Khác (ghi rõ)"}],"repooled":false}

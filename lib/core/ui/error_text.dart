@@ -27,6 +27,8 @@ String apiErrorText(AppLocalizations l, Object? error, {String? authText}) {
   if (e.code == 'PAYMENT_GATEWAY_UNAVAILABLE') return l.moneyErrGatewayUnavailable;
   if (e.isRateLimited) return l.cust2ErrRateLimit;
   if (e.isMaintenance) return l.cust2ErrMaintenance;
+  final consent = consentErrorText(l, e);
+  if (consent != null) return consent;
   switch (e.code) {
     case 'AUTH_REQUIRED':
       return authText ?? l.cust2ErrSessionExpired;
@@ -74,4 +76,18 @@ String otpSendErrorText(AppLocalizations l, Object? error) {
     if (error.isNetwork || error.isMaintenance) return apiErrorText(l, error);
   }
   return l.provOtpSendFailed;
+}
+
+/// Consent 422s (signup / quick signup / become-tasker / POST /me/consents):
+/// `fields.consent` | `fields.terms` | `fields.privacy` = box not accepted;
+/// `fields["consent.termsVersion"|"consent.privacyVersion"|"consent.version"]`
+/// = unknown / newer document version. Null when [e] is not a consent failure.
+String? consentErrorText(AppLocalizations l, ApiException e) {
+  final f = e.fields;
+  if (f == null || f.isEmpty) return null;
+  if (f.keys.any((k) => k == 'consent.termsVersion' || k == 'consent.privacyVersion' || k == 'consent.version')) {
+    return l.consentVersionInvalid;
+  }
+  if (f.containsKey('consent') || f.containsKey('terms') || f.containsKey('privacy')) return l.consentRequired;
+  return null;
 }

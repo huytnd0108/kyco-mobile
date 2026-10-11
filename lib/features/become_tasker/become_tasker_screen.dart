@@ -10,6 +10,7 @@ import '../../core/api/kyco_api.dart';
 import '../../core/api/problem.dart';
 import '../../core/datetime.dart';
 import '../../core/di.dart';
+import '../../core/legal.dart';
 import '../../core/models.dart';
 import '../../core/ui/consent_checkbox.dart';
 import '../../core/ui/error_text.dart';
@@ -275,7 +276,12 @@ class _BecomeTaskerScreenState extends ConsumerState<BecomeTaskerScreen> {
         // (Account menu, /p gate) reflects it without a cold start.
         unawaited(ref.read(authControllerProvider.notifier).reloadMe());
       } else {
+        // Consent fields only if GET /v1/legal answered 200 (guest door only:
+        // the upgrade door has no consent contract).
+        final consent = ConsentPayload.forLegal(await resolveLegal(ref));
+        if (!mounted) return;
         await api.becomeTasker(
+          consent: consent,
           phone: _phone.text.trim(),
           otpCode: _code.text.trim(),
           name: _name.text.trim(),

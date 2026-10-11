@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api/kyco_api.dart';
@@ -184,8 +186,54 @@ class AuthController extends Notifier<AuthState> {
     if (state.error != null || state.failure != null) state = state.copyWith();
   }
 
-  Future<bool> signup({required String email, required String password, String? name}) =>
-      _run(() => _api.signup(email: email, password: password, name: name));
+  /// [consent] is non-null only when GET /v1/legal answered 200 (release-i).
+  Future<bool> signup(
+          {required String email, required String password, String? name, ConsentPayload? consent}) =>
+      _run(() => _api.signup(email: email, password: password, name: name, consent: consent));
+
+  /// Re-consent gate: record acceptance of the server's CURRENT Terms +
+  /// Privacy (`POST /me/consents`), then refresh /me. Returns null on success,
+  /// else the failure for the screen to localize.
+  ///
+  /// Never loops and changes the session state exactly ONCE (so the router sees
+  /// a single transition): the fresh /me when it can be read, else the 201 body
+  /// applied locally - a failing /me refresh cannot re-open the gate for a user
+  /// who has just accepted.
+  Future<Object?> acceptReconsent() async {
+    if (state.status != AuthStatus.signedIn) return null;
+    final ConsentStatus? accepted;
+    try {
+      final c = state.user?.consents;
+      // consentSchema >= 2 -> per-document versions; absent/1/unreachable -> release-i max().
+      LegalInfo? legal;
+      try {
+        legal = await _api.legal();
+      } catch (_) {/* unreachable: legacy path */}
+      final per = legal != null && legal.perDocumentConsent ? c?.perDocumentVersions(legal) : null;
+      accepted = per != null
+          ? await _api.recordConsents(termsVersion: per.$1, privacyVersion: per.$2)
+          : await _api.recordConsents(version: c?.acceptVersion);
+    } on ApiException catch (e) {
+      // 422 = the version moved under us: pick up the new current version.
+      if (e.status == 422) unawaited(reloadMe());
+      return e;
+    } catch (e) {
+      return e;
+    }
+    AuthUser? fresh;
+    try {
+      fresh = await _api.me();
+    } catch (_) {/* offline / maintenance: fall back to the 201 body below */}
+    if (state.status != AuthStatus.signedIn) return null; // signed out meanwhile
+    if (fresh != null) {
+      await _accept(fresh);
+    } else if (state.user != null) {
+      state = AuthState(
+          status: AuthStatus.signedIn,
+          user: state.user!.withConsents(accepted ?? const ConsentStatus(needsReconsent: false)));
+    }
+    return null;
+  }
 
   Future<bool> _run(Future<AuthResult> Function() action) async {
     state = AuthState(status: state.status, user: state.user, busy: true);
@@ -196,7 +244,7 @@ class AuthController extends Notifier<AuthState> {
         await _accept(user);
         return false;
       }
-      state = AuthState(status: AuthStatus.signedIn, user: user);
+      state = AuthState(status: AuthStatus.signedIn, user: await _withConsents(user));
       return true;
     } on ApiException catch (e) {
       state = state.copyWith(busy: false, failure: e);
@@ -204,6 +252,19 @@ class AuthController extends Notifier<AuthState> {
     } catch (_) {
       state = state.copyWith(busy: false, error: genericError);
       return false;
+    }
+  }
+
+  /// The login / signup response carries no `consents`; read them from /me so
+  /// the re-consent gate decides before the first screen. Best effort: any
+  /// failure keeps [user] as is (the next /me read fills it in).
+  Future<AuthUser?> _withConsents(AuthUser? user) async {
+    if (user == null || user.consents != null) return user;
+    try {
+      final fresh = await _api.me();
+      return fresh.id == user.id ? user.withConsents(fresh.consents) : user;
+    } catch (_) {
+      return user;
     }
   }
 

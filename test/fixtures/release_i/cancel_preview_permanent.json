@@ -1,0 +1,4 @@
+{"canCancel":true,"fineVnd":0,
+ "strike":{"countAfter":3,"threshold":3,"willBlock":true,"consequence":"permanent","cancels30dAfter":3,"penaltyScoreAdd":1,"label":"Đây là lần huỷ liên tiếp thứ 3: tài khoản sẽ bị khoá vĩnh viễn."},
+ "reason":{"code":"FREE_CANCEL","label":"Huỷ trước giờ hẹn từ 4 giờ trở lên: không bị phạt tiền."},
+ "reasons":[{"code":"sick","label":"Tôi bị ốm / có việc đột xuất"},{"code":"address_unreach","label":"Địa chỉ không liên hệ được khách"},{"code":"wrong_scope","label":"Yêu cầu vượt khả năng / dụng cụ"},{"code":"safety","label":"Vấn đề an toàn"},{"code":"other","label":"Khác (ghi rõ)"}],"repooled":true}

@@ -214,3 +214,30 @@ void shiftCancelQuota() {
     File('$kQaRoot/state/cancel-shifted-ids.txt').writeAsStringSync('${ids.join('\n')}\n', mode: FileMode.append);
   }
 }
+
+
+/// Appends the request body (JSON map or multipart fields; never headers/tokens)
+/// of every consent-related call to `$QA/logs/<file>` so a suite can prove
+/// exactly what the app put on the wire.
+class CaptureInterceptor extends Interceptor {
+  CaptureInterceptor(this.tag, {this.file = 'J-req-capture.jsonl'});
+  final String tag;
+  final String file;
+  static final _paths = RegExp(r'/(auth/signup|signup/quick|become-tasker|me/consents)$');
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    if (_paths.hasMatch(options.uri.path) && options.method == 'POST') {
+      final d = options.data;
+      final body = d is FormData ? {for (final e in d.fields) e.key: e.value} : d;
+      final safe = body is Map
+          ? {for (final e in body.entries) e.key: (e.key == 'password' || e.key == 'otp_code') ? '***' : e.value}
+          : body;
+      File('$kQaRoot/logs/$file').writeAsStringSync(
+        '${jsonEncode({'ts': DateTime.now().toUtc().toIso8601String(), 'tag': tag, 'method': options.method, 'path': options.uri.path, 'body': safe})}\n',
+        mode: FileMode.append,
+      );
+    }
+    handler.next(options);
+  }
+}

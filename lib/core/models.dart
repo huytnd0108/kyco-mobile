@@ -4,6 +4,7 @@
 // tolerantly — the backend envelope wraps these as `{ ok:true, data, meta? }`.
 export 'models/auth.dart';
 export 'models/catalog.dart';
+export 'models/consent.dart';
 export 'models/home.dart';
 export 'models/locations.dart';
 export 'models/booking.dart';

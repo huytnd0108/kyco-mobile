@@ -194,6 +194,7 @@ class TaskerJobDetail {
     this.hasCheckedOut = false,
     this.thread = const [],
     this.openViolation,
+    this.cancelPreview,
   });
 
   final Map<String, dynamic> job;
@@ -204,6 +205,10 @@ class TaskerJobDetail {
   final bool hasCheckedOut;
   final List<Map<String, dynamic>> thread;
   final Map<String, dynamic>? openViolation;
+
+  /// Release-i: server dry run of the tasker cancel; null on an older backend
+  /// or when the server could not compute it.
+  final TaskerCancelPreview? cancelPreview;
 
   int? get jobId => _int(job['id'] ?? job['jobId']);
   int? get bookingId => _int((booking?['id']) ?? job['bookingId']);
@@ -223,7 +228,83 @@ class TaskerJobDetail {
         hasCheckedOut: _bool(j['hasCheckedOut']),
         thread: _mapList(j['thread']),
         openViolation: _asMap(j['openViolation']),
+        cancelPreview: TaskerCancelPreview.tryParse(j['cancelPreview']),
       );
+}
+
+/// One server cancel reason (`{code, label}`); the label is already localized.
+class TaskerCancelReason {
+  const TaskerCancelReason(this.code, this.label);
+  final String code;
+  final String label;
+}
+
+/// `GET /tasker/jobs/{id}/cancel-preview` and job-detail `cancelPreview`
+/// (backend 4f36881d lib/tasker/tasker-cancel-assess.ts TaskerCancelPreview).
+/// Everything shown comes from the server verbatim; there is no client math and
+/// no compensation field.
+class TaskerCancelPreview {
+  const TaskerCancelPreview({
+    required this.canCancel,
+    this.blockedCode,
+    this.blockedLabel,
+    this.fineVnd = 0,
+    this.strikeLabel,
+    this.willBlock = false,
+    this.consequence,
+    this.blockedUntil,
+    this.reasonLabel,
+    this.reasons = const [],
+    this.repooled = false,
+  });
+  final bool canCancel;
+
+  /// `JOB_CLOSED | TOO_LATE_1H` when [canCancel] is false.
+  final String? blockedCode;
+  final String? blockedLabel;
+  final int fineVnd;
+
+  /// `strike.label` (empty/null when cancel is refused).
+  final String? strikeLabel;
+  final bool willBlock;
+
+  /// `permanent | suspend_7d | suspend_30d` when [willBlock].
+  final String? consequence;
+
+  /// UTC ISO instant the suspension ends (`strike.blockedUntil`), if any.
+  final String? blockedUntil;
+
+  /// `reason.label` (e.g. the fine sentence); null when empty.
+  final String? reasonLabel;
+  final List<TaskerCancelReason> reasons;
+  final bool repooled;
+
+  static TaskerCancelPreview? tryParse(Object? raw) {
+    if (raw is! Map || raw['canCancel'] is! bool) return null;
+    String? s(Object? v) => v is String && v.trim().isNotEmpty ? v.trim() : null;
+    final blocked = raw['blockedReason'];
+    final strike = raw['strike'];
+    final reason = raw['reason'];
+    final reasons = raw['reasons'];
+    return TaskerCancelPreview(
+      canCancel: raw['canCancel'] as bool,
+      blockedCode: blocked is Map ? s(blocked['code']) : null,
+      blockedLabel: blocked is Map ? s(blocked['label']) : null,
+      fineVnd: raw['fineVnd'] is num ? (raw['fineVnd'] as num).toInt() : 0,
+      strikeLabel: strike is Map ? s(strike['label']) : null,
+      willBlock: strike is Map && strike['willBlock'] == true,
+      consequence: strike is Map ? s(strike['consequence']) : null,
+      blockedUntil: strike is Map ? s(strike['blockedUntil']) : null,
+      reasonLabel: reason is Map ? s(reason['label']) : null,
+      reasons: [
+        if (reasons is List)
+          for (final r in reasons)
+            if (r is Map && s(r['code']) != null && s(r['label']) != null)
+              TaskerCancelReason(s(r['code'])!, s(r['label'])!),
+      ],
+      repooled: raw['repooled'] == true,
+    );
+  }
 }
 
 // ── dashboard / workspace ────────────────────────────────────────────────────

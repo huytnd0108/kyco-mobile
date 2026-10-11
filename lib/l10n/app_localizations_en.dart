@@ -56,6 +56,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Please accept the Terms of Service and Privacy Policy to continue.';
 
   @override
+  String get consentVersionInvalid =>
+      'The terms version is no longer valid. Please update the app or try again later.';
+
+  @override
   String get createAccount => 'Create account';
 
   @override
@@ -2946,5 +2950,74 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String taskerAppDocReupload(String doc) {
     return 'Retake $doc';
+  }
+
+  @override
+  String get reconsentTitle => 'Terms update';
+
+  @override
+  String get reconsentIntro =>
+      'We have just updated our Terms of Use and Privacy Policy. Please review and confirm to keep using Kyco.';
+
+  @override
+  String reconsentTermsVersion(String version) {
+    return 'Terms of Use - version $version';
+  }
+
+  @override
+  String reconsentPrivacyVersion(String version) {
+    return 'Privacy Policy - version $version';
+  }
+
+  @override
+  String get reconsentAccept => 'Agree and continue';
+
+  @override
+  String get reconsentError =>
+      'We could not save your confirmation. Please try again.';
+
+  @override
+  String get cancelPreviewLoading =>
+      'Checking the fine and what cancelling would mean...';
+
+  @override
+  String get cancelPreviewRefreshing => 'updating';
+
+  @override
+  String get cancelPreviewLoadFailed =>
+      'Could not load the fine details. You can try again.';
+
+  @override
+  String cancelPreviewFineLine(String amount) {
+    return 'Fine: $amount';
+  }
+
+  @override
+  String get cancelPreviewCannotCancel =>
+      'This job cannot be cancelled right now.';
+
+  @override
+  String get cancelPreviewWillBlockTitle =>
+      'Warning: your account will be restricted';
+
+  @override
+  String get cancelPreviewConsequencePermanent =>
+      'If you cancel, your account will be permanently banned.';
+
+  @override
+  String get cancelPreviewConsequenceSuspend7d =>
+      'If you cancel, your account will be suspended for 7 days.';
+
+  @override
+  String get cancelPreviewConsequenceSuspend30d =>
+      'If you cancel, your account will be suspended for 30 days.';
+
+  @override
+  String get cancelPreviewConsequenceOther =>
+      'If you cancel, your account will be restricted.';
+
+  @override
+  String cancelPreviewBlockedUntil(String when) {
+    return 'Suspended until $when (Vietnam time).';
   }
 }

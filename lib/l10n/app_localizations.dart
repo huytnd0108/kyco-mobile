@@ -188,6 +188,12 @@ abstract class AppLocalizations {
   /// **'Vui lòng đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư để tiếp tục.'**
   String get consentRequired;
 
+  /// No description provided for @consentVersionInvalid.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phiên bản điều khoản không còn hợp lệ. Vui lòng cập nhật ứng dụng hoặc thử lại sau.'**
+  String get consentVersionInvalid;
+
   /// No description provided for @createAccount.
   ///
   /// In vi, this message translates to:
@@ -5341,6 +5347,108 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Chụp lại {doc}'**
   String taskerAppDocReupload(String doc);
+
+  /// Release-i re-consent gate screen title
+  ///
+  /// In vi, this message translates to:
+  /// **'Cập nhật điều khoản'**
+  String get reconsentTitle;
+
+  /// Release-i re-consent gate intro
+  ///
+  /// In vi, this message translates to:
+  /// **'Chúng tôi vừa cập nhật Điều khoản sử dụng và Chính sách quyền riêng tư. Bạn vui lòng xem và xác nhận để tiếp tục dùng Kyco.'**
+  String get reconsentIntro;
+
+  /// Release-i re-consent: terms version line; version is a dd/MM/yyyy date
+  ///
+  /// In vi, this message translates to:
+  /// **'Điều khoản sử dụng - phiên bản {version}'**
+  String reconsentTermsVersion(String version);
+
+  /// Release-i re-consent: privacy version line
+  ///
+  /// In vi, this message translates to:
+  /// **'Chính sách quyền riêng tư - phiên bản {version}'**
+  String reconsentPrivacyVersion(String version);
+
+  /// Release-i re-consent accept button
+  ///
+  /// In vi, this message translates to:
+  /// **'Đồng ý và tiếp tục'**
+  String get reconsentAccept;
+
+  /// Release-i re-consent friendly failure
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa lưu được xác nhận của bạn. Vui lòng thử lại.'**
+  String get reconsentError;
+
+  /// Release-i tasker cancel preview loading
+  ///
+  /// In vi, this message translates to:
+  /// **'Đang kiểm tra phí phạt và ảnh hưởng của việc hủy...'**
+  String get cancelPreviewLoading;
+
+  /// Subtle note while the cancel preview is re-fetched
+  ///
+  /// In vi, this message translates to:
+  /// **'đang cập nhật'**
+  String get cancelPreviewRefreshing;
+
+  /// Release-i tasker cancel preview load failure
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa tải được thông tin phí phạt. Bạn có thể thử lại.'**
+  String get cancelPreviewLoadFailed;
+
+  /// Release-i tasker cancel preview fine row; amount is formatVnd
+  ///
+  /// In vi, this message translates to:
+  /// **'Phí phạt: {amount}'**
+  String cancelPreviewFineLine(String amount);
+
+  /// Release-i tasker cancel preview refusal fallback
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiện không thể hủy công việc này.'**
+  String get cancelPreviewCannotCancel;
+
+  /// Release-i tasker cancel preview block warning title
+  ///
+  /// In vi, this message translates to:
+  /// **'Cảnh báo: tài khoản của bạn sẽ bị hạn chế'**
+  String get cancelPreviewWillBlockTitle;
+
+  /// Release-i consequence permanent
+  ///
+  /// In vi, this message translates to:
+  /// **'Nếu hủy, tài khoản sẽ bị khóa vĩnh viễn.'**
+  String get cancelPreviewConsequencePermanent;
+
+  /// Release-i consequence suspend_7d
+  ///
+  /// In vi, this message translates to:
+  /// **'Nếu hủy, tài khoản sẽ bị khóa tạm thời 7 ngày.'**
+  String get cancelPreviewConsequenceSuspend7d;
+
+  /// Release-i consequence suspend_30d
+  ///
+  /// In vi, this message translates to:
+  /// **'Nếu hủy, tài khoản sẽ bị khóa tạm thời 30 ngày.'**
+  String get cancelPreviewConsequenceSuspend30d;
+
+  /// Release-i consequence unknown code
+  ///
+  /// In vi, this message translates to:
+  /// **'Nếu hủy, tài khoản sẽ bị hạn chế.'**
+  String get cancelPreviewConsequenceOther;
+
+  /// Release-i suspension end in VN time
+  ///
+  /// In vi, this message translates to:
+  /// **'Khóa đến {when} (giờ Việt Nam).'**
+  String cancelPreviewBlockedUntil(String when);
 }
 
 class _AppLocalizationsDelegate

@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:dio/dio.dart' show FormData;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -37,6 +38,14 @@ Future<(ProviderContainer, GoRouter, Backend)> _open(
   await t.pumpAndSettle();
   return (c, router, b);
 }
+
+const _legalFixture = {
+  'termsVersion': '2026-05-24',
+  'privacyVersion': '2026-05-24',
+  'consentRequired': true,
+  'termsUrl': 'https://kyco.vn/vi/legal/terms',
+  'privacyUrl': 'https://kyco.vn/vi/legal/privacy',
+};
 
 String _loc(GoRouter r) => r.routerDelegate.currentConfiguration.last.matchedLocation;
 
@@ -154,6 +163,51 @@ void main() {
       expect(b.calls('POST /become-tasker'), hasLength(1));
       expect(find.text(vi.taskerPhoneExistsLogin), findsOneWidget);
       expect(find.byKey(const ValueKey('tasker-login-first')), findsOneWidget);
+    });
+
+    // Release-i (kyco 4f36881d lib/signup/tasker-signup-core.ts:38-44 +
+    // lib/legal/consent.ts:48 consentFromForm): the guest door takes
+    // consent_terms + consent_privacy (+ consent_version) multipart fields.
+    Map<String, String> consentFields(Backend b) => {
+          for (final e in (b.calls('POST /become-tasker').single.data as FormData).fields)
+            if (e.key.startsWith('consent')) e.key: e.value,
+        };
+
+    testWidgets('release-i: GET /legal 200 -> the multipart carries consent_terms/privacy/version', (t) async {
+      final b = Backend()
+        ..on('GET /legal', (_) => Backend.ok(_legalFixture))
+        ..on('POST /auth/otp/request', (_) => Backend.ok({}))
+        ..on('POST /become-tasker', (_) => Backend.ok({'userId': 31}, status: 201));
+      await _open(t, auth: const AuthState(status: AuthStatus.signedOut), backend: b);
+      await guestFillAndSubmit(t);
+      expect(consentFields(b),
+          {'consent_terms': '1', 'consent_privacy': '1', 'consent_version': '2026-05-24'});
+      expect(find.text(vi.provTaskerDoneTitle), findsOneWidget);
+    });
+
+    testWidgets('release-i: GET /legal 404 (older backend) -> no consent field at all', (t) async {
+      final b = Backend()
+        ..on('POST /auth/otp/request', (_) => Backend.ok({}))
+        ..on('POST /become-tasker', (_) => Backend.ok({'userId': 31}, status: 201));
+      await _open(t, auth: const AuthState(status: AuthStatus.signedOut), backend: b);
+      await guestFillAndSubmit(t);
+      expect(b.calls('GET /legal'), isNotEmpty);
+      expect(consentFields(b), isEmpty);
+      expect(find.text(vi.provTaskerDoneTitle), findsOneWidget, reason: 'the checkbox was still required and ticked');
+    });
+
+    testWidgets('release-i: the signed-in customer upgrade door never gets consent fields', (t) async {
+      final b = Backend()
+        ..on('GET /legal', (_) => Backend.ok(_legalFixture))
+        ..on('POST /become-tasker/upgrade', (_) => Backend.ok({'userId': 7}, status: 201))
+        ..on('GET /me', (_) => Backend.ok({'id': 7, 'role': 'pending_tasker', 'name': 'Ngọc Anh'}));
+      await _open(t, auth: signedInAs('customer'), backend: b);
+      await t.enterText(find.widgetWithText(TextField, vi.provTaskerDistrict), 'Quận 1');
+      await _captureAll(t);
+      await t.tap(find.text(vi.provTaskerSubmit));
+      await t.pumpAndSettle();
+      final form = b.calls('POST /become-tasker/upgrade').single.data as FormData;
+      expect(form.fields.where((e) => e.key.startsWith('consent')), isEmpty);
     });
   });
 

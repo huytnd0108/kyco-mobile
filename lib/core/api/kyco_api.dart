@@ -2,6 +2,7 @@ import 'package:dio/dio.dart' show FormData, MultipartFile;
 
 import '../models.dart';
 import 'api_client.dart';
+import 'problem.dart';
 import 'token_store.dart';
 
 // Tasker (/api/v1/tasker) methods live in a same-library part so the
@@ -53,17 +54,70 @@ class KycoApi {
     return result;
   }
 
-  Future<AuthResult> signup({required String email, required String password, String? name, String? refCode}) async {
+  /// GET /legal (public) → the server's current Terms / Privacy versions, or
+  /// null on a 404 (an older backend that does not record consent: the
+  /// `consent` key must then NOT be sent). Other failures (offline, 5xx)
+  /// rethrow so the caller can tell "unsupported" from "unreachable".
+  Future<LegalInfo?> legal() async {
+    try {
+      return LegalInfo.tryParse(await _c.get('/legal', auth: false));
+    } on ApiException catch (e) {
+      if (e.status == 404) return null;
+      rethrow;
+    }
+  }
+
+  /// POST /me/consents — record acceptance of the CURRENT Terms + Privacy.
+  /// 201 → the refreshed `consents` view. [version], when given, must be the
+  /// server's current version (else 422 `fields.version`).
+  ///
+  /// Schema 2 ([termsVersion] + [privacyVersion], FLAT body): per-document
+  /// versions replace the legacy max() [version].
+  Future<ConsentStatus?> recordConsents({String? version, String? termsVersion, String? privacyVersion}) async {
+    final perDoc = termsVersion != null && privacyVersion != null;
+    final data = await _c.post('/me/consents', body: {
+      'terms': true,
+      'privacy': true,
+      if (perDoc) ...{'termsVersion': termsVersion, 'privacyVersion': privacyVersion}
+      else if (version != null && version.isNotEmpty) 'version': version,
+    });
+    return ConsentStatus.tryParse(data);
+  }
+
+  /// [consent] is non-null ONLY when GET /legal answered 200.
+  Future<AuthResult> signup(
+      {required String email,
+      required String password,
+      String? name,
+      String? refCode,
+      ConsentPayload? consent}) async {
     final data = await _c.post('/auth/signup', auth: false, body: {
       'email': email,
       'password': password,
       if (name != null && name.isNotEmpty) 'name': name,
       if (refCode != null && refCode.isNotEmpty) 'refCode': refCode,
+      if (consent != null) 'consent': consent.toJson(),
     });
     final result = AuthResult.fromJson(data as Map<String, dynamic>);
     await _saveSession(result);
     return result;
   }
+
+  /// POST /signup/quick (phone-first customer signup; no session is created,
+  /// the server answers `{email}`). [consent] only when GET /legal was 200.
+  Future<void> quickSignup(
+          {required String phone,
+          required String email,
+          required String password,
+          required String name,
+          ConsentPayload? consent}) =>
+      _c.post('/signup/quick', auth: false, body: {
+        'phone': phone,
+        'email': email,
+        'password': password,
+        'name': name,
+        if (consent != null) 'consent': consent.toJson(),
+      });
 
   Future<void> logout() async {
     // Best-effort server revoke; always clear locally.

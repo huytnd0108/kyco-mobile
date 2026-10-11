@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
+import '../../core/legal.dart';
+import '../../core/models.dart' show ConsentPayload;
 import '../../core/ui/consent_checkbox.dart';
 import '../../core/widgets.dart';
 import 'auth_controller.dart';
@@ -22,6 +24,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _obscure = true;
   bool _consent = false;
   bool _consentTouched = false;
+  bool _resolving = false;
 
   @override
   void initState() {
@@ -48,10 +51,21 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       return;
     }
     if (!_form.currentState!.validate()) return;
+    // The consent object goes out ONLY if GET /v1/legal answered 200.
+    if (_resolving) return;
+    _resolving = true;
+    final ConsentPayload? consent;
+    try {
+      consent = ConsentPayload.forLegal(await resolveLegal(ref));
+    } finally {
+      _resolving = false;
+    }
+    if (!mounted) return;
     final ok = await ref.read(authControllerProvider.notifier).signup(
           email: _email.text.trim(),
           password: _password.text,
           name: _name.text.trim(),
+          consent: consent,
         );
     if (ok && mounted) {
       // Resume the flow the guest came from (?from=, the web's callbackUrl).
