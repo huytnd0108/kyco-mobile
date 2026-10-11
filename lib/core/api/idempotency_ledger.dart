@@ -197,6 +197,9 @@ class IdempotencyLedger {
     // A stale 'pending' key the server will never finish (crash mid-request)
     // is DEFINITIVE: drop it; the screen refreshes and the user re-checks.
     if (e.code == 'IDEMPOTENCY_STALE') return false;
+    // A pending-payout refusal is definitive: nothing was executed or stored
+    // server-side, so the next confirmation must be a new action (release-k).
+    if (e.code == 'PAYOUT_PENDING_EXISTS') return false;
     final s = e.status ?? 0;
     return s == 0 || s >= 500 || s == 408 || s == 409 || s == 429;
   }

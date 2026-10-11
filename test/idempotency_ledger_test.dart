@@ -82,6 +82,8 @@ void main() {
     expect(keep('NOT_FOUND', 404), isFalse);
     expect(keep('IDEMPOTENCY_STALE', 409), isFalse); // definitive, unlike IN_PROGRESS
     expect(keep('IDEMPOTENCY_IN_PROGRESS', 409), isTrue);
+    expect(keep('PAYOUT_PENDING_EXISTS', 409), isFalse); // definitive refusal
+    expect(keep('CONFLICT', 409), isTrue); // lost race: may still be running
   });
 
   test('textTag is stable across runs (FNV-1a) and hides the text', () {
