@@ -223,6 +223,12 @@ class KycoApi {
     return PaymentInitiateResult.fromJson(data as Map<String, dynamic>);
   }
 
+  /// `GET /payment/methods`: the rails the server currently offers.
+  Future<PaymentMethodsInfo> paymentMethods() async {
+    final data = await _c.get('/payment/methods');
+    return PaymentMethodsInfo.fromJson(data as Map<String, dynamic>);
+  }
+
   /// `GET /bookings/{id}/payment-status` (poll target; read-only).
   Future<PaymentStatusResult> paymentStatus(int bookingId) async {
     final data = await _c.get('/bookings/$bookingId/payment-status');

@@ -49,6 +49,15 @@ String paymentMethodLabel(AppLocalizations l, String? m) {
   };
 }
 
+/// Label of the "pay" button for a booking's gateway rail. An unknown rail
+/// gets a generic label, never another rail's name.
+String payActionLabel(AppLocalizations l, String? m) => switch (_norm(m)) {
+      'zalopay' => l.moneyPayActionZalopay,
+      'momo' => l.moneyPayAction('MoMo'),
+      'vnpay' => l.moneyPayAction('VNPay'),
+      _ => l.moneyPayActionGeneric,
+    };
+
 /// Booking timeline event kind.
 String timelineLabel(AppLocalizations l, String? kind) => switch (kind) {
       null || '' => _dash,

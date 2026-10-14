@@ -2341,7 +2341,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get moneyConfirmOnlineNote =>
-      'With VNPay or MoMo you will pay in the next step.';
+      'With an online payment method you will pay in the next step.';
 
   @override
   String get moneyConfirmSubmit => 'Confirm';
@@ -2426,6 +2426,27 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get moneyPayOpenFailed =>
       'Could not open the payment page. Please try again.';
+
+  @override
+  String get moneyPayActionZalopay => 'Pay with ZaloPay';
+
+  @override
+  String get moneyPayActionGeneric => 'Pay';
+
+  @override
+  String get moneyPaySandbox => 'SANDBOX';
+
+  @override
+  String moneyPayExpiresIn(String time) {
+    return '$time left to pay';
+  }
+
+  @override
+  String get moneyPayExpired =>
+      'The payment session has expired. If you have not paid, create a new one.';
+
+  @override
+  String get moneyPayRecreate => 'Create payment again';
 
   @override
   String get provWalletWithdrawInvalidAmount =>

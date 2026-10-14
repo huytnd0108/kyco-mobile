@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
@@ -26,9 +28,6 @@ const kCancelReasonCodes = <String>[
   'found_other',
   'other',
 ];
-
-/// Methods `confirm-completion` accepts (contract 3.1).
-const kConfirmMethods = <String>['cash', 'momo', 'vnpay'];
 
 /// Same rule as the server (`confirm-completion-write.ts`): trimmed 10..2000.
 String? validateDisputeNote(AppLocalizations l, String raw) {
@@ -389,15 +388,24 @@ class _ConfirmCompletionDialogState extends ConsumerState<ConfirmCompletionDialo
   @override
   void initState() {
     super.initState();
-    final m = (widget.booking.paymentMethod ?? '').toLowerCase();
-    _method = kConfirmMethods.contains(m) ? m : 'cash';
+    _method = (widget.booking.paymentMethod ?? '').toLowerCase();
   }
+
+  /// Exactly the server's list (fallback: the legacy list without zalopay).
+  PaymentMethodsInfo get _info =>
+      ref.read(paymentMethodsProvider).valueOrNull ?? PaymentMethodsInfo.fallback;
+
+  /// The chosen method if the server lists it; else cash when listed (the
+  /// customer can still pick another chip), else the first listed one.
+  String _chosen(List<String> methods) => methods.contains(_method)
+      ? _method
+      : (methods.contains('cash') ? 'cash' : (methods.isEmpty ? _method : methods.first));
 
   Future<void> _submit() async {
     if (_busy) return;
     final l = AppLocalizations.of(context);
     final id = widget.booking.id;
-    final method = _method;
+    final method = _chosen(_info.methods);
     setState(() {
       _busy = true;
       _error = null;
@@ -424,6 +432,12 @@ class _ConfirmCompletionDialogState extends ConsumerState<ConfirmCompletionDialo
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final methodsAsync = ref.watch(paymentMethodsProvider);
+    // Until the server list arrives the method is not final: a submit now could
+    // silently switch the booking's online rail to the fallback's default.
+    final loading = methodsAsync.isLoading && !methodsAsync.hasValue;
+    final info = methodsAsync.valueOrNull ?? PaymentMethodsInfo.fallback;
+    final chosen = _chosen(info.methods);
     return PopScope(
       canPop: !_busy,
       child: AlertDialog(
@@ -436,15 +450,18 @@ class _ConfirmCompletionDialogState extends ConsumerState<ConfirmCompletionDialo
               Text(l.moneyConfirmMethodLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Wrap(spacing: 8, children: [
-                for (final m in kConfirmMethods)
+                for (final m in info.methods)
                   ChoiceChip(
                     key: ValueKey('confirm-method-$m'),
-                    label: Text(m == 'cash' ? l.cust2PayCash : (m == 'momo' ? 'MoMo' : 'VNPay')),
-                    selected: _method == m,
+                    label: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Text(paymentMethodLabel(l, m)),
+                      if (info.isSandbox(m)) ...[const SizedBox(width: 6), const _SandboxBadge()],
+                    ]),
+                    selected: chosen == m,
                     onSelected: _busy ? null : (_) => setState(() => _method = m),
                   ),
               ]),
-              if (_method != 'cash') ...[
+              if (chosen != 'cash') ...[
                 const SizedBox(height: 8),
                 Text(l.moneyConfirmOnlineNote, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ],
@@ -459,7 +476,7 @@ class _ConfirmCompletionDialogState extends ConsumerState<ConfirmCompletionDialo
           ),
           FilledButton(
             key: const ValueKey('confirm-submit'),
-            onPressed: _busy ? null : _submit,
+            onPressed: (_busy || loading) ? null : _submit,
             child: _busy ? const _Spinner() : Text(l.moneyConfirmSubmit),
           ),
         ],
@@ -575,12 +592,14 @@ class _PayPanel extends ConsumerWidget {
     final cs = Theme.of(context).colorScheme;
     final st = ref.watch(payFlowProvider(b.id));
     final ctrl = ref.read(payFlowProvider(b.id).notifier);
-    final method = (b.paymentMethod ?? '').toLowerCase() == 'momo' ? 'MoMo' : 'VNPay';
+    final method = (b.paymentMethod ?? '').toLowerCase();
+    final info = ref.watch(paymentMethodsProvider).valueOrNull;
+    final sandbox = st.sandbox || (info?.isSandbox(method) ?? false);
 
     Widget payButton({bool outlined = false, String? label}) {
       final child = st.phase == PayPhase.initiating
           ? const _Spinner()
-          : Text(label ?? l.moneyPayAction(method));
+          : Text(label ?? payActionLabel(l, method));
       return outlined
           ? OutlinedButton(
               key: const ValueKey('pay-again'), onPressed: st.busy ? null : ctrl.pay, child: child)
@@ -592,11 +611,16 @@ class _PayPanel extends ConsumerWidget {
           Expanded(child: Text(text, key: const ValueKey('pay-status'))),
         ]);
 
+    final countdown = st.expiresAt == null
+        ? const <Widget>[]
+        : <Widget>[_ExpiryCountdown(bookingId: b.id, expiresAt: st.expiresAt!), const SizedBox(height: 8)];
+
     final children = switch (st.phase) {
       PayPhase.idle || PayPhase.initiating => [payButton()],
       PayPhase.awaiting || PayPhase.checking => [
           status(l.moneyPayConfirming, spinner: true),
           const SizedBox(height: 4),
+          ...countdown,
           Text(l.moneyPayWaitNote, style: TextStyle(color: cs.onSurfaceVariant)),
           const SizedBox(height: 8),
           FilledButton(
@@ -612,9 +636,15 @@ class _PayPanel extends ConsumerWidget {
       PayPhase.timeout => [
           status(l.moneyPayTimeout),
           const SizedBox(height: 8),
+          ...countdown,
           FilledButton(key: const ValueKey('pay-i-paid'), onPressed: ctrl.check, child: Text(l.moneyPayCheckAgain)),
           const SizedBox(height: 8),
           payButton(outlined: true, label: l.moneyPayReopen),
+        ],
+      PayPhase.expired => [
+          status(l.moneyPayExpired),
+          const SizedBox(height: 8),
+          FilledButton(key: const ValueKey('pay-recreate'), onPressed: ctrl.pay, child: Text(l.moneyPayRecreate)),
         ],
       PayPhase.cash => [status(l.moneyPayCash)],
       PayPhase.alreadyPaid => [status(l.moneyPayAlready)],
@@ -632,8 +662,78 @@ class _PayPanel extends ConsumerWidget {
     };
     return Padding(
       padding: const EdgeInsets.only(top: 8),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (sandbox) const Padding(padding: EdgeInsets.only(bottom: 8), child: Align(alignment: Alignment.centerLeft, child: _SandboxBadge())),
+        ...children,
+      ]),
     );
+  }
+}
+
+/// Test-mode marker on a payment method (server `sandbox` flag).
+class _SandboxBadge extends StatelessWidget {
+  const _SandboxBadge();
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      key: const ValueKey('sandbox-badge'),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(color: cs.tertiaryContainer, borderRadius: BorderRadius.circular(4)),
+      child: Text(AppLocalizations.of(context).moneyPaySandbox,
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: cs.onTertiaryContainer)),
+    );
+  }
+}
+
+/// Counts down to the server's `expiresAt` (display only; the server stays the
+/// authority). At zero it asks the server once more via [PayFlowController.check],
+/// which settles on paid / failed / expired.
+class _ExpiryCountdown extends ConsumerStatefulWidget {
+  const _ExpiryCountdown({required this.bookingId, required this.expiresAt});
+  final int bookingId;
+  final DateTime expiresAt;
+
+  @override
+  ConsumerState<_ExpiryCountdown> createState() => _ExpiryCountdownState();
+}
+
+class _ExpiryCountdownState extends ConsumerState<_ExpiryCountdown> {
+  Timer? _timer;
+  bool _fired = false;
+
+  Duration get _left => widget.expiresAt.difference(ref.read(payClockProvider)());
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+  }
+
+  void _tick() {
+    if (!mounted) return;
+    if (_left <= Duration.zero && !_fired) {
+      _fired = true;
+      final ctrl = ref.read(payFlowProvider(widget.bookingId).notifier);
+      if (!ref.read(payFlowProvider(widget.bookingId)).busy) ctrl.check();
+    }
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final left = _left.isNegative ? Duration.zero : _left;
+    final mm = left.inMinutes.toString().padLeft(2, '0');
+    final ss = (left.inSeconds % 60).toString().padLeft(2, '0');
+    return Text(AppLocalizations.of(context).moneyPayExpiresIn('$mm:$ss'),
+        key: const ValueKey('pay-countdown'),
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant));
   }
 }
 

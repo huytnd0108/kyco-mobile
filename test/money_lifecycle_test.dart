@@ -106,6 +106,9 @@ class _FakeApi extends KycoApi {
   }
 
   @override
+  Future<PaymentMethodsInfo> paymentMethods() async => PaymentMethodsInfo.fallback;
+
+  @override
   Future<PaymentStatusResult> paymentStatus(int bookingId) async {
     final i = statusReads++;
     return statusScript[i < statusScript.length ? i : statusScript.length - 1];

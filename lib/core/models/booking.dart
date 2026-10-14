@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../datetime.dart';
 import '../format.dart';
 
 class Booking {
@@ -593,7 +594,7 @@ class BookingActions {
   final bool canPay;
   final bool awaitingCashConfirm;
 
-  static const gatewayMethods = {'vnpay', 'momo'};
+  static const gatewayMethods = {'vnpay', 'momo', 'zalopay'};
   static const _cancellable = {'PENDING', 'CONFIRMED', 'EN_ROUTE'};
   static const _paidStates = {'paid', 'held', 'released'};
 
@@ -638,6 +639,9 @@ class PaymentInitiateResult {
     this.payUrl,
     this.deeplink,
     this.providerTxId,
+    this.qrCodeUrl,
+    this.expiresAt,
+    this.sandbox,
   });
   final String kind;
   final int bookingId;
@@ -646,6 +650,17 @@ class PaymentInitiateResult {
   final String? deeplink;
   final String? providerTxId;
 
+  /// A URL OR a raw EMVCo payload: only ever RENDERED (QR), never opened.
+  final String? qrCodeUrl;
+
+  /// ISO instant until which this payment intent can be paid (server clock).
+  final String? expiresAt;
+
+  /// True when the rail runs in test mode; null = the server did not say.
+  final bool? sandbox;
+
+  DateTime? get expiry => parseInstant(expiresAt);
+
   factory PaymentInitiateResult.fromJson(Map<String, dynamic> j) => PaymentInitiateResult(
         kind: (j['kind'] as String?) ?? '',
         bookingId: (j['bookingId'] as num?)?.toInt() ?? 0,
@@ -653,6 +668,9 @@ class PaymentInitiateResult {
         payUrl: j['payUrl'] as String?,
         deeplink: j['deeplink'] as String?,
         providerTxId: j['providerTxId'] as String?,
+        qrCodeUrl: j['qrCodeUrl'] as String?,
+        expiresAt: j['expiresAt'] as String?,
+        sandbox: j['sandbox'] as bool?,
       );
 }
 

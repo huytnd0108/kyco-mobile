@@ -7,6 +7,7 @@ export 'models/catalog.dart';
 export 'models/consent.dart';
 export 'models/home.dart';
 export 'models/locations.dart';
+export 'models/payment.dart';
 export 'models/booking.dart';
 export 'models/social.dart';
 export 'models/tasker.dart';

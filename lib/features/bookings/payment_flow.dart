@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -25,6 +26,20 @@ final paymentPollDelaysProvider = Provider<List<Duration>>((_) => kPaymentPollDe
 final paymentPollSleepProvider = Provider<Future<void> Function(Duration)>(
     (_) => (d) => Future<void>.delayed(d));
 
+/// Clock for the pay-intent expiry (overridable in tests).
+final payClockProvider = Provider<DateTime Function()>((_) => DateTime.now);
+
+/// Rails the server offers (`GET /payment/methods`). Any load error falls back
+/// to the legacy set WITHOUT zalopay, so ZaloPay only shows when listed.
+final paymentMethodsProvider = FutureProvider.autoDispose<PaymentMethodsInfo>((ref) async {
+  ref.watch(authUserIdProvider);
+  try {
+    return await ref.read(kycoApiProvider).paymentMethods();
+  } catch (_) {
+    return PaymentMethodsInfo.fallback;
+  }
+});
+
 enum PayPhase {
   idle,
   initiating, // POST /payment/initiate in flight
@@ -33,6 +48,7 @@ enum PayPhase {
   paid, // the SERVER reported paid
   failed, // the SERVER reported failed
   timeout, // no verdict within the poll window
+  expired, // the pay intent passed its server expiresAt (re-create = new key)
   cash,
   alreadyPaid,
   noRail,
@@ -41,9 +57,18 @@ enum PayPhase {
 }
 
 class PayFlowState {
-  const PayFlowState(this.phase, {this.error});
+  const PayFlowState(this.phase, {this.error, this.expiresAt, this.sandbox = false});
   final PayPhase phase;
   final Object? error;
+
+  /// Server expiry of the current pay intent (null = unknown).
+  final DateTime? expiresAt;
+
+  /// The initiate answer said the rail is in test mode.
+  final bool sandbox;
+
+  PayFlowState to(PayPhase p, {Object? error}) =>
+      PayFlowState(p, error: error, expiresAt: expiresAt, sandbox: sandbox);
 
   bool get busy => phase == PayPhase.initiating || phase == PayPhase.checking;
 }
@@ -72,6 +97,8 @@ class PayFlowController extends StateNotifier<PayFlowState> {
     if (!_disposed) state = s;
   }
 
+  String get _fingerprint => 'pay-initiate:$bookingId';
+
   void _refreshBooking() {
     if (_disposed) return;
     _ref.invalidate(bookingDetailProvider(bookingId));
@@ -82,44 +109,68 @@ class PayFlowController extends StateNotifier<PayFlowState> {
   /// lib/checkout/qr-guard.ts trust list). Our own API host is also allowed so a
   /// lab/sandbox stub page works; any other host is refused — a tampered or
   /// compromised payload can never send the customer to a phishing page.
-  static const _payHostSuffixes = ['momo.vn', 'vnpayment.vn', 'vnpay.vn'];
+  static const _payHostSuffixes = ['momo.vn', 'vnpayment.vn', 'vnpay.vn', 'zalopay.vn'];
 
-  static bool _hostTrusted(String host) {
-    final h = host.toLowerCase();
-    final own = Uri.tryParse(AppConfig.apiBase)?.host.toLowerCase();
-    if (own != null && own.isNotEmpty && h == own) return true;
-    return _payHostSuffixes.any((s) => h == s || h.endsWith('.$s'));
+  /// Exact domain or a real subdomain: the suffix is matched WITH its leading
+  /// dot, never by `contains`, so `evilzalopay.vn` / `zalopay.vn.evil.com` fail.
+  static bool _onSuffix(String host, String suffix) => host == suffix || host.endsWith('.$suffix');
+
+  /// https, a host, no `user@` part and no non-default port: the parts a
+  /// look-alike URL hides behind.
+  static bool _plainHttps(Uri u) =>
+      u.scheme == 'https' && u.host.isNotEmpty && u.userInfo.isEmpty && (!u.hasPort || u.port == 443);
+
+  static bool _hostTrusted(Uri u) {
+    final h = u.host.toLowerCase();
+    // The own-API-host stub page is a lab/debug aid only: never in a release build.
+    if (!kReleaseMode) {
+      final own = Uri.tryParse(AppConfig.apiBase)?.host.toLowerCase();
+      if (own != null && own.isNotEmpty && h == own) return true;
+    }
+    return _plainHttps(u) && _payHostSuffixes.any((s) => _onSuffix(h, s));
   }
 
   /// The pay URL must be https on a trusted gateway host.
   static bool isOpenablePayUrl(String? raw) {
     final u = Uri.tryParse(raw ?? '');
-    return u != null && u.scheme == 'https' && u.host.isNotEmpty && _hostTrusted(u.host);
+    return u != null && u.scheme == 'https' && u.host.isNotEmpty && _hostTrusted(u);
   }
 
-  /// Deeplink: only the MoMo app scheme, or a MoMo-hosted https link — the same
-  /// constraint the backend applies (qr-guard.ts). Everything else is dropped.
+  /// Deeplink: only the MoMo app scheme, or an https link on a MoMo / ZaloPay
+  /// host (same constraint as the backend qr-guard.ts). No custom ZaloPay app
+  /// scheme is accepted (unconfirmed): such a deeplink is ignored and the flow
+  /// falls back to the pay URL. Everything else is dropped.
   static bool isOpenableDeeplink(String? raw) {
     final u = Uri.tryParse(raw ?? '');
     if (u == null) return false;
     final scheme = u.scheme.toLowerCase();
     if (scheme == 'momo') return true;
-    return scheme == 'https' && u.host.isNotEmpty &&
-        (u.host.toLowerCase() == 'momo.vn' || u.host.toLowerCase().endsWith('.momo.vn'));
+    final h = u.host.toLowerCase();
+    return _plainHttps(u) && (_onSuffix(h, 'momo.vn') || _onSuffix(h, 'zalopay.vn'));
   }
 
   /// Ask the server for the pay URL (same txn on a repeat: P6) and hand it to
   /// an external browser/app. Ignored while another call is in flight.
   Future<void> pay() async {
     if (state.busy) return;
+    final ledger = _ref.read(idempotencyLedgerProvider);
+    // The last intent is past its server expiry: a pending key from it must not
+    // be replayed, so this tap is a NEW action with a fresh key.
+    final exp = state.expiresAt;
+    if (exp != null && !_ref.read(payClockProvider)().isBefore(exp)) {
+      await ledger.forget(_fingerprint);
+    }
+    if (_disposed) return;
     _set(const PayFlowState(PayPhase.initiating));
     final PaymentInitiateResult r;
     try {
-      r = await _ref.read(idempotencyLedgerProvider).run(
-            'pay-initiate:$bookingId',
-            (key) => _ref.read(kycoApiProvider).initiatePayment(bookingId, idempotencyKey: key),
-          );
+      r = await ledger.run(
+        _fingerprint,
+        (key) => _ref.read(kycoApiProvider).initiatePayment(bookingId, idempotencyKey: key),
+      );
     } on ApiException catch (e) {
+      // 409 PAYMENT_NOT_ALLOWED_IN_STATUS: the booking moved on — show its real state.
+      if (e.code == 'PAYMENT_NOT_ALLOWED_IN_STATUS') _refreshBooking();
       _set(PayFlowState(PayPhase.error, error: e));
       return;
     } catch (e) {
@@ -148,25 +199,32 @@ class PayFlowController extends StateNotifier<PayFlowState> {
     if (isOpenableDeeplink(r.deeplink)) opened = await launch(Uri.parse(r.deeplink!));
     if (!opened && isOpenablePayUrl(r.payUrl)) opened = await launch(Uri.parse(r.payUrl!));
     // Opening is NOT payment: the state only says "waiting for the server".
-    _set(PayFlowState(opened ? PayPhase.awaiting : PayPhase.openFailed));
+    _set(PayFlowState(opened ? PayPhase.awaiting : PayPhase.openFailed,
+        expiresAt: r.expiry, sandbox: r.sandbox == true));
   }
 
   /// Poll the server (backoff) until it says paid/failed or the window ends,
   /// then refresh the booking. Called on app resume and "Tôi đã thanh toán".
   Future<void> check() async {
     if (state.busy) return;
-    _set(const PayFlowState(PayPhase.checking));
+    _set(state.to(PayPhase.checking));
     final api = _ref.read(kycoApiProvider);
+    final now = _ref.read(payClockProvider);
+    // The poll never runs past the server expiry (nor past the usual cap).
     final outcome = await pollPaymentStatus(
       () => api.paymentStatus(bookingId),
       delays: _ref.read(paymentPollDelaysProvider),
       sleep: _ref.read(paymentPollSleepProvider),
       isCancelled: () => _disposed,
+      deadline: state.expiresAt,
+      now: now,
     );
-    _set(PayFlowState(switch (outcome) {
+    final exp = state.expiresAt;
+    final expired = exp != null && !now().isBefore(exp);
+    _set(state.to(switch (outcome) {
       PaymentPollOutcome.paid => PayPhase.paid,
       PaymentPollOutcome.failed => PayPhase.failed,
-      PaymentPollOutcome.timeout => PayPhase.timeout,
+      PaymentPollOutcome.timeout => expired ? PayPhase.expired : PayPhase.timeout,
     }));
     _refreshBooking();
   }

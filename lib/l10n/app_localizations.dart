@@ -4325,7 +4325,7 @@ abstract class AppLocalizations {
   /// Customer money lifecycle copy
   ///
   /// In vi, this message translates to:
-  /// **'Với VNPay hoặc MoMo, bạn sẽ thanh toán ở bước tiếp theo.'**
+  /// **'Với hình thức thanh toán trực tuyến, bạn sẽ thanh toán ở bước tiếp theo.'**
   String get moneyConfirmOnlineNote;
 
   /// Customer money lifecycle copy
@@ -4465,6 +4465,42 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Không mở được trang thanh toán. Vui lòng thử lại.'**
   String get moneyPayOpenFailed;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán ZaloPay'**
+  String get moneyPayActionZalopay;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Thanh toán'**
+  String get moneyPayActionGeneric;
+
+  /// Badge on a test-mode payment method
+  ///
+  /// In vi, this message translates to:
+  /// **'SANDBOX'**
+  String get moneyPaySandbox;
+
+  /// No description provided for @moneyPayExpiresIn.
+  ///
+  /// In vi, this message translates to:
+  /// **'Còn {time} để thanh toán'**
+  String moneyPayExpiresIn(String time);
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Phiên thanh toán đã hết hạn. Nếu bạn chưa thanh toán, hãy tạo lại.'**
+  String get moneyPayExpired;
+
+  /// Customer money lifecycle copy
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạo lại thanh toán'**
+  String get moneyPayRecreate;
 
   /// Customer money lifecycle copy
   ///

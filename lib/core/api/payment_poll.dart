@@ -20,13 +20,17 @@ const kPaymentPollDelays = <Duration>[
 /// [PaymentPollOutcome.paid] is returned only when [fetch] resolved to a status
 /// the server itself marks paid. Transient read errors are skipped (the next
 /// read decides); running out of time is [PaymentPollOutcome.timeout], never
-/// paid.
+/// paid. With a [deadline] (the server's `expiresAt`) no further wait starts
+/// once [now] has reached it.
 Future<PaymentPollOutcome> pollPaymentStatus(
   Future<PaymentStatusResult> Function() fetch, {
   List<Duration> delays = kPaymentPollDelays,
   Future<void> Function(Duration) sleep = _defaultSleep,
   bool Function()? isCancelled,
+  DateTime? deadline,
+  DateTime Function()? now,
 }) async {
+  bool due() => deadline != null && !(now ?? DateTime.now)().isBefore(deadline);
   Future<PaymentPollOutcome?> readOnce() async {
     try {
       final s = await fetch();
@@ -41,7 +45,7 @@ Future<PaymentPollOutcome> pollPaymentStatus(
   final first = await readOnce();
   if (first != null) return first;
   for (final d in delays) {
-    if (isCancelled?.call() ?? false) return PaymentPollOutcome.timeout;
+    if ((isCancelled?.call() ?? false) || due()) return PaymentPollOutcome.timeout;
     await sleep(d);
     if (isCancelled?.call() ?? false) return PaymentPollOutcome.timeout;
     final out = await readOnce();

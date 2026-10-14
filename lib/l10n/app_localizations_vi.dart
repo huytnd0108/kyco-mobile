@@ -2339,7 +2339,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get moneyConfirmOnlineNote =>
-      'Với VNPay hoặc MoMo, bạn sẽ thanh toán ở bước tiếp theo.';
+      'Với hình thức thanh toán trực tuyến, bạn sẽ thanh toán ở bước tiếp theo.';
 
   @override
   String get moneyConfirmSubmit => 'Xác nhận';
@@ -2424,6 +2424,27 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get moneyPayOpenFailed =>
       'Không mở được trang thanh toán. Vui lòng thử lại.';
+
+  @override
+  String get moneyPayActionZalopay => 'Thanh toán ZaloPay';
+
+  @override
+  String get moneyPayActionGeneric => 'Thanh toán';
+
+  @override
+  String get moneyPaySandbox => 'SANDBOX';
+
+  @override
+  String moneyPayExpiresIn(String time) {
+    return 'Còn $time để thanh toán';
+  }
+
+  @override
+  String get moneyPayExpired =>
+      'Phiên thanh toán đã hết hạn. Nếu bạn chưa thanh toán, hãy tạo lại.';
+
+  @override
+  String get moneyPayRecreate => 'Tạo lại thanh toán';
 
   @override
   String get provWalletWithdrawInvalidAmount =>

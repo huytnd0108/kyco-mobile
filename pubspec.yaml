@@ -37,6 +37,7 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.1
   flutter_native_splash: ^2.4.4
   device_preview: ^1.2.0
+  crypto: ^3.0.7
 
 flutter:
   uses-material-design: true
