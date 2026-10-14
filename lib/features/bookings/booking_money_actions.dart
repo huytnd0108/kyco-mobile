@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:kyco_mobile/l10n/app_localizations.dart';
 
 import '../../core/api/idempotency_ledger.dart';
@@ -615,12 +616,18 @@ class _PayPanel extends ConsumerWidget {
         ? const <Widget>[]
         : <Widget>[_ExpiryCountdown(bookingId: b.id, expiresAt: st.expiresAt!), const SizedBox(height: 8)];
 
+    final expired = st.expiresAt != null && !ref.read(payClockProvider)().isBefore(st.expiresAt!);
+    final qr = <Widget>[
+      if (st.qrCode != null && !expired) ...[_PayQr(payload: st.qrCode!), const SizedBox(height: 8)],
+    ];
+
     final children = switch (st.phase) {
       PayPhase.idle || PayPhase.initiating => [payButton()],
       PayPhase.awaiting || PayPhase.checking => [
           status(l.moneyPayConfirming, spinner: true),
           const SizedBox(height: 4),
           ...countdown,
+          ...qr,
           Text(l.moneyPayWaitNote, style: TextStyle(color: cs.onSurfaceVariant)),
           const SizedBox(height: 8),
           FilledButton(
@@ -637,6 +644,7 @@ class _PayPanel extends ConsumerWidget {
           status(l.moneyPayTimeout),
           const SizedBox(height: 8),
           ...countdown,
+          ...qr,
           FilledButton(key: const ValueKey('pay-i-paid'), onPressed: ctrl.check, child: Text(l.moneyPayCheckAgain)),
           const SizedBox(height: 8),
           payButton(outlined: true, label: l.moneyPayReopen),
@@ -667,6 +675,60 @@ class _PayPanel extends ConsumerWidget {
         ...children,
       ]),
     );
+  }
+}
+
+/// ZaloPay QR for paying from another device. Wide screens show it inline; on a
+/// phone it sits behind a toggle. White background + quiet zone so it scans in
+/// dark mode. The payload is drawn only, never opened or copied.
+class _PayQr extends StatefulWidget {
+  const _PayQr({required this.payload});
+  final String payload;
+
+  @override
+  State<_PayQr> createState() => _PayQrState();
+}
+
+class _PayQrState extends State<_PayQr> {
+  bool _shown = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final wide = MediaQuery.sizeOf(context).width >= 600;
+    final qr = Column(mainAxisSize: MainAxisSize.min, children: [
+      Semantics(
+        label: l.moneyPayQrSemantics,
+        image: true,
+        child: ExcludeSemantics(
+          child: QrImageView(
+            key: const ValueKey('pay-qr'),
+            data: widget.payload,
+            version: QrVersions.auto,
+            errorCorrectionLevel: QrErrorCorrectLevel.M,
+            size: 220,
+            padding: const EdgeInsets.all(16),
+            backgroundColor: Colors.white,
+            eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
+            dataModuleStyle:
+                const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black),
+          ),
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(l.moneyPayQrCaption,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+    ]);
+    if (wide) return Center(child: qr);
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      TextButton(
+        key: const ValueKey('pay-qr-toggle'),
+        onPressed: () => setState(() => _shown = !_shown),
+        child: Text(_shown ? l.moneyPayQrHide : l.moneyPayQrShow),
+      ),
+      if (_shown) Center(child: qr),
+    ]);
   }
 }
 

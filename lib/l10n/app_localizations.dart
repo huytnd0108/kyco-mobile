@@ -4484,6 +4484,30 @@ abstract class AppLocalizations {
   /// **'SANDBOX'**
   String get moneyPaySandbox;
 
+  /// No description provided for @moneyPayQrShow.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hiện mã QR'**
+  String get moneyPayQrShow;
+
+  /// No description provided for @moneyPayQrHide.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ẩn mã QR'**
+  String get moneyPayQrHide;
+
+  /// No description provided for @moneyPayQrCaption.
+  ///
+  /// In vi, this message translates to:
+  /// **'Quét mã bằng ứng dụng ZaloPay trên thiết bị khác'**
+  String get moneyPayQrCaption;
+
+  /// No description provided for @moneyPayQrSemantics.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mã QR thanh toán ZaloPay'**
+  String get moneyPayQrSemantics;
+
   /// No description provided for @moneyPayExpiresIn.
   ///
   /// In vi, this message translates to:

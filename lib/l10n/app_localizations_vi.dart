@@ -2435,6 +2435,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get moneyPaySandbox => 'SANDBOX';
 
   @override
+  String get moneyPayQrShow => 'Hiện mã QR';
+
+  @override
+  String get moneyPayQrHide => 'Ẩn mã QR';
+
+  @override
+  String get moneyPayQrCaption =>
+      'Quét mã bằng ứng dụng ZaloPay trên thiết bị khác';
+
+  @override
+  String get moneyPayQrSemantics => 'Mã QR thanh toán ZaloPay';
+
+  @override
   String moneyPayExpiresIn(String time) {
     return 'Còn $time để thanh toán';
   }

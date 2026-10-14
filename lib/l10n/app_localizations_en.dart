@@ -2437,6 +2437,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get moneyPaySandbox => 'SANDBOX';
 
   @override
+  String get moneyPayQrShow => 'Show QR code';
+
+  @override
+  String get moneyPayQrHide => 'Hide QR code';
+
+  @override
+  String get moneyPayQrCaption => 'Scan with the ZaloPay app on another device';
+
+  @override
+  String get moneyPayQrSemantics => 'ZaloPay payment QR code';
+
+  @override
   String moneyPayExpiresIn(String time) {
     return '$time left to pay';
   }

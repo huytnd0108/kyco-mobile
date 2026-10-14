@@ -57,7 +57,7 @@ enum PayPhase {
 }
 
 class PayFlowState {
-  const PayFlowState(this.phase, {this.error, this.expiresAt, this.sandbox = false});
+  const PayFlowState(this.phase, {this.error, this.expiresAt, this.sandbox = false, this.qrCode});
   final PayPhase phase;
   final Object? error;
 
@@ -67,8 +67,15 @@ class PayFlowState {
   /// The initiate answer said the rail is in test mode.
   final bool sandbox;
 
-  PayFlowState to(PayPhase p, {Object? error}) =>
-      PayFlowState(p, error: error, expiresAt: expiresAt, sandbox: sandbox);
+  /// Raw EMVCo/VietQR payload (validated by [PayFlowController.sanitizeQr]).
+  /// Only ever drawn as a QR image: never launched, logged or copied.
+  final String? qrCode;
+
+  PayFlowState to(PayPhase p, {Object? error}) {
+    final keepQr = p == PayPhase.awaiting || p == PayPhase.checking || p == PayPhase.timeout;
+    return PayFlowState(p,
+        error: error, expiresAt: expiresAt, sandbox: sandbox, qrCode: keepQr ? qrCode : null);
+  }
 
   bool get busy => phase == PayPhase.initiating || phase == PayPhase.checking;
 }
@@ -193,6 +200,14 @@ class PayFlowController extends StateNotifier<PayFlowState> {
     }
   }
 
+  /// A QR payload is accepted only as a short EMVCo string ("000201..."), never
+  /// a URL or script scheme. Anything else is dropped (returns null).
+  static String? sanitizeQr(String? raw) {
+    if (raw == null || raw.isEmpty || raw.length > 512) return null;
+    if (!raw.startsWith('000201') || raw.contains('://')) return null;
+    return raw;
+  }
+
   Future<void> _open(PaymentInitiateResult r) async {
     final launch = _ref.read(externalLauncherProvider);
     var opened = false;
@@ -200,7 +215,7 @@ class PayFlowController extends StateNotifier<PayFlowState> {
     if (!opened && isOpenablePayUrl(r.payUrl)) opened = await launch(Uri.parse(r.payUrl!));
     // Opening is NOT payment: the state only says "waiting for the server".
     _set(PayFlowState(opened ? PayPhase.awaiting : PayPhase.openFailed,
-        expiresAt: r.expiry, sandbox: r.sandbox == true));
+        expiresAt: r.expiry, sandbox: r.sandbox == true, qrCode: sanitizeQr(r.qrCodeUrl)));
   }
 
   /// Poll the server (backoff) until it says paid/failed or the window ends,

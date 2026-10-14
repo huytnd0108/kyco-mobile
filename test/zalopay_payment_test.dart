@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:kyco_mobile/core/api/api_client.dart';
 import 'package:kyco_mobile/core/api/idempotency_ledger.dart';
 import 'package:kyco_mobile/core/api/kyco_api.dart';
@@ -76,9 +77,10 @@ class _H {
   final launched = <Uri>[];
   int detailLoads = 0;
   Locale locale = const Locale('vi');
+  double width = 800;
 
   Future<void> pump(WidgetTester t) async {
-    t.view.physicalSize = const Size(800, 1600);
+    t.view.physicalSize = Size(width, 1600);
     t.view.devicePixelRatio = 1.0;
     addTearDown(t.view.reset);
     await t.pumpWidget(ProviderScope(
@@ -431,6 +433,86 @@ void main() {
       await _tap(t, _key('pay-again'));
       await _settle(t);
       expect(h.api.initiates.last, isNot(stale));
+      await t.pumpWidget(const SizedBox());
+    });
+  });
+
+  group('zalopay QR', () {
+    const good = '00020101021238570010A000000727012700069704220113VQRQ0000abcde0208QRIBFTTA5303704540650000062070703A0163044B5E';
+
+    Future<_H> open(WidgetTester t, String? qr, {double width = 800}) async {
+      final h = _H(_booking('AWAITING_PAYMENT', 'zalopay'));
+      h.width = width;
+      h.api.result = PaymentInitiateResult(
+          kind: 'ok',
+          bookingId: 5,
+          method: 'zalopay',
+          payUrl: 'https://qcgateway.zalopay.vn/o?order=1',
+          qrCodeUrl: qr,
+          expiresAt: _iso(h.now.add(const Duration(minutes: 15))));
+      await h.pump(t);
+      await _tap(t, _key('pay-cta'));
+      await _settle(t);
+      return h;
+    }
+
+    testWidgets('wide surface shows the QR with caption, white background, EC level M', (t) async {
+      await open(t, good);
+      expect(_key('pay-qr'), findsOneWidget);
+      expect(_key('pay-qr-toggle'), findsNothing);
+      expect(find.text('Quét mã bằng ứng dụng ZaloPay trên thiết bị khác'), findsOneWidget);
+      expect(_key('pay-countdown'), findsOneWidget);
+      final w = t.widget<QrImageView>(_key('pay-qr'));
+      expect(w.backgroundColor, Colors.white);
+      expect(w.errorCorrectionLevel, QrErrorCorrectLevel.M);
+      await t.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('phone surface hides the QR behind a toggle', (t) async {
+      await open(t, good, width: 400);
+      expect(_key('pay-qr'), findsNothing);
+      expect(find.text('Hiện mã QR'), findsOneWidget);
+      await _tap(t, _key('pay-qr-toggle'));
+      await _settle(t);
+      expect(_key('pay-qr'), findsOneWidget);
+      expect(_key('pay-countdown'), findsOneWidget);
+      await t.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('invalid payloads give no QR', (t) async {
+      for (final bad in [
+        'https://qcgateway.zalopay.vn/x',
+        'javascript:alert(1)',
+        '000201https://evil.com',
+        '12345',
+        '',
+        '000201${'0' * 507}',
+        null,
+      ]) {
+        await open(t, bad);
+        expect(_key('pay-qr'), findsNothing, reason: '$bad');
+        expect(_key('pay-qr-toggle'), findsNothing, reason: '$bad');
+        await t.pumpWidget(const SizedBox());
+      }
+      expect(PayFlowController.sanitizeQr('000201${'0' * 506}'), isNotNull); // exactly 512
+    });
+
+    testWidgets('the QR disappears after expiry', (t) async {
+      final h = await open(t, good);
+      expect(_key('pay-qr'), findsOneWidget);
+      h.now = h.now.add(const Duration(minutes: 16));
+      // the countdown reaches zero on its next tick and asks the server once
+      await t.pump(const Duration(seconds: 1));
+      await _settle(t);
+      expect(_key('pay-recreate'), findsOneWidget);
+      expect(_key('pay-qr'), findsNothing);
+      await t.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('the QR payload is never passed to the launcher', (t) async {
+      final h = await open(t, good);
+      expect(h.launched.where((u) => u.toString().contains(good) || u.toString().contains('000201')), isEmpty);
+      expect(h.launched.length, 1); // only the pay URL
       await t.pumpWidget(const SizedBox());
     });
   });
